@@ -6,6 +6,7 @@ import { DatePicker } from "@nextui-org/date-picker";
 import { Button } from "@nextui-org/button";
 import { CalendarDate } from "@internationalized/date";
 import { toast } from "react-toastify";
+import { Divider } from "@nextui-org/divider";
 
 import { PageHeader } from "@/components/page-header";
 import { WorkoutUser } from "@/api/api.generated";
@@ -31,8 +32,6 @@ function DataForm({ user }: { user: WorkoutUser }) {
   const [userDateOfBirth, setUserDateOfBirth] = useState(
     protoToCalendarDate(user.dateOfBirth!),
   );
-  const [userFirstName, setUserFirstName] = useState(user.firstName);
-  const [userLastName, setUserLastName] = useState(user.lastName);
   const [userWeight, setUserWeight] = useState(user.weight!);
   const [userHeight, setUserHeight] = useState(user.height!);
 
@@ -41,8 +40,6 @@ function DataForm({ user }: { user: WorkoutUser }) {
 
     await authApi.v1
       .userServiceUpdateUser({
-        firstName: userFirstName ? userFirstName : undefined,
-        lastName: userLastName ? userLastName : undefined,
         dateOfBirth: userDateOfBirth
           ? userDateOfBirth.toDate("UTC").toISOString()
           : undefined,
@@ -59,19 +56,7 @@ function DataForm({ user }: { user: WorkoutUser }) {
   }
 
   return (
-    <Form className="flex flex-col pt-4 px-4 gap-4" onSubmit={handleSubmit}>
-      <Input
-        label="Имя"
-        placeholder="Имя"
-        value={userFirstName}
-        onChange={(e) => setUserFirstName(e.target.value)}
-      />
-      <Input
-        label="Фамилия"
-        placeholder="Фамилия"
-        value={userLastName}
-        onChange={(e) => setUserLastName(e.target.value)}
-      />
+    <Form className="flex flex-col px-4 gap-4" onSubmit={handleSubmit}>
       <DatePicker
         label="Дата рождения"
         value={userDateOfBirth}
@@ -100,95 +85,10 @@ function DataForm({ user }: { user: WorkoutUser }) {
   );
 }
 
-function AvatarSection({
-  src,
-  setProfilePictureURL,
-}: {
-  src: string;
-  setProfilePictureURL: (url: string) => void;
-}) {
-  async function handleUploadAvatar(e: React.ChangeEvent<HTMLInputElement>) {
-    if (!e.target.files || e.target.files.length === 0) {
-      return;
-    }
-
-    const file = e.target.files[0];
-
-    const filename =
-      (Math.random() + 1).toString(36).substring(2) + "-" + file.name;
-
-    const data = await authApi.v1
-      .fileServicePresignUpload({
-        filename: filename,
-        contentType: file.type,
-      })
-      .then((response) => {
-        return response.data;
-      })
-      .catch((error) => {
-        console.log(error);
-        toast.error("Ошибка при загрузке файла");
-      });
-
-    if (!data) {
-      return;
-    }
-
-    const formData = new FormData();
-
-    formData.append("file", file);
-
-    const response = await fetch(data.uploadUrl!, {
-      method: "PUT",
-      body: file,
-      headers: {
-        "Content-Type": file.type,
-      },
-    })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("Ошибка при загрузке файла");
-        } else {
-          toast.success("Фотография успешно загружена");
-        }
-
-        return response;
-      })
-      .catch((error) => {
-        console.log(error);
-        toast.error("Ошибка при загрузке файла");
-      });
-
-    if (!response) {
-      return;
-    }
-
-    await authApi.v1
-      .userServiceUpdateUser({
-        profilePictureUrl: data.getUrl,
-      })
-      .catch((error) => {
-        console.log(error);
-        toast.error("Ошибка при обновлении аватара");
-      });
-
-    e.target.value = "";
-
-    setProfilePictureURL(data.getUrl!);
-  }
-
+function AvatarSection({ src }: { src: string }) {
   return (
     <div className="flex flex-col gap-2 items-center justify-around pt-4 px-4">
       <Avatar src={src} />
-      <label className="text-blue-500 cursor-pointer hover:underline text-sm">
-        Загрузить фотографию
-        <input
-          accept="image/*"
-          className="hidden"
-          type="file"
-          onChange={handleUploadAvatar}
-        />
-      </label>
     </div>
   );
 }
@@ -244,13 +144,16 @@ export default function EditProfilePage() {
   return (
     <div className="py-4 flex flex-col h-full">
       <PageHeader enableBackButton title="Редактировать профиль" />
-      <AvatarSection
-        setProfilePictureURL={(url) =>
-          setUser({ ...user!, profilePictureUrl: url })
-        }
-        src={user!.profilePictureUrl!}
-      />
-      <DataForm user={user!} />
+      <div className="grid grid-cols-1 gap-4 py-4">
+        <div className="flex flex-col gap-4 items-center justify-around">
+          <Avatar src={user!.profilePictureUrl!} />
+          <h2 className="text-2xl font-bold">
+            {user!.firstName} {user!.lastName}
+          </h2>
+        </div>
+        <Divider />
+        <DataForm user={user!} />
+      </div>
     </div>
   );
 }
