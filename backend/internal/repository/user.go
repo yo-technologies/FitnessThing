@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fitness-trainer/internal/domain"
 	"fitness-trainer/internal/logger"
+	"fitness-trainer/internal/utils"
 
 	"github.com/georgysavva/scany/v2/pgxscan"
 	"github.com/jackc/pgerrcode"
@@ -17,21 +18,21 @@ import (
 type userEntity struct {
 	ID pgtype.UUID
 
-	Email    string
-	Password string
+	TelegramID int64       `db:"telegram_id"`
+	Username   pgtype.Text `db:"username"`
 
-	FirstName string
-	LastName  string
+	FirstName pgtype.Text `db:"first_name"`
+	LastName  pgtype.Text `db:"last_name"`
 
 	PictureProfileURL pgtype.Text `db:"picture_profile_url"`
 
-	DateOfBirth pgtype.Timestamptz
+	DateOfBirth pgtype.Timestamptz `db:"date_of_birth"`
 
-	Weight pgtype.Float4
-	Height pgtype.Float4
+	Weight pgtype.Float4 `db:"weight"`
+	Height pgtype.Float4 `db:"height"`
 
-	CreatedAt pgtype.Timestamptz
-	UpdatedAt pgtype.Timestamptz
+	CreatedAt pgtype.Timestamptz `db:"created_at"`
+	UpdatedAt pgtype.Timestamptz `db:"updated_at"`
 }
 
 func (u userEntity) toDomain() domain.User {
@@ -41,56 +42,31 @@ func (u userEntity) toDomain() domain.User {
 			CreatedAt: timeFromPgtype(u.CreatedAt),
 			UpdatedAt: timeFromPgtype(u.UpdatedAt),
 		},
-		Email:         u.Email,
-		Password:      u.Password,
-		FirstName:     u.FirstName,
-		LastName:      u.LastName,
-		DateOfBirth:   timeFromPgtype(u.DateOfBirth),
-		Weight:        u.Weight.Float32,
-		Height:        u.Height.Float32,
-		ProfilePicURL: u.PictureProfileURL.String,
+		TelegramID:       u.TelegramID,
+		TelegramUsername: nullableStringFromPgtype(u.Username),
+		FirstName:        nullableStringFromPgtype(u.FirstName),
+		LastName:         nullableStringFromPgtype(u.LastName),
+		DateOfBirth:      timeFromPgtype(u.DateOfBirth),
+		Weight:           utils.NewNullable(u.Weight.Float32, u.Weight.Valid),
+		Height:           utils.NewNullable(u.Height.Float32, u.Height.Valid),
+		ProfilePicURL:    utils.NewNullable(u.PictureProfileURL.String, u.PictureProfileURL.Valid),
 	}
 }
 
 func userFromDomain(user domain.User) userEntity {
 	return userEntity{
 		ID:                uuidToPgtype(user.ID),
-		Email:             user.Email,
-		FirstName:         user.FirstName,
-		LastName:          user.LastName,
-		Password:          user.Password,
+		TelegramID:        user.TelegramID,
+		Username:          nullableStringToPgtype(user.TelegramUsername),
+		FirstName:         nullableStringToPgtype(user.FirstName),
+		LastName:          nullableStringToPgtype(user.LastName),
 		DateOfBirth:       timeToPgtype(user.DateOfBirth),
-		Weight:            floatToPgtype(user.Weight),
-		Height:            floatToPgtype(user.Height),
+		Weight:            nullableFloatToPgtype(user.Weight),
+		Height:            nullableFloatToPgtype(user.Height),
 		CreatedAt:         timeToPgtype(user.CreatedAt),
 		UpdatedAt:         timeToPgtype(user.UpdatedAt),
-		PictureProfileURL: pgtype.Text{String: user.ProfilePicURL, Valid: user.ProfilePicURL != ""},
+		PictureProfileURL: nullableStringToPgtype(user.ProfilePicURL),
 	}
-}
-
-func (r *PGXRepository) GetUserByEmail(ctx context.Context, email string) (domain.User, error) {
-	span, ctx := opentracing.StartSpanFromContext(ctx, "repository.GetUserByEmail")
-	defer span.Finish()
-
-	const query = `
-		select id, email, password, first_name, last_name, date_of_birth, height, weight, created_at, updated_at, picture_profile_url
-		from users u 
-		where u.email=$1;
-	`
-
-	var user userEntity
-
-	engine := r.contextManager.GetEngineFromContext(ctx)
-
-	err := pgxscan.Get(ctx, engine, &user, query, email)
-	if err != nil {
-		if err == pgx.ErrNoRows {
-			return domain.User{}, domain.ErrNotFound
-		}
-		logger.Errorf("error getting user by email: %v", err)
-	}
-
-	return user.toDomain(), nil
 }
 
 func (r *PGXRepository) GetUserByID(ctx context.Context, id domain.ID) (domain.User, error) {
@@ -98,9 +74,9 @@ func (r *PGXRepository) GetUserByID(ctx context.Context, id domain.ID) (domain.U
 	defer span.Finish()
 
 	const query = `
-		select id, email, password, first_name, last_name, date_of_birth, height, weight, created_at, updated_at, picture_profile_url
-		from users u 
-		where u.id=$1;
+		select id, telegram_id, username, first_name, last_name, date_of_birth, height, weight, created_at, updated_at, picture_profile_url
+		from users
+		where id = $1;
 	`
 
 	var user userEntity
@@ -118,14 +94,24 @@ func (r *PGXRepository) GetUserByID(ctx context.Context, id domain.ID) (domain.U
 	return user.toDomain(), nil
 }
 
-func (r *PGXRepository) CreateUser(ctx context.Context, user domain.User) (domain.User, error) {
-	span, ctx := opentracing.StartSpanFromContext(ctx, "repository.CreateUser")
+func (r *PGXRepository) GetOrCreateUser(ctx context.Context, user domain.User) (domain.User, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "repository.GetOrCreateUser")
 	defer span.Finish()
 
 	const query = `
-		insert into users (id, email, password, first_name, last_name, date_of_birth, height, weight, created_at, updated_at, picture_profile_url)
+		insert into users (id, telegram_id, username, first_name, last_name, date_of_birth, height, weight, created_at, updated_at, picture_profile_url)
 		values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-		returning id, email, password, first_name, last_name, date_of_birth, height, weight, created_at, updated_at, picture_profile_url;
+		on conflict (telegram_id) do update
+		set 
+			username = excluded.username,
+			first_name = excluded.first_name,
+			last_name = excluded.last_name,
+			date_of_birth = excluded.date_of_birth,
+			height = excluded.height,
+			weight = excluded.weight,
+			updated_at = excluded.updated_at,
+			picture_profile_url = excluded.picture_profile_url
+		returning id, telegram_id, username, first_name, last_name, date_of_birth, height, weight, created_at, updated_at, picture_profile_url;
 	`
 
 	userEntity := userFromDomain(user)
@@ -133,17 +119,17 @@ func (r *PGXRepository) CreateUser(ctx context.Context, user domain.User) (domai
 	engine := r.contextManager.GetEngineFromContext(ctx)
 
 	err := pgxscan.Get(ctx, engine, &userEntity, query,
-		uuidToPgtype(user.ID),
-		user.Email,
-		user.Password,
-		user.FirstName,
-		user.LastName,
-		timeToPgtype(user.DateOfBirth),
-		floatToPgtype(user.Height),
-		floatToPgtype(user.Weight),
-		timeToPgtype(user.CreatedAt),
-		timeToPgtype(user.UpdatedAt),
-		pgtype.Text{String: user.ProfilePicURL, Valid: user.ProfilePicURL != ""},
+		userEntity.ID,
+		userEntity.TelegramID,
+		userEntity.Username,
+		userEntity.FirstName,
+		userEntity.LastName,
+		userEntity.DateOfBirth,
+		userEntity.Height,
+		userEntity.Weight,
+		userEntity.CreatedAt,
+		userEntity.UpdatedAt,
+		userEntity.PictureProfileURL,
 	)
 	if err != nil {
 		var pgErr *pgconn.PgError
@@ -165,9 +151,17 @@ func (r *PGXRepository) UpdateUser(ctx context.Context, user domain.User) (domai
 
 	const query = `
 		update users
-		set email=$2, first_name=$3, last_name=$4, date_of_birth=$5, height=$6, weight=$7, updated_at=$8, picture_profile_url=$9
-		where id=$1
-		returning id, email, password, first_name, last_name, date_of_birth, height, weight, created_at, updated_at;
+		set 
+			username = $2,
+			first_name = $3,
+			last_name = $4,
+			date_of_birth = $5,
+			height = $6,
+			weight = $7,
+			updated_at = $8,
+			picture_profile_url = $9
+		where id = $1
+		returning id, telegram_id, username, first_name, last_name, date_of_birth, height, weight, created_at, updated_at, picture_profile_url;
 	`
 
 	userEntity := userFromDomain(user)
@@ -176,15 +170,16 @@ func (r *PGXRepository) UpdateUser(ctx context.Context, user domain.User) (domai
 
 	err := pgxscan.Get(
 		ctx, engine, &userEntity, query,
-		uuidToPgtype(user.ID),
-		user.Email,
-		user.FirstName,
-		user.LastName,
-		timeToPgtype(user.DateOfBirth),
-		floatToPgtype(user.Height),
-		floatToPgtype(user.Weight),
-		timeToPgtype(user.UpdatedAt),
-		pgtype.Text{String: user.ProfilePicURL, Valid: user.ProfilePicURL != ""},
+		userEntity.ID,
+		userEntity.TelegramID,
+		userEntity.Username,
+		userEntity.FirstName,
+		userEntity.LastName,
+		userEntity.DateOfBirth,
+		userEntity.Height,
+		userEntity.Weight,
+		userEntity.UpdatedAt,
+		userEntity.PictureProfileURL,
 	)
 	if err != nil {
 		logger.Errorf("error updating user: %v", err)

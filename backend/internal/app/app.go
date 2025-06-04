@@ -11,7 +11,6 @@ import (
 	"os/signal"
 	"syscall"
 
-	"fitness-trainer/internal/app/fitness-trainer/api/auth"
 	"fitness-trainer/internal/app/fitness-trainer/api/exercise"
 	"fitness-trainer/internal/app/fitness-trainer/api/file"
 	"fitness-trainer/internal/app/fitness-trainer/api/routine"
@@ -108,24 +107,25 @@ func WithBypassCors(bypassCors bool) OptionsFunc {
 	}
 }
 
+type service interface {
+	user.Service
+	workout.Service
+	exercise.Service
+	routine.Service
+	file.Service
+	interceptors.UserService
+}
+
 type App struct {
-	authService     auth.Service
-	userService     user.Service
-	workoutService  workout.Service
-	exerciseService exercise.Service
-	routineService  routine.Service
-	fileService     file.Service
+	service             service
+	telegramTokenParser interceptors.TelegramTokenParser
 
 	options *Options
 }
 
 func New(
-	authService auth.Service,
-	userService user.Service,
-	workoutService workout.Service,
-	exerciseService exercise.Service,
-	routineService routine.Service,
-	fileService file.Service,
+	service service,
+	telegramTokenParser interceptors.TelegramTokenParser,
 	options ...OptionsFunc,
 ) *App {
 	opts := defaultOptions
@@ -133,13 +133,9 @@ func New(
 		o(opts)
 	}
 	return &App{
-		authService:     authService,
-		userService:     userService,
-		workoutService:  workoutService,
-		exerciseService: exerciseService,
-		routineService:  routineService,
-		fileService:     fileService,
-		options:         opts,
+		service:             service,
+		telegramTokenParser: telegramTokenParser,
+		options:             opts,
 	}
 }
 
@@ -150,35 +146,26 @@ func (a *App) Run(ctx context.Context) error {
 	srv := grpc.NewServer(
 		grpc.ChainUnaryInterceptor(
 			interceptors.TracingInterceptor,
-			interceptors.RecovertInterceptor,
-			interceptors.NewAuth(
-				a.authService,
-				map[string]struct{}{
-					"/fitness_trainer.api.workout.AuthService/Login":      {},
-					"/fitness_trainer.api.workout.AuthService/Refresh":    {},
-					"/fitness_trainer.api.workout.UserService/CreateUser": {},
-				},
-			),
+			interceptors.RecoveryInterceptor,
 			interceptors.ErrCodesInterceptor,
+			interceptors.TelegramAuthInterceptor(a.service, a.telegramTokenParser),
 		),
 		grpc.ChainStreamInterceptor(
 			recovery.StreamServerInterceptor(),
 		),
 	)
 
-	workoutService := workout.New(a.workoutService)
-	exerciseService := exercise.New(a.exerciseService)
-	routineService := routine.New(a.routineService)
-	authServiceServer := auth.New(a.authService)
-	userServiceServer := user.New(a.userService)
-	fileServiceServer := file.New(a.fileService)
+	workoutService := workout.New(a.service)
+	exerciseService := exercise.New(a.service)
+	routineService := routine.New(a.service)
+	userServiceServer := user.New(a.service)
+	fileServiceServer := file.New(a.service)
 
 	// Register the service
 	desc.RegisterWorkoutServiceServer(srv, workoutService)
 	desc.RegisterExerciseServiceServer(srv, exerciseService)
 	desc.RegisterRoutineServiceServer(srv, routineService)
 	desc.RegisterUserServiceServer(srv, userServiceServer)
-	desc.RegisterAuthServiceServer(srv, authServiceServer)
 	desc.RegisterFileServiceServer(srv, fileServiceServer)
 
 	// Reflect the service
@@ -299,11 +286,6 @@ func registerGateway(ctx context.Context, mux *runtime.ServeMux, grpcEndpoint st
 	}
 
 	err = desc.RegisterUserServiceHandlerFromEndpoint(ctx, mux, grpcEndpoint, opts)
-	if err != nil {
-		return err
-	}
-
-	err = desc.RegisterAuthServiceHandlerFromEndpoint(ctx, mux, grpcEndpoint, opts)
 	if err != nil {
 		return err
 	}

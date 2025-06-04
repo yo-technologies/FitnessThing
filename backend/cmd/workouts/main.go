@@ -1,8 +1,9 @@
 package main
 
 import (
-	"context"
 	_ "embed"
+
+	"context"
 	"fmt"
 	"io"
 	"log"
@@ -12,16 +13,17 @@ import (
 	"time"
 
 	"fitness-trainer/internal/app"
-	genai_client "fitness-trainer/internal/clients/gemini"
 	"fitness-trainer/internal/clients/ratelimiter"
-	s3_client "fitness-trainer/internal/clients/s3"
 	"fitness-trainer/internal/db"
-	"fitness-trainer/internal/jwt"
 	"fitness-trainer/internal/logger"
 	"fitness-trainer/internal/repository"
 	"fitness-trainer/internal/service"
-	workout_generator_service "fitness-trainer/internal/service/workout_generator"
+	"fitness-trainer/internal/telegram/token_parser"
 	"fitness-trainer/internal/tracer"
+
+	genai_client "fitness-trainer/internal/clients/gemini"
+	s3_client "fitness-trainer/internal/clients/s3"
+	workout_generator_service "fitness-trainer/internal/service/workout_generator"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -34,6 +36,7 @@ import (
 	"github.com/openai/openai-go/option"
 	"github.com/throttled/throttled/v2"
 	"github.com/throttled/throttled/v2/store/memstore"
+
 	apiOpts "google.golang.org/api/option"
 )
 
@@ -86,20 +89,9 @@ func Run() error {
 	})
 	s3ClientWrapper := s3_client.New(s3Client, bucket)
 
-	ContextManager := db.NewContextManager(pool)
+	contextManager := db.NewContextManager(pool)
 
-	Repo := repository.NewPGXRepository(ContextManager)
-
-	jwtSecret := os.Getenv("JWT_SECRET")
-
-	JWTProvider := jwt.NewProvider(
-		jwt.WithCredentials(
-			jwt.NewSecretCredentials(jwtSecret),
-		),
-		jwt.WithAccessTTL(
-			30*time.Minute,
-		),
-	)
+	repo := repository.NewPGXRepository(contextManager)
 
 	genaiClient, err := newGeminiClient(ctx)
 	if err != nil {
@@ -112,7 +104,7 @@ func Run() error {
 
 	// clientWrapper := openai_client.New(openaiClient, os.Getenv("OPENAI_ASS_ID"))
 
-	WorkoutGenerator := workout_generator_service.New(clientWrapper)
+	workoutGenerator := workout_generator_service.New(clientWrapper)
 
 	quota := throttled.RateQuota{
 		MaxRate:  throttled.PerDay(5),
@@ -131,37 +123,23 @@ func Run() error {
 
 	rateLimiterWrapper := ratelimiter.New(rateLimiter)
 
-	Service := service.New(
-		ContextManager,
-		JWTProvider,
+	service := service.New(
+		contextManager,
 		s3ClientWrapper,
-		WorkoutGenerator,
+		workoutGenerator,
 		rateLimiterWrapper,
-		Repo, // Auth
-		Repo, // User
-		Repo, // Exercise
-		Repo, // Workout
-		Repo, // ExerciseInstance
-		Repo, // MuscleGroup
-		Repo, // Workout
-		Repo, // ExerciseLog
-		Repo, // SetLog
-		Repo, // Set
-		Repo, // ExpectedSet
-		Repo, // Generation Settings
+		repo,
 	)
 
-	App := app.New(
-		Service,
-		Service,
-		Service,
-		Service,
-		Service,
-		Service,
+	telegramTokenParser := newTelegramTokenParser()
+
+	app := app.New(
+		service,
+		telegramTokenParser,
 		app.WithHTTPPathPrefix("/api"),
 	)
 
-	if err := App.Run(ctx); err != nil {
+	if err := app.Run(ctx); err != nil {
 		return err
 	}
 
@@ -172,6 +150,27 @@ func main() {
 	if err := Run(); err != nil {
 		panic(err)
 	}
+}
+
+func newTelegramTokenParser() token_parser.TokenParser {
+	botToken := os.Getenv("TELEGRAM_BOT_TOKEN")
+	if botToken == "" {
+		logger.Fatal("TELEGRAM_BOT_TOKEN environment variable is not set")
+	}
+
+	expireInStr := os.Getenv("TELEGRAM_TOKEN_EXPIRE_IN")
+	if expireInStr == "" {
+		logger.Fatal("TELEGRAM_TOKEN_EXPIRE_IN environment variable is not set")
+	}
+	expireIn, err := time.ParseDuration(expireInStr)
+	if err != nil {
+		logger.Fatal(fmt.Sprintf("Failed to parse TELEGRAM_TOKEN_EXPIRE_IN: %v", err))
+	}
+
+	return token_parser.NewTokenParser(
+		botToken,
+		expireIn,
+	)
 }
 
 func getAWSConfig(ctx context.Context) aws.Config {

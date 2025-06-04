@@ -2,32 +2,18 @@ package service
 
 import (
 	"context"
-	"time"
 
 	"fitness-trainer/internal/domain"
 	"fitness-trainer/internal/domain/dto"
 )
 
-type jwtProvider interface {
-	GeneratePair(ctx context.Context, userID, pairID domain.ID, atTime time.Time) (domain.Tokens, error)
-	VerifyPair(ctx context.Context, userID domain.ID, tokens domain.Tokens, atTime time.Time) error
-	ParseToken(ctx context.Context, token string) (domain.ID, error)
-}
-
 type workoutGenerator interface {
 	GenerateWorkout(ctx context.Context, options *dto.GenerateWorkoutOptions) (dto.GeneratedWorkoutDTO, error)
 }
 
-type sessionRepository interface {
-	GetSessionByToken(ctx context.Context, token string) (domain.Session, error)
-	SetSessionExpired(ctx context.Context, id domain.ID, expiredAt time.Time) error
-	CreateSession(ctx context.Context, session domain.Session) (domain.Session, error)
-}
-
 type userRepository interface {
-	GetUserByEmail(ctx context.Context, email string) (domain.User, error)
 	GetUserByID(ctx context.Context, id domain.ID) (domain.User, error)
-	CreateUser(ctx context.Context, user domain.User) (domain.User, error)
+	GetOrCreateUser(ctx context.Context, user domain.User) (domain.User, error)
 	UpdateUser(ctx context.Context, user domain.User) (domain.User, error)
 }
 
@@ -102,6 +88,20 @@ type generationSettingsRepository interface {
 	SaveGenerationSettings(ctx context.Context, settings domain.GenerationSettings) (domain.GenerationSettings, error)
 }
 
+type repository interface {
+	userRepository
+	exerciseRepository
+	routineRepository
+	exerciseInstanceRepository
+	muscleGroupRepository
+	workoutRepository
+	exerciseLogRepository
+	setLogRepository
+	setRepository
+	expectedSetRepository
+	generationSettingsRepository
+}
+
 type unitOfWork interface {
 	Begin(ctx context.Context) (context.Context, error)
 	Commit(ctx context.Context) error
@@ -118,61 +118,25 @@ type generateWorkoutLimiter interface {
 }
 
 type Service struct {
-	jwtProvider                  jwtProvider
-	s3Client                     s3Client
-	workoutGenerator             workoutGenerator
-	generateWorkoutLimiter       generateWorkoutLimiter
-	sessionRepository            sessionRepository
-	userRepository               userRepository
-	exerciseRepository           exerciseRepository
-	routineRepository            routineRepository
-	exerciseInstanceRepository   exerciseInstanceRepository
-	muscleGroupRepository        muscleGroupRepository
-	workoutRepository            workoutRepository
-	exerciseLogRepository        exerciseLogRepository
-	setLogRepository             setLogRepository
-	setRepository                setRepository
-	expectedSetRepository        expectedSetRepository
-	generationSettingsRepository generationSettingsRepository
-	unitOfWork                   unitOfWork
+	s3Client               s3Client
+	workoutGenerator       workoutGenerator
+	generateWorkoutLimiter generateWorkoutLimiter
+	unitOfWork             unitOfWork
+	repository             repository
 }
 
 func New(
 	unitOfWork unitOfWork,
-	jwtProvider jwtProvider,
 	s3Client s3Client,
 	workoutGenerator workoutGenerator,
 	generateWorkoutLimiter generateWorkoutLimiter,
-	sessionRepository sessionRepository,
-	userRepository userRepository,
-	exerciseRepository exerciseRepository,
-	routineRepository routineRepository,
-	exerciseInstanceRepository exerciseInstanceRepository,
-	muscleGroupRepository muscleGroupRepository,
-	workoutRepository workoutRepository,
-	exerciseLogRepository exerciseLogRepository,
-	setLogRepository setLogRepository,
-	setRepository setRepository,
-	expectedSetRepository expectedSetRepository,
-	generationSettingsRepository generationSettingsRepository,
+	repository repository,
 ) *Service {
 	return &Service{
-		unitOfWork:                   unitOfWork,
-		workoutGenerator:             workoutGenerator,
-		jwtProvider:                  jwtProvider,
-		s3Client:                     s3Client,
-		generateWorkoutLimiter:       generateWorkoutLimiter,
-		sessionRepository:            sessionRepository,
-		userRepository:               userRepository,
-		exerciseRepository:           exerciseRepository,
-		routineRepository:            routineRepository,
-		exerciseInstanceRepository:   exerciseInstanceRepository,
-		muscleGroupRepository:        muscleGroupRepository,
-		workoutRepository:            workoutRepository,
-		exerciseLogRepository:        exerciseLogRepository,
-		setLogRepository:             setLogRepository,
-		setRepository:                setRepository,
-		expectedSetRepository:        expectedSetRepository,
-		generationSettingsRepository: generationSettingsRepository,
+		unitOfWork:             unitOfWork,
+		workoutGenerator:       workoutGenerator,
+		s3Client:               s3Client,
+		generateWorkoutLimiter: generateWorkoutLimiter,
+		repository:             repository,
 	}
 }

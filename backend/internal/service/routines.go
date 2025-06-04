@@ -13,7 +13,7 @@ func (s *Service) GetRoutines(ctx context.Context, userID domain.ID) ([]domain.R
 	span, ctx := opentracing.StartSpanFromContext(ctx, "service.GetRoutines")
 	defer span.Finish()
 
-	return s.routineRepository.GetRoutines(ctx, userID)
+	return s.repository.GetRoutines(ctx, userID)
 }
 
 func (s *Service) CreateRoutine(ctx context.Context, dto dto.CreateRoutineDTO) (domain.Routine, error) {
@@ -28,7 +28,7 @@ func (s *Service) CreateRoutine(ctx context.Context, dto dto.CreateRoutineDTO) (
 
 	routine := domain.NewRoutine(dto.UserID, dto.Name, dto.Description)
 
-	routine, err = s.routineRepository.CreateRoutine(ctx, routine)
+	routine, err = s.repository.CreateRoutine(ctx, routine)
 	if err != nil {
 		return domain.Routine{}, err
 	}
@@ -51,7 +51,7 @@ func (s *Service) fillRoutineWithWorkout(ctx context.Context, routine domain.Rou
 	span, ctx := opentracing.StartSpanFromContext(ctx, "service.fillRoutineWithWorkout")
 	defer span.Finish()
 
-	workout, err := s.workoutRepository.GetWorkoutByID(ctx, workoutID)
+	workout, err := s.repository.GetWorkoutByID(ctx, workoutID)
 	if err != nil {
 		return err
 	}
@@ -60,19 +60,19 @@ func (s *Service) fillRoutineWithWorkout(ctx context.Context, routine domain.Rou
 		return err
 	}
 
-	exerciseLogs, err := s.exerciseLogRepository.GetExerciseLogsByWorkoutID(ctx, workoutID)
+	exerciseLogs, err := s.repository.GetExerciseLogsByWorkoutID(ctx, workoutID)
 	if err != nil {
 		return err
 	}
 
 	for _, exerciseLog := range exerciseLogs {
 		exerciseInstance := domain.NewExerciseInstance(routine.ID, exerciseLog.ExerciseID)
-		exerciseInstance, err := s.exerciseInstanceRepository.CreateExerciseInstance(ctx, exerciseInstance)
+		exerciseInstance, err := s.repository.CreateExerciseInstance(ctx, exerciseInstance)
 		if err != nil {
 			return err
 		}
 
-		sets, err := s.setLogRepository.GetSetLogsByExerciseLogID(ctx, exerciseLog.ID)
+		sets, err := s.repository.GetSetLogsByExerciseLogID(ctx, exerciseLog.ID)
 		if err != nil {
 			return err
 		}
@@ -85,7 +85,7 @@ func (s *Service) fillRoutineWithWorkout(ctx context.Context, routine domain.Rou
 				set.Weight,
 				set.Time,
 			)
-			if _, err := s.setRepository.CreateSet(ctx, set); err != nil {
+			if _, err := s.repository.CreateSet(ctx, set); err != nil {
 				return err
 			}
 		}
@@ -98,12 +98,12 @@ func (s *Service) GetRoutineByID(ctx context.Context, id domain.ID) (dto.Routine
 	span, ctx := opentracing.StartSpanFromContext(ctx, "service.GetRoutineByID")
 	defer span.Finish()
 
-	routine, err := s.routineRepository.GetRoutineByID(ctx, id)
+	routine, err := s.repository.GetRoutineByID(ctx, id)
 	if err != nil {
 		return dto.RoutineDetailsDTO{}, err
 	}
 
-	exerciseInstances, err := s.exerciseInstanceRepository.GetExerciseInstancesByRoutineID(ctx, id)
+	exerciseInstances, err := s.repository.GetExerciseInstancesByRoutineID(ctx, id)
 	if err != nil {
 		return dto.RoutineDetailsDTO{}, err
 	}
@@ -119,12 +119,12 @@ func (s *Service) GetRoutineByID(ctx context.Context, id domain.ID) (dto.Routine
 	}
 
 	for i, instance := range exerciseInstances {
-		exercise, err := s.exerciseRepository.GetExerciseByID(ctx, instance.ExerciseID)
+		exercise, err := s.repository.GetExerciseByID(ctx, instance.ExerciseID)
 		if err != nil {
 			return dto.RoutineDetailsDTO{}, err
 		}
 
-		sets, err := s.setRepository.GetSetsByExerciseInstanceID(ctx, instance.ID)
+		sets, err := s.repository.GetSetsByExerciseInstanceID(ctx, instance.ID)
 		if err != nil {
 			return dto.RoutineDetailsDTO{}, err
 		}
@@ -148,14 +148,14 @@ func (s *Service) AddExerciseToRoutine(ctx context.Context, routineID domain.ID,
 	defer span.Finish()
 
 	exerciseInstance := domain.NewExerciseInstance(routineID, exerciseID)
-	return s.exerciseInstanceRepository.CreateExerciseInstance(ctx, exerciseInstance)
+	return s.repository.CreateExerciseInstance(ctx, exerciseInstance)
 }
 
 func (s *Service) GetExerciseInstance(ctx context.Context, userID, routineID, exerciseInstanceID domain.ID) (dto.ExerciseInstanceDetailsDTO, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "service.GetExerciseInstance")
 	defer span.Finish()
 
-	exerciseInstance, err := s.exerciseInstanceRepository.GetExerciseInstanceByID(ctx, exerciseInstanceID)
+	exerciseInstance, err := s.repository.GetExerciseInstanceByID(ctx, exerciseInstanceID)
 	if err != nil {
 		return dto.ExerciseInstanceDetailsDTO{}, err
 	}
@@ -165,12 +165,12 @@ func (s *Service) GetExerciseInstance(ctx context.Context, userID, routineID, ex
 		return dto.ExerciseInstanceDetailsDTO{}, domain.ErrNotFound
 	}
 
-	exercise, err := s.exerciseRepository.GetExerciseByID(ctx, exerciseInstance.ExerciseID)
+	exercise, err := s.repository.GetExerciseByID(ctx, exerciseInstance.ExerciseID)
 	if err != nil {
 		return dto.ExerciseInstanceDetailsDTO{}, err
 	}
 
-	sets, err := s.setRepository.GetSetsByExerciseInstanceID(ctx, exerciseInstanceID)
+	sets, err := s.repository.GetSetsByExerciseInstanceID(ctx, exerciseInstanceID)
 	if err != nil {
 		return dto.ExerciseInstanceDetailsDTO{}, err
 	}
@@ -190,7 +190,7 @@ func (s *Service) RemoveExerciseInstanceFromRoutine(ctx context.Context, userID 
 	span, ctx := opentracing.StartSpanFromContext(ctx, "service.RemoveExerciseInstanceFromRoutine")
 	defer span.Finish()
 
-	routine, err := s.routineRepository.GetRoutineByID(ctx, routineID)
+	routine, err := s.repository.GetRoutineByID(ctx, routineID)
 	if err != nil {
 		return err
 	}
@@ -199,21 +199,21 @@ func (s *Service) RemoveExerciseInstanceFromRoutine(ctx context.Context, userID 
 		return domain.ErrUnauthorized
 	}
 
-	return s.exerciseInstanceRepository.DeleteExerciseInstance(ctx, exerciseInstanceID)
+	return s.repository.DeleteExerciseInstance(ctx, exerciseInstanceID)
 }
 
 func (s *Service) DeleteRoutine(ctx context.Context, id domain.ID) error {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "service.DeleteRoutine")
 	defer span.Finish()
 
-	return s.routineRepository.DeleteRoutine(ctx, id)
+	return s.repository.DeleteRoutine(ctx, id)
 }
 
 func (s *Service) UpdateRoutine(ctx context.Context, id domain.ID, dto dto.UpdateRoutineDTO) (domain.Routine, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "service.UpdateRoutine")
 	defer span.Finish()
 
-	routine, err := s.routineRepository.GetRoutineByID(ctx, id)
+	routine, err := s.repository.GetRoutineByID(ctx, id)
 	if err != nil {
 		return domain.Routine{}, err
 	}
@@ -226,7 +226,7 @@ func (s *Service) UpdateRoutine(ctx context.Context, id domain.ID, dto dto.Updat
 		routine.Description = dto.Description.V
 	}
 
-	return s.routineRepository.UpdateRoutine(ctx, id, routine)
+	return s.repository.UpdateRoutine(ctx, id, routine)
 }
 
 func (s *Service) AddSetToExerciseInstance(ctx context.Context, userID, routineID, exerciseInstanceID domain.ID, dto dto.CreateSetDTO) (domain.Set, error) {
@@ -234,14 +234,14 @@ func (s *Service) AddSetToExerciseInstance(ctx context.Context, userID, routineI
 	defer span.Finish()
 
 	set := domain.NewSet(exerciseInstanceID, dto.SetType, dto.Reps.V, dto.Weight.V, dto.Time.V)
-	return s.setRepository.CreateSet(ctx, set)
+	return s.repository.CreateSet(ctx, set)
 }
 
 func (s *Service) RemoveSetFromExerciseInstance(ctx context.Context, userID, routineID, exerciseInstanceID, setID domain.ID) error {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "service.RemoveSetFromExerciseInstance")
 	defer span.Finish()
 
-	routine, err := s.routineRepository.GetRoutineByID(ctx, routineID)
+	routine, err := s.repository.GetRoutineByID(ctx, routineID)
 	if err != nil {
 		return err
 	}
@@ -251,7 +251,7 @@ func (s *Service) RemoveSetFromExerciseInstance(ctx context.Context, userID, rou
 		return domain.ErrNotFound
 	}
 
-	exerciseInstance, err := s.exerciseInstanceRepository.GetExerciseInstanceByID(ctx, exerciseInstanceID)
+	exerciseInstance, err := s.repository.GetExerciseInstanceByID(ctx, exerciseInstanceID)
 	if err != nil {
 		return err
 	}
@@ -261,7 +261,7 @@ func (s *Service) RemoveSetFromExerciseInstance(ctx context.Context, userID, rou
 		return domain.ErrNotFound
 	}
 
-	set, err := s.setRepository.GetSetByID(ctx, setID)
+	set, err := s.repository.GetSetByID(ctx, setID)
 	if err != nil {
 		return err
 	}
@@ -271,14 +271,14 @@ func (s *Service) RemoveSetFromExerciseInstance(ctx context.Context, userID, rou
 		return domain.ErrNotFound
 	}
 
-	return s.setRepository.DeleteSet(ctx, setID)
+	return s.repository.DeleteSet(ctx, setID)
 }
 
 func (s *Service) UpdateSetInExerciseInstance(ctx context.Context, userID, routineID, exerciseInstanceID, setID domain.ID, dto dto.UpdateSetDTO) (domain.Set, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "service.UpdateSet")
 	defer span.Finish()
 
-	routine, err := s.routineRepository.GetRoutineByID(ctx, routineID)
+	routine, err := s.repository.GetRoutineByID(ctx, routineID)
 	if err != nil {
 		return domain.Set{}, err
 	}
@@ -288,7 +288,7 @@ func (s *Service) UpdateSetInExerciseInstance(ctx context.Context, userID, routi
 		return domain.Set{}, domain.ErrUnauthorized
 	}
 
-	exerciseInstance, err := s.exerciseInstanceRepository.GetExerciseInstanceByID(ctx, exerciseInstanceID)
+	exerciseInstance, err := s.repository.GetExerciseInstanceByID(ctx, exerciseInstanceID)
 	if err != nil {
 		return domain.Set{}, err
 	}
@@ -298,7 +298,7 @@ func (s *Service) UpdateSetInExerciseInstance(ctx context.Context, userID, routi
 		return domain.Set{}, domain.ErrNotFound
 	}
 
-	set, err := s.setRepository.GetSetByID(ctx, setID)
+	set, err := s.repository.GetSetByID(ctx, setID)
 	if err != nil {
 		return domain.Set{}, err
 	}
@@ -320,14 +320,14 @@ func (s *Service) UpdateSetInExerciseInstance(ctx context.Context, userID, routi
 		set.Time = dto.Time.V
 	}
 
-	return s.setRepository.UpdateSet(ctx, setID, set)
+	return s.repository.UpdateSet(ctx, setID, set)
 }
 
 func (s *Service) SetExerciseOrder(ctx context.Context, userID, routineID domain.ID, exerciseInstanceIDs []domain.ID) error {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "service.SetExerciseOrder")
 	defer span.Finish()
 
-	routine, err := s.routineRepository.GetRoutineByID(ctx, routineID)
+	routine, err := s.repository.GetRoutineByID(ctx, routineID)
 	if err != nil {
 		return err
 	}
@@ -339,5 +339,5 @@ func (s *Service) SetExerciseOrder(ctx context.Context, userID, routineID domain
 
 	// TODO: check if all exercise instances belong to the routine
 
-	return s.exerciseInstanceRepository.SetExerciseOrder(ctx, routineID, exerciseInstanceIDs)
+	return s.repository.SetExerciseOrder(ctx, routineID, exerciseInstanceIDs)
 }

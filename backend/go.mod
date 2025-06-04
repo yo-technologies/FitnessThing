@@ -8,7 +8,6 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.36.1
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.59
 	github.com/envoyproxy/protoc-gen-validate v1.1.0
-	github.com/golang/protobuf v1.5.4
 	github.com/google/generative-ai-go v0.19.0
 	github.com/google/uuid v1.6.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.24.0
@@ -16,6 +15,7 @@ require (
 	github.com/opentracing/opentracing-go v1.2.0
 	github.com/prometheus/client_golang v1.20.5
 	github.com/swaggest/swgui v1.8.2
+	github.com/telegram-mini-apps/init-data-golang v1.5.0
 	github.com/throttled/throttled/v2 v2.13.0
 	github.com/uber/jaeger-lib v2.4.1+incompatible
 	go.uber.org/zap v1.27.0
@@ -54,6 +54,7 @@ require (
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
+	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/s2a-go v0.1.7 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.2 // indirect
 	github.com/googleapis/gax-go/v2 v2.12.5 // indirect

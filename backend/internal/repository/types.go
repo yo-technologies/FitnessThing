@@ -2,6 +2,7 @@ package repository
 
 import (
 	"fitness-trainer/internal/domain"
+	"fitness-trainer/internal/utils"
 	"time"
 
 	"github.com/google/uuid"
@@ -43,4 +44,28 @@ func uuidsToPgtype(ids []domain.ID) []pgtype.UUID {
 	}
 
 	return result
+}
+
+func nullableStringToPgtype(s utils.Nullable[string]) pgtype.Text {
+	if !s.IsValid {
+		return pgtype.Text{Valid: false}
+	}
+
+	return pgtype.Text{String: s.V, Valid: true}
+}
+
+func nullableFloatToPgtype(f utils.Nullable[float32]) pgtype.Float4 {
+	if !f.IsValid {
+		return pgtype.Float4{Valid: false}
+	}
+
+	return pgtype.Float4{Float32: f.V, Valid: true}
+}
+
+func nullableStringFromPgtype(t pgtype.Text) utils.Nullable[string] {
+	if !t.Valid {
+		return utils.NewNullable("", false)
+	}
+
+	return utils.NewNullable(t.String, true)
 }
