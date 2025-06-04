@@ -5,14 +5,13 @@ import { Select, SelectItem } from "@nextui-org/select";
 import { Skeleton } from "@nextui-org/skeleton";
 import { Modal, ModalContent, ModalHeader } from "@nextui-org/modal";
 import { ScrollShadow } from "@nextui-org/scroll-shadow";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { Button } from "@nextui-org/button";
 
 import InfiniteScroll, { useInfiniteScroll } from "./infinite-scroll";
 
-import { authApi, errUnauthorized } from "@/api/api";
+import { authApi } from "@/api/api";
 import { WorkoutExercise } from "@/api/api.generated";
 
 function SkeletonExerciseCard() {
@@ -122,8 +121,6 @@ export function ModalSelectExercise({
 
   const [isLoading, setIsLoading] = useState(true);
 
-  const router = useRouter();
-
   function toggleExerciseSelection(id: string) {
     setSelectedExercisesIds((prev) => {
       const index = prev.indexOf(id);
@@ -159,11 +156,6 @@ export function ModalSelectExercise({
       })
       .catch((error) => {
         console.log(error);
-        if (error === errUnauthorized || error.response?.status === 401) {
-          router.push("/auth/login");
-
-          return;
-        }
         toast.error("Ошибка при загрузке упражнений");
       })
       .finally(() => {
@@ -183,11 +175,6 @@ export function ModalSelectExercise({
       })
       .catch((error) => {
         console.log(error);
-        if (error === errUnauthorized || error.response?.status === 401) {
-          router.push("/auth/login");
-
-          return;
-        }
         toast.error("Ошибка при загрузке групп мышц");
       });
   }
@@ -215,13 +202,6 @@ export function ModalSelectExercise({
     //     })
     //     .catch((error) => {
     //         console.log(error);
-    //         if (
-    //             error === errUnauthorized ||
-    //             error.response?.status === 401
-    //         ) {
-    //             router.push("/auth/login");
-    //             return;
-    //         }
     //         toast.error("Ошибка при загрузке упражнений");
     //     });
   };

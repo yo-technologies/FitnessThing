@@ -2345,6 +2345,20 @@
     "@telegram-apps/transformers" "^1.2.2"
     "@telegram-apps/types" "^1.2.1"
 
+"@telegram-apps/bridge@^2.8.2":
+  version "2.8.2"
+  resolved "https://registry.yarnpkg.com/@telegram-apps/bridge/-/bridge-2.8.2.tgz#47940085cc2f7a422d651570cc24f24eb967c2f4"
+  integrity sha512-DpdvK1FUSklQFRaqV84rzhxUU/Pe6tVW497CtUfUZ87wenf/NY8Tvd5GONTJpAVb+H7wGcEcolielLOq1dSV5g==
+  dependencies:
+    "@telegram-apps/signals" "^1.1.1"
+    "@telegram-apps/toolkit" "^2.1.2"
+    "@telegram-apps/transformers" "^2.2.3"
+    "@telegram-apps/types" "^2.0.0"
+    better-promises "^0.4.1"
+    error-kid "^0.0.7"
+    mitt "^3.0.1"
+    valibot "1.0.0"
+
 "@telegram-apps/navigation@^1.0.13":
   version "1.0.13"
   resolved "https://registry.yarnpkg.com/@telegram-apps/navigation/-/navigation-1.0.13.tgz#9fb861533729a3ed227cc92b7f2c907bd9017870"
@@ -2354,23 +2368,27 @@
     "@telegram-apps/signals" "^1.1.1"
     "@telegram-apps/toolkit" "^1.1.1"
 
-"@telegram-apps/sdk-react@^2.0.25":
-  version "2.0.25"
-  resolved "https://registry.yarnpkg.com/@telegram-apps/sdk-react/-/sdk-react-2.0.25.tgz#ee089e1b5d59b0cc7bb525fb9f4cc60f3605663c"
-  integrity sha512-WbgND2EvjYaLljZQP62sfTMb/JoDLMyVYa3+s3tnKuVsS5iD09kFjyynKYK6cRPRmam3UlezXSjS6sYrEkBihA==
+"@telegram-apps/sdk-react@^3.3.0":
+  version "3.3.0"
+  resolved "https://registry.yarnpkg.com/@telegram-apps/sdk-react/-/sdk-react-3.3.0.tgz#d4d8e267694981318dba95be84e8d86a23833579"
+  integrity sha512-OeHfCR67/QgiTewwHN0Mlwf9ww2plgItrh2LWTjUe0JqsY0Zl8JgK5BNSjsR2qQasu/ivAdJTrwu/QiygGk3Ig==
   dependencies:
-    "@telegram-apps/sdk" "^2.11.3"
+    "@telegram-apps/sdk" "^3.10.0"
 
-"@telegram-apps/sdk@^2.11.3":
-  version "2.11.3"
-  resolved "https://registry.yarnpkg.com/@telegram-apps/sdk/-/sdk-2.11.3.tgz#cc3ba119bd659a39298d894cdf78c073f997ed45"
-  integrity sha512-KdULzgRe1gcR8B3Z/t3hQrEaDmLGrfsL2IePtPP6ehtMn5tT0uPfnjtDLjDNQMyI7D4Tv2ZOzvDx45wOhhreXg==
+"@telegram-apps/sdk@^3.10.0":
+  version "3.10.0"
+  resolved "https://registry.yarnpkg.com/@telegram-apps/sdk/-/sdk-3.10.0.tgz#3c21f2bd3ea0d3afdae87fde350be5fd8f06382e"
+  integrity sha512-LD7mk0STzFGh2Qws2cyTAudLaAb4cT8nUJDBCdaBitLjmndru13UZHjsU9dzZCD9jpeJmqaQjhHNjtRHMithTg==
   dependencies:
-    "@telegram-apps/bridge" "^1.9.2"
+    "@telegram-apps/bridge" "^2.8.2"
     "@telegram-apps/navigation" "^1.0.13"
     "@telegram-apps/signals" "^1.1.1"
-    "@telegram-apps/toolkit" "^1.1.1"
-    "@telegram-apps/transformers" "^1.2.2"
+    "@telegram-apps/toolkit" "^2.1.2"
+    "@telegram-apps/transformers" "^2.2.3"
+    "@telegram-apps/types" "^2.0.0"
+    better-promises "^0.4.1"
+    error-kid "^0.0.7"
+    valibot "1.0.0"
 
 "@telegram-apps/signals@^1.1.1":
   version "1.1.1"
@@ -2382,6 +2400,11 @@
   resolved "https://registry.yarnpkg.com/@telegram-apps/toolkit/-/toolkit-1.1.1.tgz#939c30f07dab7c3d754765b60021210cb9669b84"
   integrity sha512-+vhKx6ngfvjyTE6Xagl3z1TPVbfx5s7xAkcYzCdHYUo6T60jLIqLgyZMcI1UPoIAMuMu1pHoO+p8QNCj/+tFmw==
 
+"@telegram-apps/toolkit@^2.1.2":
+  version "2.1.2"
+  resolved "https://registry.yarnpkg.com/@telegram-apps/toolkit/-/toolkit-2.1.2.tgz#332ea0fc50468ec0b256256d9a337e596b029592"
+  integrity sha512-iAPjn7RNVEm4o+LPJg1mYv7eDOnCatVEvep7JT74awTt3tn8pVpTYeUbDIFBuOF2BRSIzUgPUYQgVhQcDFTpUg==
+
 "@telegram-apps/transformers@^1.2.2":
   version "1.2.2"
   resolved "https://registry.yarnpkg.com/@telegram-apps/transformers/-/transformers-1.2.2.tgz#f995461b0f4dcfe54c6baed9a1abf4e21ca29339"
@@ -2390,10 +2413,24 @@
     "@telegram-apps/toolkit" "^1.1.1"
     "@telegram-apps/types" "^1.2.1"
 
+"@telegram-apps/transformers@^2.2.3":
+  version "2.2.3"
+  resolved "https://registry.yarnpkg.com/@telegram-apps/transformers/-/transformers-2.2.3.tgz#1b1785890620ca7a6a7adea114b4f35d12d0fe2b"
+  integrity sha512-CFQqs7iXw6yuUMBzU1/W/EGW6RlrO0ZViJGFa0ButyHVxOnmM+d5vJmlAiqBFtnUutK9Q2GfbHZoGLW8qSs5YQ==
+  dependencies:
+    "@telegram-apps/toolkit" "^2.1.2"
+    "@telegram-apps/types" "^2.0.0"
+    valibot "1.0.0-beta.14"
+
 "@telegram-apps/types@^1.2.1":
   version "1.2.1"
   resolved "https://registry.yarnpkg.com/@telegram-apps/types/-/types-1.2.1.tgz#e5886f65ec399c06838c257e96e2b130213c6d6c"
   integrity sha512-so4HLh7clur0YyMthi9KVIgWoGpZdXlFOuQjk3+Q5NAvJZ11nAheBSwPlGw/Ko92+zwvrSBE/lQyN2+p17RP+w==
+
+"@telegram-apps/types@^2.0.0":
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/@telegram-apps/types/-/types-2.0.0.tgz#5e4eb0e32b6bdeacf08abc4ebfbeef6c4228219f"
+  integrity sha512-yF499FJK82a2IDNDAQdrmVH3sgFZl/QFNdVZKgWpgtunIVJ1fres5wi9+4aUBRVIdQwZOZZqB/AOvYYuYXsq3Q==
 
 "@types/debug@^4.0.0":
   version "4.1.12"
@@ -2880,6 +2917,13 @@ balanced-match@^1.0.0:
   resolved "https://registry.npmjs.org/balanced-match/-/balanced-match-1.0.2.tgz"
   integrity sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw==
 
+better-promises@^0.4.1:
+  version "0.4.1"
+  resolved "https://registry.yarnpkg.com/better-promises/-/better-promises-0.4.1.tgz#37d23067d918160fdc8b0a074cb39e5afe630f3d"
+  integrity sha512-cDW7eMvhvCoWzSih5o/OxsAgTUfP05yGMq77xNZUTmcZoNU9vEeFZJ+yJJi4lnocvxFrVFKsG0Yxt7ZnuYJEig==
+  dependencies:
+    error-kid "^0.0.7"
+
 binary-extensions@^2.0.0:
   version "2.3.0"
   resolved "https://registry.npmjs.org/binary-extensions/-/binary-extensions-2.3.0.tgz"
@@ -3275,6 +3319,11 @@ enhanced-resolve@^5.15.0:
   dependencies:
     graceful-fs "^4.2.4"
     tapable "^2.2.0"
+
+error-kid@^0.0.7:
+  version "0.0.7"
+  resolved "https://registry.yarnpkg.com/error-kid/-/error-kid-0.0.7.tgz#43c0646d7b359acae5737f614f21a9ece2c04e9a"
+  integrity sha512-8mFs7ZaDWlBFgjOy4lHLMCe2+KZfZXGx5GOgh2VQ/M1CCIvSWzbl2OMl+5fdZgrgoUfhTeF+NPhmqfEvUhN8yw==
 
 es-abstract@^1.17.5, es-abstract@^1.23.2, es-abstract@^1.23.3, es-abstract@^1.23.5, es-abstract@^1.23.6, es-abstract@^1.23.9:
   version "1.23.9"
@@ -4835,6 +4884,11 @@ minimist@^1.2.0, minimist@^1.2.6:
   resolved "https://registry.npmjs.org/minipass/-/minipass-7.1.2.tgz"
   integrity sha512-qOOzS1cBTWYF4BH8fVePDBOO9iptMnGUEZwNc/cMWnTV2nVLZ7VoNWEPHkYczZA0pdoA7dl6e7FL659nX9S2aw==
 
+mitt@^3.0.1:
+  version "3.0.1"
+  resolved "https://registry.yarnpkg.com/mitt/-/mitt-3.0.1.tgz#ea36cf0cc30403601ae074c8f77b7092cdab36d1"
+  integrity sha512-vKivATfr97l2/QBCYAkXYDbrIWPM2IIKEl7YPhjCvKlG3kE2gm+uBo6nEXK3M5/Ffh/FLpKExzOQ3JJoJGFKBw==
+
 motion-dom@^11.13.0:
   version "11.14.3"
   resolved "https://registry.npmjs.org/motion-dom/-/motion-dom-11.14.3.tgz"
@@ -6032,6 +6086,16 @@ util-deprecate@^1.0.2:
   version "1.0.2"
   resolved "https://registry.npmjs.org/util-deprecate/-/util-deprecate-1.0.2.tgz"
   integrity sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw==
+
+valibot@1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/valibot/-/valibot-1.0.0.tgz#1f82514296abcd23d0ae4280088ba85f8651c564"
+  integrity sha512-1Hc0ihzWxBar6NGeZv7fPLY0QuxFMyxwYR2sF1Blu7Wq7EnremwY2W02tit2ij2VJT8HcSkHAQqmFfl77f73Yw==
+
+valibot@1.0.0-beta.14:
+  version "1.0.0-beta.14"
+  resolved "https://registry.yarnpkg.com/valibot/-/valibot-1.0.0-beta.14.tgz#a02dab44ec538d4b2a36da4a2770eddc64f94da6"
+  integrity sha512-tLyV2rE5QL6U29MFy3xt4AqMrn+/HErcp2ZThASnQvPMwfSozjV1uBGKIGiegtZIGjinJqn0SlBdannf18wENA==
 
 vfile-message@^4.0.0:
   version "4.0.2"

@@ -29,7 +29,7 @@
 		"@react-aria/ssr": "3.9.7",
 		"@react-aria/visually-hidden": "3.8.18",
 		"@siberiacancode/reactuse": "^0.0.78",
-		"@telegram-apps/sdk-react": "^2.0.25",
+		"@telegram-apps/sdk-react": "^3.3.0",
 		"axios": "^1.7.9",
 		"clsx": "2.1.1",
 		"framer-motion": "^11.13.1",

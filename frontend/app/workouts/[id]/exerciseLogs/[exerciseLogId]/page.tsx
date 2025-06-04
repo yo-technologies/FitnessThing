@@ -29,7 +29,7 @@ import {
   WorkoutExpectedSet,
   WorkoutSetLog,
 } from "@/api/api.generated";
-import { authApi, errUnauthorized } from "@/api/api";
+import { authApi } from "@/api/api";
 import { InputWithIncrement } from "@/components/input-with-increments";
 import InfiniteScroll from "@/components/infinite-scroll";
 
@@ -68,11 +68,6 @@ export default function RoutineDetailsPage({
       })
       .catch((error) => {
         console.log(error);
-        if (error === errUnauthorized || error.response?.status === 401) {
-          router.push("/auth/login");
-
-          return;
-        }
         throw error;
       });
   }

@@ -1,7 +1,6 @@
 "use client";
 import { Form } from "@nextui-org/form";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { Input } from "@nextui-org/input";
 import { DatePicker } from "@nextui-org/date-picker";
 import { Button } from "@nextui-org/button";
@@ -10,7 +9,7 @@ import { toast } from "react-toastify";
 
 import { PageHeader } from "@/components/page-header";
 import { WorkoutUser } from "@/api/api.generated";
-import { authApi, errUnauthorized } from "@/api/api";
+import { authApi } from "@/api/api";
 import { Loading } from "@/components/loading";
 import Avatar from "@/components/avatar";
 
@@ -200,8 +199,6 @@ export default function EditProfilePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isError, setIsError] = useState(false);
 
-  const router = useRouter();
-
   async function fetchMe() {
     await authApi.v1
       .userServiceGetMe()
@@ -211,11 +208,6 @@ export default function EditProfilePage() {
       })
       .catch((error) => {
         console.log(error);
-        if (error === errUnauthorized || error.response?.status === 401) {
-          router.push("/auth/login");
-
-          return;
-        }
         throw error;
       });
   }

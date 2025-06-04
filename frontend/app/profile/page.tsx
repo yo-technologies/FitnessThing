@@ -6,7 +6,7 @@ import { Button } from "@nextui-org/button";
 import { Card } from "@nextui-org/card";
 import { Divider } from "@nextui-org/divider";
 
-import { authApi, errUnauthorized } from "@/api/api";
+import { authApi } from "@/api/api";
 import { Loading } from "@/components/loading";
 import {
   ChevronRightIcon,
@@ -37,11 +37,6 @@ export default function ProfilePage() {
       })
       .catch((error) => {
         console.log(error);
-        if (error === errUnauthorized || error.response?.status === 401) {
-          router.push("/auth/login");
-
-          return;
-        }
         setIsError(true);
       })
       .finally(() => {
@@ -64,15 +59,6 @@ export default function ProfilePage() {
         <p>Проверьте соединение с сервером или обновите страницу.</p>
       </div>
     );
-  }
-
-  async function handleLogout() {
-    await authApi.v1.authServiceLogout({
-      refreshToken: localStorage.getItem("refreshToken")!,
-    });
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("refreshToken");
-    router.push("/auth/login");
   }
 
   function SubPageButton({
@@ -137,10 +123,6 @@ export default function ProfilePage() {
           }}
         >
           Сменить тему
-        </Button>
-        <Divider />
-        <Button color="danger" onPress={handleLogout}>
-          Выйти
         </Button>
       </div>
     </div>
