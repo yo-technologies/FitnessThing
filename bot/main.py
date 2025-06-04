@@ -1,6 +1,6 @@
 import signal
 from telegram.ext import Application, ContextTypes, CommandHandler
-from telegram import Update
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, WebAppInfo
 from dotenv import load_dotenv
 import logging
 import os
@@ -17,6 +17,8 @@ logging.getLogger("httpcore").setLevel(logging.WARNING)
 
 load_dotenv()
 
+url = os.getenv("APP_URL")
+
 class GracefulKiller:
     kill_now = False
 
@@ -29,7 +31,21 @@ class GracefulKiller:
         self.kill_now = True
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Hello, world!")
+    webapp = WebAppInfo(url=url)
+    keyboard = InlineKeyboardMarkup(
+        [
+            [
+                InlineKeyboardButton("Открыть приложение", web_app=webapp),
+            ]
+        ]
+    )
+    await update.message.reply_text("Hello, world!", reply_markup=keyboard)
+
+async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.message:
+        await update.message.reply_text(update.message.text)
+    else:
+        logger.warning("Received an update without a message")
 
 async def main():
     app = Application.builder().token(os.getenv("TG_BOT_TOKEN")).build()

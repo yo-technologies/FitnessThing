@@ -8,7 +8,7 @@ import (
 )
 
 type Service interface {
-	CreateUser(ctx context.Context, dto dto.CreateUserDTO) (domain.User, error)
+	GetOrCreateUser(ctx context.Context, dto dto.CreateUserDTO) (domain.User, error)
 	GetUserByID(ctx context.Context, id domain.ID) (domain.User, error)
 	UpdateUser(ctx context.Context, id domain.ID, dto dto.UpdateUserDTO) (domain.User, error)
 

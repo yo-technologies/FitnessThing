@@ -10,7 +10,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-func RecovertInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+func RecoveryInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 	defer func() {
 		if r := recover(); r != nil {
 			logger.Errorf("[interceptor.Recovery] method: %s; error: %v\n%s", info.FullMethod, r, debug.Stack())

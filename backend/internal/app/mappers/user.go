@@ -10,12 +10,14 @@ import (
 func UserToProto(user domain.User) *desc.User {
 	userProto := &desc.User{
 		Id:                user.ID.String(),
-		Email:             user.Email,
-		FirstName:         user.FirstName,
-		LastName:          user.LastName,
-		Weight:            user.Weight,
-		Height:            user.Height,
-		ProfilePictureUrl: user.ProfilePicURL,
+		TelegramId:        int32(user.TelegramID),
+		Username:          user.TelegramUsername.V,
+		DateOfBirth:       timestamppb.New(user.DateOfBirth),
+		FirstName:         user.FirstName.V,
+		LastName:          user.LastName.V,
+		Weight:            user.Weight.V,
+		Height:            user.Height.V,
+		ProfilePictureUrl: user.ProfilePicURL.V,
 		CreatedAt:         timestamppb.New(user.CreatedAt),
 		UpdatedAt:         timestamppb.New(user.UpdatedAt),
 	}

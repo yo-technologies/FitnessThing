@@ -29,7 +29,7 @@ option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
       value: {
         type: TYPE_API_KEY
         in: IN_HEADER
-        name: "x-access-token"
+        name: "Authorization"
       }
     }
   }
@@ -43,15 +43,16 @@ option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
 
 message User {
   string id = 1;
-  google.protobuf.Timestamp created_at = 2;
-  string email = 3;
+  int32 telegram_id = 3;
+  string username = 4;
   string first_name = 5;
   string last_name = 6;
-  google.protobuf.Timestamp date_of_birth = 7;
-  float height = 8;
-  float weight = 9;
-  google.protobuf.Timestamp updated_at = 10;
-  string profile_picture_url = 11;
+  string profile_picture_url = 7;
+  float weight = 8;
+  float height = 9;
+  google.protobuf.Timestamp date_of_birth = 10;
+  google.protobuf.Timestamp created_at = 11;
+  google.protobuf.Timestamp updated_at = 12;
 }
 
 message MuscleGroup {
@@ -856,14 +857,6 @@ message AddCommentToWorkoutRequest {
 }
 
 service UserService {
-  // Метод для создания пользователя
-  rpc CreateUser(CreateUserRequest) returns (UserResponse) {
-    option (google.api.http) = {
-      post: "/v1/users"
-      body: "*"
-    };
-  }
-  
   // Метод для получения пользователя по ID
   rpc GetUser(GetUserRequest) returns (UserResponse) {
     option (google.api.http) = {
@@ -902,26 +895,6 @@ service UserService {
   }
 }
 
-message CreateUserRequest {
-  string email = 1 [
-    (google.api.field_behavior) = REQUIRED,
-    (validate.rules).string.email = true
-  ];
-  string password = 2 [
-    (google.api.field_behavior) = REQUIRED,
-    (validate.rules).string.min_len = 8
-  ];
-  optional string first_name = 3;
-  optional string last_name = 4;
-  optional google.protobuf.Timestamp date_of_birth = 5;
-  optional float height = 6 [
-    (validate.rules).float.gt = 0
-  ];
-  optional float weight = 7 [
-    (validate.rules).float.gt = 0
-  ];
-}
-
 message GetUserRequest {
   string user_id = 1 [
     (google.api.field_behavior) = REQUIRED
@@ -929,21 +902,12 @@ message GetUserRequest {
 }
 
 message UpdateUserRequest {
-  optional string first_name = 4 [
-    (validate.rules).string.min_len = 1
-  ];
-  optional string last_name = 5 [
-    (validate.rules).string.min_len = 1
-  ];
-  optional google.protobuf.Timestamp date_of_birth = 6;
-  optional float height = 7 [
+  optional google.protobuf.Timestamp date_of_birth = 1;
+  optional float height = 2 [
     (validate.rules).float.gt = 0
   ];
-  optional float weight = 8 [
+  optional float weight = 3 [
     (validate.rules).float.gt = 0
-  ];
-  optional string profile_picture_url = 9 [
-    (validate.rules).string.uri = true
   ];
 }
 
@@ -964,66 +928,6 @@ message WorkoutGenerationSettingsResponse {
 message UpdateWorkoutGenerationSettingsRequest {
   optional string base_prompt = 1;
   optional int32 variety_level = 2;
-}
-
-service AuthService {
-  rpc Login(LoginRequest) returns (LoginResponse) {
-    option (google.api.http) = {
-      post: "/v1/auth/login"
-      body: "*"
-    };
-  }
-
-  rpc Refresh(RefreshRequest) returns (RefreshResponse) {
-    option (google.api.http) = {
-      post: "/v1/auth/refresh"
-      body: "*"
-    };
-  }
-
-  rpc Logout(LogoutRequest) returns (google.protobuf.Empty) {
-    option (google.api.http) = {
-      post: "/v1/auth/logout"
-      body: "*"
-    };
-  }
-}
-
-message TokensPair {
-  string access_token = 1 [
-    (google.api.field_behavior) = REQUIRED
-  ];
-  string refresh_token = 2 [
-    (google.api.field_behavior) = REQUIRED
-  ];
-}
-
-message LoginRequest {
-  string email = 1 [
-    (google.api.field_behavior) = REQUIRED,
-    (validate.rules).string.email = true
-  ];
-  string password = 2 [
-    (google.api.field_behavior) = REQUIRED
-  ];
-}
-
-message LoginResponse {
-  TokensPair tokens = 1;
-}
-
-message RefreshRequest {
-  TokensPair tokens = 1;
-}
-
-message RefreshResponse {
-  TokensPair tokens = 1;
-}
-
-message LogoutRequest {
-  string refresh_token = 1 [
-    (google.api.field_behavior) = REQUIRED
-  ];
 }
 
 service FileService {

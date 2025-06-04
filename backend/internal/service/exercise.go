@@ -12,14 +12,14 @@ func (s *Service) GetExercises(ctx context.Context, muscleGroups, excludedExerci
 	span, ctx := opentracing.StartSpanFromContext(ctx, "service.GetExercises")
 	defer span.Finish()
 
-	return s.exerciseRepository.GetExercises(ctx, muscleGroups, excludedExercises)
+	return s.repository.GetExercises(ctx, muscleGroups, excludedExercises)
 }
 
 func (s *Service) GetExerciseByID(ctx context.Context, id domain.ID) (domain.Exercise, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "service.GetExerciseByID")
 	defer span.Finish()
 
-	return s.exerciseRepository.GetExerciseByID(ctx, id)
+	return s.repository.GetExerciseByID(ctx, id)
 }
 
 func (s *Service) GetExerciseAlternatives(ctx context.Context, id domain.ID) ([]domain.Exercise, error) {
@@ -33,14 +33,14 @@ func (s *Service) GetExerciseAlternatives(ctx context.Context, id domain.ID) ([]
 
 	ids := make([]domain.ID, 0, len(exercise.TargetMuscleGroups))
 	for _, muscleGroup := range exercise.TargetMuscleGroups {
-		mg, err := s.muscleGroupRepository.GetMuscleGroupByName(ctx, muscleGroup.String())
+		mg, err := s.repository.GetMuscleGroupByName(ctx, muscleGroup.String())
 		if err != nil {
 			return nil, err
 		}
 		ids = append(ids, mg.ID)
 	}
 
-	result, err := s.exerciseRepository.GetExercises(ctx, ids, []domain.ID{id})
+	result, err := s.repository.GetExercises(ctx, ids, []domain.ID{id})
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +52,7 @@ func (s *Service) GetExerciseHistory(ctx context.Context, userID, exerciseID dom
 	span, ctx := opentracing.StartSpanFromContext(ctx, "service.GetExerciseHistory")
 	defer span.Finish()
 
-	exerciseLogs, err := s.exerciseLogRepository.GetExerciseLogsByExerciseIDAndUserID(ctx, exerciseID, userID, offset, limit)
+	exerciseLogs, err := s.repository.GetExerciseLogsByExerciseIDAndUserID(ctx, exerciseID, userID, offset, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +82,7 @@ func (s *Service) CreateExercise(ctx context.Context, exerciseDTO dto.CreateExer
 	)
 
 	err := s.unitOfWork.InTransaction(ctx, func(ctx context.Context) (err error) {
-		exercise, err = s.exerciseRepository.CreateExercise(ctx, exercise, exerciseDTO.TargetMuscleGroups)
+		exercise, err = s.repository.CreateExercise(ctx, exercise, exerciseDTO.TargetMuscleGroups)
 		return err
 	})
 	if err != nil {

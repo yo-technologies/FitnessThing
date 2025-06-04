@@ -11,7 +11,7 @@ import { WorkoutWorkout } from "@/api/api.generated";
 import { AnimationProcessor } from "@/components/animated-background";
 import { BoltIcon, ChevronRightIcon, PlayIcon } from "@/config/icons";
 import { Loading } from "@/components/loading";
-import { authApi, errUnauthorized } from "@/api/api";
+import { authApi } from "@/api/api";
 
 export default function Home() {
   const [user, setUser] = useState<any>({});
@@ -33,11 +33,6 @@ export default function Home() {
       })
       .catch((error) => {
         console.log(error);
-        if (error === errUnauthorized || error.response?.status === 401) {
-          router.push("/auth/login");
-
-          return;
-        }
         throw error;
       });
   }
@@ -51,11 +46,6 @@ export default function Home() {
       })
       .catch((error) => {
         console.log(error);
-        if (error === errUnauthorized || error.response?.status === 401) {
-          router.push("/auth/login");
-
-          return;
-        }
         throw error;
       });
   }
@@ -69,11 +59,6 @@ export default function Home() {
       })
       .catch((error) => {
         console.log(error);
-        if (error === errUnauthorized || error.response?.status === 401) {
-          router.push("/auth/login");
-
-          return;
-        }
         throw error;
       });
   }
@@ -112,12 +97,6 @@ export default function Home() {
       })
       .catch((error) => {
         console.log(error);
-
-        if (error === errUnauthorized || error.response?.status === 401) {
-          router.push("/auth/login");
-
-          return;
-        }
 
         if (error.response?.status === 429) {
           toast.error("Превышен лимит генераций на сегодня");

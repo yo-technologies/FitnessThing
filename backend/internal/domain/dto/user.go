@@ -6,21 +6,15 @@ import (
 )
 
 type CreateUserDTO struct {
-	Email    string
-	Password string
-
-	DateOfBirth time.Time
-	FirstName   utils.Nullable[string]
-	LastName    utils.Nullable[string]
-	Height      utils.Nullable[float32]
-	Weight      utils.Nullable[float32]
+	TelegramID       int64
+	TelegramUsername utils.Nullable[string]
+	FirstName        utils.Nullable[string]
+	LastName         utils.Nullable[string]
+	ProfilePicURL    utils.Nullable[string]
 }
 
 type UpdateUserDTO struct {
-	FirstName     utils.Nullable[string]
-	LastName      utils.Nullable[string]
-	Height        utils.Nullable[float32]
-	Weight        utils.Nullable[float32]
-	ProfilePicURL utils.Nullable[string]
-	DateOfBirth   time.Time
+	Height      utils.Nullable[float32]
+	Weight      utils.Nullable[float32]
+	DateOfBirth time.Time
 }

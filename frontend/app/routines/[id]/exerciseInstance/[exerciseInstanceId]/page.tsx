@@ -9,7 +9,7 @@ import { DropdownItem } from "@nextui-org/dropdown";
 import { Spinner } from "@nextui-org/spinner";
 
 import { Loading } from "@/components/loading";
-import { authApi, errUnauthorized } from "@/api/api";
+import { authApi } from "@/api/api";
 import {
   WorkoutExerciseInstanceDetails,
   WorkoutSet,
@@ -43,11 +43,6 @@ export default function ExerciseInstancePage({
       })
       .catch((error) => {
         console.log(error);
-        if (error === errUnauthorized || error.response?.status === 401) {
-          router.push("/auth/login");
-
-          return;
-        }
         throw error;
       });
   }
@@ -284,11 +279,6 @@ export default function ExerciseInstancePage({
         })
         .catch((error) => {
           console.log(error);
-          if (error === errUnauthorized || error.response?.status === 401) {
-            router.push("/auth/login");
-
-            return;
-          }
           throw error;
         });
     } catch (error) {

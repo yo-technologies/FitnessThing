@@ -15,7 +15,7 @@ import { useEffect, useState } from "react";
 import { ChevronRightIcon, PlusIcon } from "@/config/icons";
 import { PageHeader } from "@/components/page-header";
 import { Loading } from "@/components/loading";
-import { authApi, errUnauthorized } from "@/api/api";
+import { authApi } from "@/api/api";
 
 export default function RoutinesPage() {
   const [isLoading, setIsLoading] = useState(true);
@@ -38,11 +38,6 @@ export default function RoutinesPage() {
       })
       .catch((error) => {
         console.log(error);
-        if (error === errUnauthorized) {
-          router.push("/auth/login");
-
-          return;
-        }
         setIsError(true);
       })
       .finally(() => {

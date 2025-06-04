@@ -22,7 +22,7 @@ func (s *Service) StartWorkout(ctx context.Context, userID domain.ID, opts domai
 	defer s.unitOfWork.Rollback(ctx)
 
 	if opts.RoutineID.IsValid {
-		_, err := s.routineRepository.GetRoutineByID(ctx, opts.RoutineID.V)
+		_, err := s.repository.GetRoutineByID(ctx, opts.RoutineID.V)
 		if err != nil {
 			return domain.Workout{}, fmt.Errorf("%w: %w", domain.ErrInvalidArgument, err)
 		}
@@ -30,7 +30,7 @@ func (s *Service) StartWorkout(ctx context.Context, userID domain.ID, opts domai
 
 	workout := domain.NewWorkout(userID, opts.RoutineID, opts.GenerateWorkout)
 
-	workout, err = s.workoutRepository.CreateWorkout(ctx, workout)
+	workout, err = s.repository.CreateWorkout(ctx, workout)
 	if err != nil {
 		return domain.Workout{}, err
 	}
@@ -61,12 +61,12 @@ func (s *Service) enrichWorkoutFromRoutine(ctx context.Context, userID, workoutI
 	span, ctx := opentracing.StartSpanFromContext(ctx, "service.assignExercisesToWorkout")
 	defer span.Finish()
 
-	routine, err := s.routineRepository.GetRoutineByID(ctx, routineID)
+	routine, err := s.repository.GetRoutineByID(ctx, routineID)
 	if err != nil {
 		return err
 	}
 
-	exerciseInstances, err := s.exerciseInstanceRepository.GetExerciseInstancesByRoutineID(ctx, routine.ID)
+	exerciseInstances, err := s.repository.GetExerciseInstancesByRoutineID(ctx, routine.ID)
 	if err != nil {
 		return err
 	}
@@ -77,7 +77,7 @@ func (s *Service) enrichWorkoutFromRoutine(ctx context.Context, userID, workoutI
 			return err
 		}
 
-		sets, err := s.setRepository.GetSetsByExerciseInstanceID(ctx, instance.ID)
+		sets, err := s.repository.GetSetsByExerciseInstanceID(ctx, instance.ID)
 		if err != nil {
 			return err
 		}
@@ -91,7 +91,7 @@ func (s *Service) enrichWorkoutFromRoutine(ctx context.Context, userID, workoutI
 				set.Time,
 			)
 
-			_, err = s.expectedSetRepository.CreateExpectedSet(ctx, expectedSet)
+			_, err = s.repository.CreateExpectedSet(ctx, expectedSet)
 			if err != nil {
 				return err
 			}
@@ -107,14 +107,14 @@ func (s *Service) generateWorkout(ctx context.Context, userID domain.ID, userPro
 
 	const numExercises = 8
 
-	userWorkouts, err := s.workoutRepository.GetWorkouts(ctx, userID, numExercises, 0)
+	userWorkouts, err := s.repository.GetWorkouts(ctx, userID, numExercises, 0)
 	if err != nil {
 		return dto.GeneratedWorkoutDTO{}, err
 	}
 
 	userWorkoutsDTO := make([]dto.SlimWorkoutDTO, 0, len(userWorkouts))
 	for _, workout := range userWorkouts {
-		exerciseLogs, err := s.exerciseLogRepository.GetExerciseLogsByWorkoutID(ctx, workout.ID)
+		exerciseLogs, err := s.repository.GetExerciseLogsByWorkoutID(ctx, workout.ID)
 		if err != nil {
 			return dto.GeneratedWorkoutDTO{}, err
 		}
@@ -126,7 +126,7 @@ func (s *Service) generateWorkout(ctx context.Context, userID domain.ID, userPro
 
 		exerciseNames := make([]string, 0, len(exerciseIDs))
 		for _, exerciseLog := range exerciseLogs {
-			exercise, err := s.exerciseRepository.GetExerciseByID(ctx, exerciseLog.ExerciseID)
+			exercise, err := s.repository.GetExerciseByID(ctx, exerciseLog.ExerciseID)
 			if err != nil {
 				return dto.GeneratedWorkoutDTO{}, nil
 			}
@@ -141,7 +141,7 @@ func (s *Service) generateWorkout(ctx context.Context, userID domain.ID, userPro
 		})
 	}
 
-	exercises, err := s.exerciseRepository.GetExercises(ctx, []domain.ID{}, []domain.ID{})
+	exercises, err := s.repository.GetExercises(ctx, []domain.ID{}, []domain.ID{})
 	if err != nil {
 		return dto.GeneratedWorkoutDTO{}, err
 	}
@@ -161,12 +161,12 @@ func (s *Service) generateWorkout(ctx context.Context, userID domain.ID, userPro
 	}
 
 	opts := &dto.GenerateWorkoutOptions{
-		UserID: userID,
-		Exercises: exerciseDTOs,
-		Workouts: userWorkoutsDTO,
-		VarietyLevel: generationSettings.VarietyLevel,
+		UserID:         userID,
+		Exercises:      exerciseDTOs,
+		Workouts:       userWorkoutsDTO,
+		VarietyLevel:   generationSettings.VarietyLevel,
 		BaseUserPrompt: generationSettings.BasePrompt,
-		UserPrompt: userPrompt,
+		UserPrompt:     userPrompt,
 	}
 
 	return s.workoutGenerator.GenerateWorkout(ctx, opts)
@@ -197,14 +197,14 @@ func (s *Service) enrichWorkoutByGenerating(ctx context.Context, userID, workout
 		}
 	}
 
-	workout, err := s.workoutRepository.GetWorkoutByID(ctx, workoutID)
+	workout, err := s.repository.GetWorkoutByID(ctx, workoutID)
 	if err != nil {
 		return err
 	}
 
 	workout.Reasoning = generatedWorkout.Reasoning
 
-	_, err = s.workoutRepository.UpdateWorkout(ctx, workoutID, workout)
+	_, err = s.repository.UpdateWorkout(ctx, workoutID, workout)
 	if err != nil {
 		return err
 	}
@@ -216,7 +216,7 @@ func (s *Service) GetWorkout(ctx context.Context, userID domain.ID, workoutID do
 	span, ctx := opentracing.StartSpanFromContext(ctx, "service.GetWorkout")
 	defer span.Finish()
 
-	workout, err := s.workoutRepository.GetWorkoutByID(ctx, workoutID)
+	workout, err := s.repository.GetWorkoutByID(ctx, workoutID)
 	if err != nil {
 		return dto.WorkoutDetailsDTO{}, err
 	}
@@ -226,7 +226,7 @@ func (s *Service) GetWorkout(ctx context.Context, userID domain.ID, workoutID do
 		return dto.WorkoutDetailsDTO{}, domain.ErrNotFound
 	}
 
-	exerciseLogs, err := s.exerciseLogRepository.GetExerciseLogsByWorkoutID(ctx, workoutID)
+	exerciseLogs, err := s.repository.GetExerciseLogsByWorkoutID(ctx, workoutID)
 	if err != nil {
 		return dto.WorkoutDetailsDTO{}, err
 	}
@@ -251,12 +251,12 @@ func (s *Service) GetExerciseLog(ctx context.Context, userID, exerciseLogID doma
 	span, ctx := opentracing.StartSpanFromContext(ctx, "service.GetExerciseLog")
 	defer span.Finish()
 
-	exerciseLog, err := s.exerciseLogRepository.GetExerciseLogByID(ctx, exerciseLogID)
+	exerciseLog, err := s.repository.GetExerciseLogByID(ctx, exerciseLogID)
 	if err != nil {
 		return dto.ExerciseLogDTO{}, err
 	}
 
-	workout, err := s.workoutRepository.GetWorkoutByID(ctx, exerciseLog.WorkoutID)
+	workout, err := s.repository.GetWorkoutByID(ctx, exerciseLog.WorkoutID)
 	if err != nil {
 		return dto.ExerciseLogDTO{}, err
 	}
@@ -266,17 +266,17 @@ func (s *Service) GetExerciseLog(ctx context.Context, userID, exerciseLogID doma
 		return dto.ExerciseLogDTO{}, domain.ErrNotFound
 	}
 
-	setLogs, err := s.setLogRepository.GetSetLogsByExerciseLogID(ctx, exerciseLogID)
+	setLogs, err := s.repository.GetSetLogsByExerciseLogID(ctx, exerciseLogID)
 	if err != nil {
 		return dto.ExerciseLogDTO{}, err
 	}
 
-	exercise, err := s.exerciseRepository.GetExerciseByID(ctx, exerciseLog.ExerciseID)
+	exercise, err := s.repository.GetExerciseByID(ctx, exerciseLog.ExerciseID)
 	if err != nil {
 		return dto.ExerciseLogDTO{}, err
 	}
 
-	expectedSets, err := s.expectedSetRepository.GetExpectedSetsByExerciseLogID(ctx, exerciseLogID)
+	expectedSets, err := s.repository.GetExpectedSetsByExerciseLogID(ctx, exerciseLogID)
 	if err != nil {
 		return dto.ExerciseLogDTO{}, err
 	}
@@ -293,7 +293,7 @@ func (s *Service) LogExercise(ctx context.Context, userID, workoutID, exerciseID
 	span, ctx := opentracing.StartSpanFromContext(ctx, "service.LogExercise")
 	defer span.Finish()
 
-	workout, err := s.workoutRepository.GetWorkoutByID(ctx, workoutID)
+	workout, err := s.repository.GetWorkoutByID(ctx, workoutID)
 	if err != nil {
 		return domain.ExerciseLog{}, err
 	}
@@ -303,7 +303,7 @@ func (s *Service) LogExercise(ctx context.Context, userID, workoutID, exerciseID
 		return domain.ExerciseLog{}, fmt.Errorf("%w: workout %s is already finished", domain.ErrInvalidArgument, workoutID)
 	}
 
-	_, err = s.exerciseRepository.GetExerciseByID(ctx, exerciseID)
+	_, err = s.repository.GetExerciseByID(ctx, exerciseID)
 	if err != nil {
 		return domain.ExerciseLog{}, err
 	}
@@ -315,7 +315,7 @@ func (s *Service) LogExercise(ctx context.Context, userID, workoutID, exerciseID
 
 	exerciseLog := domain.NewExerciseLog(workoutID, exerciseID)
 
-	exerciseLog, err = s.exerciseLogRepository.CreateExerciseLog(ctx, exerciseLog)
+	exerciseLog, err = s.repository.CreateExerciseLog(ctx, exerciseLog)
 	if err != nil {
 		return domain.ExerciseLog{}, err
 	}
@@ -327,12 +327,12 @@ func (s *Service) LogSet(ctx context.Context, userID, workoutID, exerciseLogID d
 	span, ctx := opentracing.StartSpanFromContext(ctx, "service.LogSet")
 	defer span.Finish()
 
-	exerciseLog, err := s.exerciseLogRepository.GetExerciseLogByID(ctx, exerciseLogID)
+	exerciseLog, err := s.repository.GetExerciseLogByID(ctx, exerciseLogID)
 	if err != nil {
 		return domain.ExerciseSetLog{}, err
 	}
 
-	workout, err := s.workoutRepository.GetWorkoutByID(ctx, workoutID)
+	workout, err := s.repository.GetWorkoutByID(ctx, workoutID)
 	if err != nil {
 		return domain.ExerciseSetLog{}, err
 	}
@@ -359,7 +359,7 @@ func (s *Service) LogSet(ctx context.Context, userID, workoutID, exerciseLogID d
 		time.Duration(0),
 	)
 
-	setLog, err = s.setLogRepository.CreateSetLog(ctx, setLog)
+	setLog, err = s.repository.CreateSetLog(ctx, setLog)
 	if err != nil {
 		return domain.ExerciseSetLog{}, err
 	}
@@ -371,7 +371,7 @@ func (s *Service) GetActiveWorkouts(ctx context.Context, userID domain.ID) ([]do
 	span, ctx := opentracing.StartSpanFromContext(ctx, "service.GetActiveWorkouts")
 	defer span.Finish()
 
-	workouts, err := s.workoutRepository.GetActiveWorkouts(ctx, userID)
+	workouts, err := s.repository.GetActiveWorkouts(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -383,7 +383,7 @@ func (s *Service) CompleteWorkout(ctx context.Context, userID, workoutID domain.
 	span, ctx := opentracing.StartSpanFromContext(ctx, "service.FinishWorkout")
 	defer span.Finish()
 
-	workout, err := s.workoutRepository.GetWorkoutByID(ctx, workoutID)
+	workout, err := s.repository.GetWorkoutByID(ctx, workoutID)
 	if err != nil {
 		return err
 	}
@@ -400,7 +400,7 @@ func (s *Service) CompleteWorkout(ctx context.Context, userID, workoutID domain.
 
 	workout.FinishedAt = time.Now()
 
-	_, err = s.workoutRepository.UpdateWorkout(ctx, workoutID, workout)
+	_, err = s.repository.UpdateWorkout(ctx, workoutID, workout)
 	if err != nil {
 		return err
 	}
@@ -412,7 +412,7 @@ func (s *Service) DeleteWorkout(ctx context.Context, userID, workoutID domain.ID
 	span, ctx := opentracing.StartSpanFromContext(ctx, "service.DeleteWorkout")
 	defer span.Finish()
 
-	workout, err := s.workoutRepository.GetWorkoutByID(ctx, workoutID)
+	workout, err := s.repository.GetWorkoutByID(ctx, workoutID)
 	if err != nil {
 		return err
 	}
@@ -422,7 +422,7 @@ func (s *Service) DeleteWorkout(ctx context.Context, userID, workoutID domain.ID
 		return domain.ErrNotFound
 	}
 
-	err = s.workoutRepository.DeleteWorkout(ctx, workoutID)
+	err = s.repository.DeleteWorkout(ctx, workoutID)
 	if err != nil {
 		return err
 	}
@@ -434,7 +434,7 @@ func (s *Service) DeleteExerciseLog(ctx context.Context, userID, workoutID, exer
 	span, ctx := opentracing.StartSpanFromContext(ctx, "service.DeleteExerciseLog")
 	defer span.Finish()
 
-	workout, err := s.workoutRepository.GetWorkoutByID(ctx, workoutID)
+	workout, err := s.repository.GetWorkoutByID(ctx, workoutID)
 	if err != nil {
 		return err
 	}
@@ -449,7 +449,7 @@ func (s *Service) DeleteExerciseLog(ctx context.Context, userID, workoutID, exer
 		return fmt.Errorf("%w: workout %s is already finished", domain.ErrInvalidArgument, workoutID)
 	}
 
-	exerciseLog, err := s.exerciseLogRepository.GetExerciseLogByID(ctx, exerciseLogID)
+	exerciseLog, err := s.repository.GetExerciseLogByID(ctx, exerciseLogID)
 	if err != nil {
 		return err
 	}
@@ -459,7 +459,7 @@ func (s *Service) DeleteExerciseLog(ctx context.Context, userID, workoutID, exer
 		return domain.ErrNotFound
 	}
 
-	err = s.exerciseLogRepository.DeleteExerciseLog(ctx, exerciseLogID)
+	err = s.repository.DeleteExerciseLog(ctx, exerciseLogID)
 	if err != nil {
 		return err
 	}
@@ -471,7 +471,7 @@ func (s *Service) DeleteSetLog(ctx context.Context, userID, workoutID, exerciseL
 	span, ctx := opentracing.StartSpanFromContext(ctx, "service.DeleteSetLog")
 	defer span.Finish()
 
-	workout, err := s.workoutRepository.GetWorkoutByID(ctx, workoutID)
+	workout, err := s.repository.GetWorkoutByID(ctx, workoutID)
 	if err != nil {
 		return err
 	}
@@ -486,7 +486,7 @@ func (s *Service) DeleteSetLog(ctx context.Context, userID, workoutID, exerciseL
 		return fmt.Errorf("%w: workout %s is already finished", domain.ErrInvalidArgument, workoutID)
 	}
 
-	exerciseLog, err := s.exerciseLogRepository.GetExerciseLogByID(ctx, exerciseLogID)
+	exerciseLog, err := s.repository.GetExerciseLogByID(ctx, exerciseLogID)
 	if err != nil {
 		return err
 	}
@@ -496,7 +496,7 @@ func (s *Service) DeleteSetLog(ctx context.Context, userID, workoutID, exerciseL
 		return domain.ErrNotFound
 	}
 
-	setLog, err := s.setLogRepository.GetSetLogByID(ctx, setLogID)
+	setLog, err := s.repository.GetSetLogByID(ctx, setLogID)
 	if err != nil {
 		return err
 	}
@@ -506,7 +506,7 @@ func (s *Service) DeleteSetLog(ctx context.Context, userID, workoutID, exerciseL
 		return domain.ErrNotFound
 	}
 
-	err = s.setLogRepository.DeleteSetLog(ctx, setLogID)
+	err = s.repository.DeleteSetLog(ctx, setLogID)
 	if err != nil {
 		return err
 	}
@@ -518,7 +518,7 @@ func (s *Service) UpdateSetLog(ctx context.Context, userID, workoutID, exerciseL
 	span, ctx := opentracing.StartSpanFromContext(ctx, "service.UpdateSetLog")
 	defer span.Finish()
 
-	workout, err := s.workoutRepository.GetWorkoutByID(ctx, workoutID)
+	workout, err := s.repository.GetWorkoutByID(ctx, workoutID)
 	if err != nil {
 		return domain.ExerciseSetLog{}, err
 	}
@@ -533,7 +533,7 @@ func (s *Service) UpdateSetLog(ctx context.Context, userID, workoutID, exerciseL
 		return domain.ExerciseSetLog{}, fmt.Errorf("%w: workout %s is already finished", domain.ErrInvalidArgument, workoutID)
 	}
 
-	exerciseLog, err := s.exerciseLogRepository.GetExerciseLogByID(ctx, exerciseLogID)
+	exerciseLog, err := s.repository.GetExerciseLogByID(ctx, exerciseLogID)
 	if err != nil {
 		return domain.ExerciseSetLog{}, err
 	}
@@ -543,7 +543,7 @@ func (s *Service) UpdateSetLog(ctx context.Context, userID, workoutID, exerciseL
 		return domain.ExerciseSetLog{}, domain.ErrNotFound
 	}
 
-	setLog, err := s.setLogRepository.GetSetLogByID(ctx, setLogID)
+	setLog, err := s.repository.GetSetLogByID(ctx, setLogID)
 	if err != nil {
 		return domain.ExerciseSetLog{}, err
 	}
@@ -563,7 +563,7 @@ func (s *Service) UpdateSetLog(ctx context.Context, userID, workoutID, exerciseL
 
 	setLog.UpdatedAt = time.Now()
 
-	setLog, err = s.setLogRepository.UpdateSetLog(ctx, setLogID, setLog)
+	setLog, err = s.repository.UpdateSetLog(ctx, setLogID, setLog)
 	if err != nil {
 		return domain.ExerciseSetLog{}, err
 	}
@@ -575,7 +575,7 @@ func (s *Service) RateWorkout(ctx context.Context, userID, workoutID domain.ID, 
 	span, ctx := opentracing.StartSpanFromContext(ctx, "service.RateWorkout")
 	defer span.Finish()
 
-	workout, err := s.workoutRepository.GetWorkoutByID(ctx, workoutID)
+	workout, err := s.repository.GetWorkoutByID(ctx, workoutID)
 	if err != nil {
 		return domain.Workout{}, err
 	}
@@ -592,7 +592,7 @@ func (s *Service) RateWorkout(ctx context.Context, userID, workoutID domain.ID, 
 
 	workout.Rating = rating
 
-	workout, err = s.workoutRepository.UpdateWorkout(ctx, workoutID, workout)
+	workout, err = s.repository.UpdateWorkout(ctx, workoutID, workout)
 	if err != nil {
 		return domain.Workout{}, err
 	}
@@ -604,7 +604,7 @@ func (s *Service) AddCommentToWorkout(ctx context.Context, userID, workoutID dom
 	span, ctx := opentracing.StartSpanFromContext(ctx, "service.AddCommentToWorkout")
 	defer span.Finish()
 
-	workout, err := s.workoutRepository.GetWorkoutByID(ctx, workoutID)
+	workout, err := s.repository.GetWorkoutByID(ctx, workoutID)
 	if err != nil {
 		return domain.Workout{}, err
 	}
@@ -621,7 +621,7 @@ func (s *Service) AddCommentToWorkout(ctx context.Context, userID, workoutID dom
 
 	workout.Notes = comment
 
-	workout, err = s.workoutRepository.UpdateWorkout(ctx, workoutID, workout)
+	workout, err = s.repository.UpdateWorkout(ctx, workoutID, workout)
 	if err != nil {
 		return domain.Workout{}, err
 	}
@@ -633,14 +633,14 @@ func (s *Service) GetWorkouts(ctx context.Context, userID domain.ID, limit, offs
 	span, ctx := opentracing.StartSpanFromContext(ctx, "service.GetWorkouts")
 	defer span.Finish()
 
-	workouts, err := s.workoutRepository.GetWorkouts(ctx, userID, limit, offset)
+	workouts, err := s.repository.GetWorkouts(ctx, userID, limit, offset)
 	if err != nil {
 		return nil, err
 	}
 
 	workoutsDTO := make([]dto.WorkoutDTO, 0, len(workouts))
 	for _, workout := range workouts {
-		exerciseLogs, err := s.exerciseLogRepository.GetExerciseLogsByWorkoutID(ctx, workout.ID)
+		exerciseLogs, err := s.repository.GetExerciseLogsByWorkoutID(ctx, workout.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -658,7 +658,7 @@ func (s *Service) AddNotesToExerciseLog(ctx context.Context, userID, workoutID, 
 	span, ctx := opentracing.StartSpanFromContext(ctx, "service.AddNotesToExerciseLog")
 	defer span.Finish()
 
-	workout, err := s.workoutRepository.GetWorkoutByID(ctx, workoutID)
+	workout, err := s.repository.GetWorkoutByID(ctx, workoutID)
 	if err != nil {
 		return err
 	}
@@ -673,7 +673,7 @@ func (s *Service) AddNotesToExerciseLog(ctx context.Context, userID, workoutID, 
 		return fmt.Errorf("%w: workout %s is already finished", domain.ErrInvalidArgument, workoutID)
 	}
 
-	exerciseLog, err := s.exerciseLogRepository.GetExerciseLogByID(ctx, exerciseLogID)
+	exerciseLog, err := s.repository.GetExerciseLogByID(ctx, exerciseLogID)
 	if err != nil {
 		return err
 	}
@@ -685,7 +685,7 @@ func (s *Service) AddNotesToExerciseLog(ctx context.Context, userID, workoutID, 
 
 	exerciseLog.Notes = notes
 
-	_, err = s.exerciseLogRepository.UpdateExerciseLog(ctx, exerciseLogID, exerciseLog)
+	_, err = s.repository.UpdateExerciseLog(ctx, exerciseLogID, exerciseLog)
 	if err != nil {
 		return err
 	}
@@ -697,7 +697,7 @@ func (s *Service) AddPowerRatingToExerciseLog(ctx context.Context, userID, worko
 	span, ctx := opentracing.StartSpanFromContext(ctx, "service.AddPowerRatingToExerciseLog")
 	defer span.Finish()
 
-	workout, err := s.workoutRepository.GetWorkoutByID(ctx, workoutID)
+	workout, err := s.repository.GetWorkoutByID(ctx, workoutID)
 	if err != nil {
 		return err
 	}
@@ -712,7 +712,7 @@ func (s *Service) AddPowerRatingToExerciseLog(ctx context.Context, userID, worko
 		return fmt.Errorf("%w: workout %s is already finished", domain.ErrInvalidArgument, workoutID)
 	}
 
-	exerciseLog, err := s.exerciseLogRepository.GetExerciseLogByID(ctx, exerciseLogID)
+	exerciseLog, err := s.repository.GetExerciseLogByID(ctx, exerciseLogID)
 	if err != nil {
 		return err
 	}
@@ -724,7 +724,7 @@ func (s *Service) AddPowerRatingToExerciseLog(ctx context.Context, userID, worko
 
 	exerciseLog.PowerRating = powerRating
 
-	_, err = s.exerciseLogRepository.UpdateExerciseLog(ctx, exerciseLogID, exerciseLog)
+	_, err = s.repository.UpdateExerciseLog(ctx, exerciseLogID, exerciseLog)
 	if err != nil {
 		return err
 	}

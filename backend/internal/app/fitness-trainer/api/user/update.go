@@ -32,15 +32,10 @@ func (i *Implementation) UpdateUser(ctx context.Context, in *desc.UpdateUserRequ
 
 	var input dto.UpdateUserDTO
 	{
-		input.FirstName = utils.NewNullable(in.GetFirstName(), in.GetFirstName() != "")
-		input.LastName = utils.NewNullable(in.GetLastName(), in.GetLastName() != "")
-
 		input.DateOfBirth = in.GetDateOfBirth().AsTime()
 
 		input.Height = utils.NewNullable(in.GetHeight(), in.GetHeight() != 0)
 		input.Weight = utils.NewNullable(in.GetWeight(), in.GetWeight() != 0)
-
-		input.ProfilePicURL = utils.NewNullable(in.GetProfilePictureUrl(), in.ProfilePictureUrl != nil)
 	}
 
 	user, err := i.service.UpdateUser(ctx, id, input)

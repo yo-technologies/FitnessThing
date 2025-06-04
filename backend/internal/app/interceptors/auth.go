@@ -2,63 +2,88 @@ package interceptors
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	"fitness-trainer/internal/domain"
+	"fitness-trainer/internal/domain/dto"
 	"fitness-trainer/internal/logger"
+	"fitness-trainer/internal/utils"
 
 	"github.com/opentracing/opentracing-go"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
-	"google.golang.org/grpc/status"
 )
 
 const (
-	userIDKey            contextKey = "auth-interceptor.user-id"
-	accesTokenHeaderName string     = "x-access-token"
+	userIDKey contextKey = "auth-interceptor.user-id"
 )
 
-type JWTManager interface {
-	ParseToken(ctx context.Context, token string) (domain.ID, error)
+type UserService interface {
+	GetOrCreateUser(ctx context.Context, dto dto.CreateUserDTO) (domain.User, error)
 }
 
-func NewAuth(
-	jwtManager JWTManager,
-	unprotectedMethods map[string]struct{},
+type TelegramTokenParser interface {
+	Parse(token string) (domain.TelegramTokenData, error)
+}
+
+func TelegramAuthInterceptor(
+	userService UserService,
+	tokenParser TelegramTokenParser,
 ) func(context.Context, interface{}, *grpc.UnaryServerInfo, grpc.UnaryHandler) (interface{}, error) {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 		span, ctx := opentracing.StartSpanFromContext(ctx, "interceptors.Auth")
 		defer span.Finish()
 
-		logger.Debugf("method %s is called", info.FullMethod)
-		if _, ok := unprotectedMethods[info.FullMethod]; ok {
-			logger.Infof("method %s is unprotected", info.FullMethod)
-			return handler(ctx, req)
-		}
-
 		md, ok := metadata.FromIncomingContext(ctx)
 		if !ok {
 			logger.Errorf("metadata is not provided")
-			return nil, status.Error(codes.Unauthenticated, "metadata is not provided")
+			return nil, fmt.Errorf("metadata is not provided: %w", domain.ErrUnauthorized)
 		}
 
-		token, ok := md[accesTokenHeaderName]
+		tokens, ok := md["authorization"]
 		if !ok {
 			logger.Errorf("authorization token is not provided")
-			return nil, status.Error(codes.Unauthenticated, "authorization token is not provided")
+			return nil, fmt.Errorf("authorization token is not provided: %w", domain.ErrUnauthorized)
 		}
 
-		id, err := jwtManager.ParseToken(ctx, token[0])
+		if len(tokens) != 1 {
+			logger.Errorf("invalid token format")
+			return nil, fmt.Errorf("invalid token format: %w", domain.ErrUnauthorized)
+		}
+
+		token := strings.TrimSpace(strings.TrimPrefix(tokens[0], "tma "))
+
+		parsedData, err := tokenParser.Parse(token)
 		if err != nil {
-			logger.Errorf("invalid token: %v", err)
-			return nil, status.Error(codes.Unauthenticated, "invalid token")
+			logger.Errorf("failed to parse token: %v", err)
+			return nil, fmt.Errorf("failed to parse token: %w", domain.ErrUnauthorized)
 		}
 
-		ctx = context.WithValue(ctx, userIDKey, id)
-		span.SetTag("user_id", id.String())
+		var dto dto.CreateUserDTO
+		{
+			dto.TelegramID = parsedData.User.ID
+			dto.TelegramUsername = utils.NewNullable(parsedData.User.Username, parsedData.User.Username != "")
+			dto.FirstName = utils.NewNullable(parsedData.User.FirstName, parsedData.User.FirstName != "")
+			dto.LastName = utils.NewNullable(parsedData.User.LastName, parsedData.User.LastName != "")
+			dto.ProfilePicURL = utils.NewNullable(parsedData.User.PhotoURL, parsedData.User.PhotoURL != "")
+		}
+
+		user, err := userService.GetOrCreateUser(ctx, dto)
+		if err != nil {
+			logger.Errorf("failed to get or create user: %v", err)
+			return nil, fmt.Errorf("failed to get or create user: %w", domain.ErrInternal)
+		}
+
+		ctx = context.WithValue(ctx, userIDKey, user.ID)
+		span.SetTag("user_id", user.ID.String())
 
 		return handler(ctx, req)
 	}
+}
+
+func EnrichContextWithUserID(ctx context.Context, userID domain.ID) context.Context {
+	return context.WithValue(ctx, userIDKey, userID)
 }
 
 func GetUserID(ctx context.Context) (domain.ID, bool) {

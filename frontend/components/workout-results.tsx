@@ -1,7 +1,6 @@
 "use client";
 
 import { Modal, ModalContent, useDisclosure } from "@nextui-org/modal";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { Divider } from "@nextui-org/divider";
@@ -18,7 +17,7 @@ import {
   WeightIcon,
 } from "@/config/icons";
 import { WorkoutGetWorkoutResponse } from "@/api/api.generated";
-import { authApi, errUnauthorized } from "@/api/api";
+import { authApi } from "@/api/api";
 import { Loading } from "@/components/loading";
 
 export function WorkoutResults({
@@ -36,8 +35,6 @@ export function WorkoutResults({
 
   const { isOpen, onOpen, onClose } = useDisclosure();
 
-  const router = useRouter();
-
   async function fetchWorkoutDetails() {
     await authApi.v1
       .workoutServiceGetWorkout(id)
@@ -47,11 +44,6 @@ export function WorkoutResults({
       })
       .catch((error) => {
         console.log(error);
-        if (error === errUnauthorized || error.response?.status === 401) {
-          router.push("/auth/login");
-
-          return;
-        }
         throw error;
       });
   }

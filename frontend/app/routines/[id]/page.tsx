@@ -40,7 +40,7 @@ import {
   WorkoutExerciseInstanceDetails,
   WorkoutRoutineDetailResponse,
 } from "@/api/api.generated";
-import { authApi, errUnauthorized } from "@/api/api";
+import { authApi } from "@/api/api";
 
 export default function RoutineDetailsPage({
   params,
@@ -91,14 +91,6 @@ export default function RoutineDetailsPage({
       })
       .catch((error) => {
         console.log(error);
-        if (
-          error === errUnauthorized ||
-          (error as any).response?.status === 401
-        ) {
-          router.push("/auth/login");
-
-          return;
-        }
         toast.error("Ошибка при загрузке данных");
       });
   }
@@ -111,11 +103,6 @@ export default function RoutineDetailsPage({
       })
       .catch((error) => {
         console.log(error);
-        if (error === errUnauthorized || error.response?.status === 401) {
-          router.push("/auth/login");
-
-          return;
-        }
         toast.error("Ошибка при добавлении упражнения");
       });
   }
@@ -129,14 +116,6 @@ export default function RoutineDetailsPage({
       await fetchRoutineDetails();
     } catch (error) {
       console.log(error);
-      if (
-        error === errUnauthorized ||
-        (error as any).response?.status === 401
-      ) {
-        router.push("/auth/login");
-
-        return;
-      }
       toast.error("Ошибка при добавлении упражнения");
     }
   }
@@ -149,11 +128,6 @@ export default function RoutineDetailsPage({
       })
       .catch((error) => {
         console.log(error);
-        if (error === errUnauthorized || error.response?.status === 401) {
-          router.push("/auth/login");
-
-          return;
-        }
         toast.error("Ошибка при обновлении порядка упражнений");
       });
   }
@@ -314,14 +288,6 @@ export default function RoutineDetailsPage({
       } catch (error) {
         console.log(error);
         toast.error("Ошибка при обновлении рутины");
-        if (
-          error === errUnauthorized ||
-          (error as any).response?.status === 401
-        ) {
-          router.push("/auth/login");
-
-          return;
-        }
       } finally {
         setIsButtonLoading(false);
       }
@@ -382,14 +348,6 @@ export default function RoutineDetailsPage({
       .routineServiceDeleteRoutine(id)
       .catch((error) => {
         console.log(error);
-        if (
-          error === errUnauthorized ||
-          (error as any).response?.status === 401
-        ) {
-          router.push("/auth/login");
-
-          return;
-        }
         toast.error("Ошибка при удалении рутины");
       })
       .then(() => {

@@ -121,19 +121,6 @@ export interface WorkoutCreateRoutineRequest {
   description?: string;
 }
 
-export interface WorkoutCreateUserRequest {
-  email: string;
-  password: string;
-  firstName?: string;
-  lastName?: string;
-  /** @format date-time */
-  dateOfBirth?: string;
-  /** @format float */
-  height?: number;
-  /** @format float */
-  weight?: number;
-}
-
 export interface WorkoutExercise {
   id?: string;
   /** @format date-time */
@@ -236,19 +223,6 @@ export interface WorkoutGetWorkoutsResponse {
   workouts?: GetWorkoutsResponseWorkoutDetails[];
 }
 
-export interface WorkoutLoginRequest {
-  email: string;
-  password: string;
-}
-
-export interface WorkoutLoginResponse {
-  tokens?: WorkoutTokensPair;
-}
-
-export interface WorkoutLogoutRequest {
-  refreshToken: string;
-}
-
 export interface WorkoutMuscleGroup {
   id?: string;
   name?: string;
@@ -262,14 +236,6 @@ export interface WorkoutPresignUploadRequest {
 export interface WorkoutPresignUploadResponse {
   uploadUrl?: string;
   getUrl?: string;
-}
-
-export interface WorkoutRefreshRequest {
-  tokens?: WorkoutTokensPair;
-}
-
-export interface WorkoutRefreshResponse {
-  tokens?: WorkoutTokensPair;
 }
 
 /** Структура плана тренировки */
@@ -357,21 +323,13 @@ export interface WorkoutStartWorkoutRequest {
   userPrompt?: string;
 }
 
-export interface WorkoutTokensPair {
-  accessToken: string;
-  refreshToken: string;
-}
-
 export interface WorkoutUpdateUserRequest {
-  firstName?: string;
-  lastName?: string;
   /** @format date-time */
   dateOfBirth?: string;
   /** @format float */
   height?: number;
   /** @format float */
   weight?: number;
-  profilePictureUrl?: string;
 }
 
 export interface WorkoutUpdateWorkoutGenerationSettingsRequest {
@@ -382,20 +340,22 @@ export interface WorkoutUpdateWorkoutGenerationSettingsRequest {
 
 export interface WorkoutUser {
   id?: string;
-  /** @format date-time */
-  createdAt?: string;
-  email?: string;
+  /** @format int32 */
+  telegramId?: number;
+  username?: string;
   firstName?: string;
   lastName?: string;
-  /** @format date-time */
-  dateOfBirth?: string;
-  /** @format float */
-  height?: number;
+  profilePictureUrl?: string;
   /** @format float */
   weight?: number;
+  /** @format float */
+  height?: number;
+  /** @format date-time */
+  dateOfBirth?: string;
+  /** @format date-time */
+  createdAt?: string;
   /** @format date-time */
   updatedAt?: string;
-  profilePictureUrl?: string;
 }
 
 export interface WorkoutUserResponse {
@@ -445,8 +405,7 @@ export interface WorkoutWorkoutsListResponse {
   workouts?: WorkoutWorkout[];
 }
 
-import type { AxiosInstance, AxiosRequestConfig, AxiosResponse, HeadersDefaults, ResponseType } from "axios";
-import axios from "axios";
+import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, HeadersDefaults, ResponseType } from "axios";
 
 export type QueryParamsType = Record<string | number, any>;
 
@@ -524,9 +483,6 @@ export class HttpClient<SecurityDataType = unknown> {
   }
 
   protected createFormData(input: Record<string, unknown>): FormData {
-    if (input instanceof FormData) {
-      return input;
-    }
     return Object.keys(input || {}).reduce((formData, key) => {
       const property = input[key];
       const propertyContent: any[] = property instanceof Array ? property : [property];
@@ -569,7 +525,7 @@ export class HttpClient<SecurityDataType = unknown> {
       ...requestParams,
       headers: {
         ...(requestParams.headers || {}),
-        ...(type ? { "Content-Type": type } : {}),
+        ...(type && type !== ContentType.FormData ? { "Content-Type": type } : {}),
       },
       params: query,
       responseType: responseFormat,
@@ -588,63 +544,6 @@ export class HttpClient<SecurityDataType = unknown> {
  */
 export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDataType> {
   v1 = {
-    /**
-     * No description
-     *
-     * @tags AuthService
-     * @name AuthServiceLogin
-     * @request POST:/v1/auth/login
-     * @secure
-     */
-    authServiceLogin: (body: WorkoutLoginRequest, params: RequestParams = {}) =>
-      this.request<WorkoutLoginResponse, RpcStatus>({
-        path: `/v1/auth/login`,
-        method: "POST",
-        body: body,
-        secure: true,
-        type: ContentType.Json,
-        format: "json",
-        ...params,
-      }),
-
-    /**
-     * No description
-     *
-     * @tags AuthService
-     * @name AuthServiceLogout
-     * @request POST:/v1/auth/logout
-     * @secure
-     */
-    authServiceLogout: (body: WorkoutLogoutRequest, params: RequestParams = {}) =>
-      this.request<WorkoutServiceCompleteWorkoutBody, RpcStatus>({
-        path: `/v1/auth/logout`,
-        method: "POST",
-        body: body,
-        secure: true,
-        type: ContentType.Json,
-        format: "json",
-        ...params,
-      }),
-
-    /**
-     * No description
-     *
-     * @tags AuthService
-     * @name AuthServiceRefresh
-     * @request POST:/v1/auth/refresh
-     * @secure
-     */
-    authServiceRefresh: (body: WorkoutRefreshRequest, params: RequestParams = {}) =>
-      this.request<WorkoutRefreshResponse, RpcStatus>({
-        path: `/v1/auth/refresh`,
-        method: "POST",
-        body: body,
-        secure: true,
-        type: ContentType.Json,
-        format: "json",
-        ...params,
-      }),
-
     /**
      * No description
      *
@@ -1047,26 +946,6 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
     ) =>
       this.request<WorkoutRoutineInstanceResponse, RpcStatus>({
         path: `/v1/routines/${routineId}/exercises`,
-        method: "POST",
-        body: body,
-        secure: true,
-        type: ContentType.Json,
-        format: "json",
-        ...params,
-      }),
-
-    /**
-     * No description
-     *
-     * @tags UserService
-     * @name UserServiceCreateUser
-     * @summary Метод для создания пользователя
-     * @request POST:/v1/users
-     * @secure
-     */
-    userServiceCreateUser: (body: WorkoutCreateUserRequest, params: RequestParams = {}) =>
-      this.request<WorkoutUserResponse, RpcStatus>({
-        path: `/v1/users`,
         method: "POST",
         body: body,
         secure: true,

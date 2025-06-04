@@ -45,34 +45,30 @@ func NewModel() Model {
 type User struct {
 	Model
 
-	Email         string
-	Password      string
-	FirstName     string
-	LastName      string
-	DateOfBirth   time.Time
-	Height        float32
-	Weight        float32
-	ProfilePicURL string
+	TelegramID       int64
+	TelegramUsername utils.Nullable[string]
+	FirstName        utils.Nullable[string]
+	LastName         utils.Nullable[string]
+	DateOfBirth      time.Time
+	Height           utils.Nullable[float32]
+	Weight           utils.Nullable[float32]
+	ProfilePicURL    utils.Nullable[string]
 }
 
 func NewUser(
-	Email string,
-	Password string,
-	FirstName string,
-	LastName string,
-	DateOfBirth time.Time,
-	Height float32,
-	Weight float32,
+	TelegramID int64,
+	TelegramUsername utils.Nullable[string],
+	FirstName utils.Nullable[string],
+	LastName utils.Nullable[string],
+	ProfilePicURL utils.Nullable[string],
 ) User {
 	return User{
-		Model:       NewModel(),
-		Email:       Email,
-		Password:    Password,
-		FirstName:   FirstName,
-		LastName:    LastName,
-		DateOfBirth: DateOfBirth,
-		Height:      Height,
-		Weight:      Weight,
+		Model:            NewModel(),
+		TelegramID:       TelegramID,
+		TelegramUsername: TelegramUsername,
+		FirstName:        FirstName,
+		LastName:         LastName,
+		ProfilePicURL:    ProfilePicURL,
 	}
 }
 

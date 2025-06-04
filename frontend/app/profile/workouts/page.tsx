@@ -6,7 +6,7 @@ import { Card, ScrollShadow } from "@nextui-org/react";
 
 import { PageHeader } from "@/components/page-header";
 import { Loading } from "@/components/loading";
-import { authApi, errUnauthorized } from "@/api/api";
+import { authApi } from "@/api/api";
 import { GetWorkoutsResponseWorkoutDetails } from "@/api/api.generated";
 import InfiniteScroll, {
   useInfiniteScroll,
@@ -135,8 +135,6 @@ export default function WorkoutsHistoryPage() {
     GetWorkoutsResponseWorkoutDetails[]
   >([]);
 
-  const router = useRouter();
-
   async function fetchExerciseLogHistory() {
     await authApi.v1
       .workoutServiceGetWorkouts({ offset, limit })
@@ -148,11 +146,6 @@ export default function WorkoutsHistoryPage() {
       })
       .catch((error) => {
         console.log(error);
-        if (error === errUnauthorized || error.response?.status === 401) {
-          router.push("/auth/login");
-
-          return;
-        }
         throw error;
       });
   }

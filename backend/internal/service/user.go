@@ -6,32 +6,25 @@ import (
 
 	"fitness-trainer/internal/domain"
 	"fitness-trainer/internal/domain/dto"
-	"fitness-trainer/internal/utils"
 
 	"github.com/opentracing/opentracing-go"
 )
 
-func (s *Service) CreateUser(ctx context.Context, dto dto.CreateUserDTO) (domain.User, error) {
-	span, ctx := opentracing.StartSpanFromContext(ctx, "service.CreateUser")
+func (s *Service) GetOrCreateUser(ctx context.Context, dto dto.CreateUserDTO) (domain.User, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "service.GetOrCreateUser")
 	defer span.Finish()
 
-	hashedPass, err := utils.HashPassword(dto.Password)
-	if err != nil {
-		return domain.User{}, err
-	}
-
 	user := domain.NewUser(
-		dto.Email,
-		hashedPass,
-		dto.FirstName.V,
-		dto.LastName.V,
-		dto.DateOfBirth,
-		dto.Height.V,
-		dto.Weight.V,
+		dto.TelegramID,
+		dto.TelegramUsername,
+		dto.FirstName,
+		dto.LastName,
+		dto.ProfilePicURL,
 	)
 
-	err = s.unitOfWork.InTransaction(ctx, func(ctx context.Context) error {
-		user, err = s.userRepository.CreateUser(ctx, user)
+	err := s.unitOfWork.InTransaction(ctx, func(ctx context.Context) error {
+		var err error
+		user, err = s.repository.GetOrCreateUser(ctx, user)
 		return err
 	})
 	if err != nil {
@@ -45,7 +38,7 @@ func (s *Service) GetUserByID(ctx context.Context, id domain.ID) (domain.User, e
 	span, ctx := opentracing.StartSpanFromContext(ctx, "service.GetUserByID")
 	defer span.Finish()
 
-	return s.userRepository.GetUserByID(ctx, id)
+	return s.repository.GetUserByID(ctx, id)
 }
 
 func (s *Service) UpdateUser(ctx context.Context, id domain.ID, dto dto.UpdateUserDTO) (domain.User, error) {
@@ -62,31 +55,19 @@ func (s *Service) UpdateUser(ctx context.Context, id domain.ID, dto dto.UpdateUs
 			user.DateOfBirth = dto.DateOfBirth
 		}
 
-		if dto.LastName.IsValid {
-			user.LastName = dto.LastName.V
-		}
-
-		if dto.FirstName.IsValid {
-			user.FirstName = dto.FirstName.V
-		}
-
 		if dto.Height.IsValid {
-			user.Height = dto.Height.V
+			user.Height = dto.Height
 		}
 
 		if dto.Weight.IsValid {
-			user.Weight = dto.Weight.V
-		}
-
-		if dto.ProfilePicURL.IsValid {
-			user.ProfilePicURL = dto.ProfilePicURL.V
+			user.Weight = dto.Weight
 		}
 
 		user.UpdatedAt = time.Now()
 	}
 
 	err = s.unitOfWork.InTransaction(ctx, func(ctx context.Context) error {
-		user, err = s.userRepository.UpdateUser(ctx, user)
+		user, err = s.repository.UpdateUser(ctx, user)
 
 		return err
 	})

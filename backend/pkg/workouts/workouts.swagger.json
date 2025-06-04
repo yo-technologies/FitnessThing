@@ -19,9 +19,6 @@
       "name": "UserService"
     },
     {
-      "name": "AuthService"
-    },
-    {
       "name": "FileService"
     }
   ],
@@ -37,103 +34,6 @@
     "application/json"
   ],
   "paths": {
-    "/v1/auth/login": {
-      "post": {
-        "operationId": "AuthService_Login",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/workoutLoginResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/workoutLoginRequest"
-            }
-          }
-        ],
-        "tags": [
-          "AuthService"
-        ]
-      }
-    },
-    "/v1/auth/logout": {
-      "post": {
-        "operationId": "AuthService_Logout",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "type": "object",
-              "properties": {}
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/workoutLogoutRequest"
-            }
-          }
-        ],
-        "tags": [
-          "AuthService"
-        ]
-      }
-    },
-    "/v1/auth/refresh": {
-      "post": {
-        "operationId": "AuthService_Refresh",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/workoutRefreshResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/workoutRefreshRequest"
-            }
-          }
-        ],
-        "tags": [
-          "AuthService"
-        ]
-      }
-    },
     "/v1/exercises": {
       "get": {
         "summary": "Метод для получения списка всех упражнений",
@@ -815,37 +715,6 @@
       }
     },
     "/v1/users": {
-      "post": {
-        "summary": "Метод для создания пользователя",
-        "operationId": "UserService_CreateUser",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/workoutUserResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/workoutCreateUserRequest"
-            }
-          }
-        ],
-        "tags": [
-          "UserService"
-        ]
-      },
       "put": {
         "summary": "Метод для обновления данных пользователя",
         "operationId": "UserService_UpdateUser",
@@ -1897,39 +1766,6 @@
         "name"
       ]
     },
-    "workoutCreateUserRequest": {
-      "type": "object",
-      "properties": {
-        "email": {
-          "type": "string"
-        },
-        "password": {
-          "type": "string"
-        },
-        "firstName": {
-          "type": "string"
-        },
-        "lastName": {
-          "type": "string"
-        },
-        "dateOfBirth": {
-          "type": "string",
-          "format": "date-time"
-        },
-        "height": {
-          "type": "number",
-          "format": "float"
-        },
-        "weight": {
-          "type": "number",
-          "format": "float"
-        }
-      },
-      "required": [
-        "email",
-        "password"
-      ]
-    },
     "workoutExercise": {
       "type": "object",
       "properties": {
@@ -2187,40 +2023,6 @@
         }
       }
     },
-    "workoutLoginRequest": {
-      "type": "object",
-      "properties": {
-        "email": {
-          "type": "string"
-        },
-        "password": {
-          "type": "string"
-        }
-      },
-      "required": [
-        "email",
-        "password"
-      ]
-    },
-    "workoutLoginResponse": {
-      "type": "object",
-      "properties": {
-        "tokens": {
-          "$ref": "#/definitions/workoutTokensPair"
-        }
-      }
-    },
-    "workoutLogoutRequest": {
-      "type": "object",
-      "properties": {
-        "refreshToken": {
-          "type": "string"
-        }
-      },
-      "required": [
-        "refreshToken"
-      ]
-    },
     "workoutMuscleGroup": {
       "type": "object",
       "properties": {
@@ -2255,22 +2057,6 @@
         },
         "getUrl": {
           "type": "string"
-        }
-      }
-    },
-    "workoutRefreshRequest": {
-      "type": "object",
-      "properties": {
-        "tokens": {
-          "$ref": "#/definitions/workoutTokensPair"
-        }
-      }
-    },
-    "workoutRefreshResponse": {
-      "type": "object",
-      "properties": {
-        "tokens": {
-          "$ref": "#/definitions/workoutTokensPair"
         }
       }
     },
@@ -2449,30 +2235,9 @@
         }
       }
     },
-    "workoutTokensPair": {
-      "type": "object",
-      "properties": {
-        "accessToken": {
-          "type": "string"
-        },
-        "refreshToken": {
-          "type": "string"
-        }
-      },
-      "required": [
-        "accessToken",
-        "refreshToken"
-      ]
-    },
     "workoutUpdateUserRequest": {
       "type": "object",
       "properties": {
-        "firstName": {
-          "type": "string"
-        },
-        "lastName": {
-          "type": "string"
-        },
         "dateOfBirth": {
           "type": "string",
           "format": "date-time"
@@ -2484,9 +2249,6 @@
         "weight": {
           "type": "number",
           "format": "float"
-        },
-        "profilePictureUrl": {
-          "type": "string"
         }
       }
     },
@@ -2508,11 +2270,11 @@
         "id": {
           "type": "string"
         },
-        "createdAt": {
-          "type": "string",
-          "format": "date-time"
+        "telegramId": {
+          "type": "integer",
+          "format": "int32"
         },
-        "email": {
+        "username": {
           "type": "string"
         },
         "firstName": {
@@ -2521,24 +2283,28 @@
         "lastName": {
           "type": "string"
         },
-        "dateOfBirth": {
-          "type": "string",
-          "format": "date-time"
-        },
-        "height": {
-          "type": "number",
-          "format": "float"
+        "profilePictureUrl": {
+          "type": "string"
         },
         "weight": {
           "type": "number",
           "format": "float"
         },
-        "updatedAt": {
+        "height": {
+          "type": "number",
+          "format": "float"
+        },
+        "dateOfBirth": {
           "type": "string",
           "format": "date-time"
         },
-        "profilePictureUrl": {
-          "type": "string"
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
         }
       }
     },
@@ -2653,7 +2419,7 @@
   "securityDefinitions": {
     "Bearer": {
       "type": "apiKey",
-      "name": "x-access-token",
+      "name": "Authorization",
       "in": "header"
     }
   },

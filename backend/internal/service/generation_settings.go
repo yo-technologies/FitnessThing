@@ -15,7 +15,7 @@ func (s *Service) SaveGenerationSettings(ctx context.Context, userID domain.ID, 
 
 	var settings domain.GenerationSettings
 	if err := s.unitOfWork.InTransaction(ctx, func(ctx context.Context) (err error) {
-		settings, err := s.generationSettingsRepository.GetGenerationSettings(ctx, userID)
+		settings, err := s.repository.GetGenerationSettings(ctx, userID)
 		if err != nil {
 			if errors.Is(err, domain.ErrNotFound) {
 				settings = domain.NewGenerationSettings(userID)
@@ -32,7 +32,7 @@ func (s *Service) SaveGenerationSettings(ctx context.Context, userID domain.ID, 
 			settings.VarietyLevel = createDTO.VarietyLevel.V
 		}
 
-		settings, err = s.generationSettingsRepository.SaveGenerationSettings(ctx, settings)
+		settings, err = s.repository.SaveGenerationSettings(ctx, settings)
 		if err != nil {
 			return err
 		}
@@ -49,7 +49,7 @@ func (s *Service) GetGenerationSettings(ctx context.Context, userID domain.ID) (
 	span, ctx := opentracing.StartSpanFromContext(ctx, "service.GetGenerationSettings")
 	defer span.Finish()
 
-	settings, err := s.generationSettingsRepository.GetGenerationSettings(ctx, userID)
+	settings, err := s.repository.GetGenerationSettings(ctx, userID)
 
 	// If the settings are found, return them
 	if err == nil {
@@ -63,7 +63,7 @@ func (s *Service) GetGenerationSettings(ctx context.Context, userID domain.ID) (
 
 	// Create and save new settings
 	settings = domain.NewGenerationSettings(userID)
-	settings, err = s.generationSettingsRepository.SaveGenerationSettings(ctx, settings)
+	settings, err = s.repository.SaveGenerationSettings(ctx, settings)
 	if err != nil {
 		return domain.GenerationSettings{}, err
 	}
