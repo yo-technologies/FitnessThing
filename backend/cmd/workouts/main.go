@@ -152,7 +152,7 @@ func main() {
 	}
 }
 
-func newTelegramTokenParser() token_parser.TokenParser {
+func newTelegramTokenParser() token_parser.TelegramTokenParser {
 	botToken := os.Getenv("TELEGRAM_BOT_TOKEN")
 	if botToken == "" {
 		logger.Fatal("TELEGRAM_BOT_TOKEN environment variable is not set")
@@ -167,7 +167,7 @@ func newTelegramTokenParser() token_parser.TokenParser {
 		logger.Fatal(fmt.Sprintf("Failed to parse TELEGRAM_TOKEN_EXPIRE_IN: %v", err))
 	}
 
-	return token_parser.NewTokenParser(
+	return token_parser.NewTelegramTokenParser(
 		botToken,
 		expireIn,
 	)

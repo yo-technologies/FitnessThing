@@ -8,23 +8,23 @@ import (
 	initdata "github.com/telegram-mini-apps/init-data-golang"
 )
 
-type TokenParser interface {
+type TelegramTokenParser interface {
 	Parse(token string) (domain.TelegramTokenData, error)
 }
 
-type TokenParserImpl struct {
+type TelegramTokenParserImpl struct {
 	botToken string
 	expireIn time.Duration
 }
 
-func NewTokenParser(botToken string, expireIn time.Duration) TokenParser {
-	return &TokenParserImpl{
+func NewTelegramTokenParser(botToken string, expireIn time.Duration) TelegramTokenParser {
+	return &TelegramTokenParserImpl{
 		botToken: botToken,
 		expireIn: expireIn,
 	}
 }
 
-func (t *TokenParserImpl) Parse(token string) (domain.TelegramTokenData, error) {
+func (t *TelegramTokenParserImpl) Parse(token string) (domain.TelegramTokenData, error) {
 	err := initdata.Validate(token, t.botToken, t.expireIn)
 	if err != nil {
 		return domain.TelegramTokenData{}, fmt.Errorf("invalid token: %w", err)
