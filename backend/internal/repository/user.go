@@ -152,15 +152,15 @@ func (r *PGXRepository) UpdateUser(ctx context.Context, user domain.User) (domai
 	const query = `
 		update users
 		set 
-			username = $2,
-			first_name = $3,
-			last_name = $4,
-			date_of_birth = $5,
-			height = $6,
-			weight = $7,
-			updated_at = $8,
-			picture_profile_url = $9
-		where id = $1
+			username = $3,
+			first_name = $4,
+			last_name = $5,
+			date_of_birth = $6,
+			height = $7,
+			weight = $8,
+			updated_at = $9,
+			picture_profile_url = $10
+		where id = $1 and telegram_id = $2
 		returning id, telegram_id, username, first_name, last_name, date_of_birth, height, weight, created_at, updated_at, picture_profile_url;
 	`
 
@@ -182,6 +182,10 @@ func (r *PGXRepository) UpdateUser(ctx context.Context, user domain.User) (domai
 		userEntity.PictureProfileURL,
 	)
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return domain.User{}, domain.ErrNotFound
+		}
+
 		logger.Errorf("error updating user: %v", err)
 		return domain.User{}, err
 	}

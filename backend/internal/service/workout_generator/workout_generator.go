@@ -6,6 +6,8 @@ import (
 	"fitness-trainer/internal/domain"
 	"fitness-trainer/internal/domain/dto"
 	"fmt"
+	"math/rand"
+	"slices"
 
 	"github.com/opentracing/opentracing-go"
 )
@@ -49,6 +51,11 @@ func (s *Service) GenerateWorkout(ctx context.Context, options *dto.GenerateWork
 	if err != nil {
 		return dto.GeneratedWorkoutDTO{}, fmt.Errorf("failed to marshal workouts: %w", err)
 	}
+
+	// Shuffle exercises to ensure variety
+	slices.SortFunc(options.Exercises, func(a, b dto.SlimExerciseDTO) int {
+		return rand.Intn(2)*2 - 1
+	})
 
 	marshaledExercises, err := marshalExercises(options.Exercises)
 	if err != nil {
