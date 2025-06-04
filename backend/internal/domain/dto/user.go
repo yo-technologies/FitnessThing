@@ -10,6 +10,7 @@ type CreateUserDTO struct {
 	TelegramUsername utils.Nullable[string]
 	FirstName        utils.Nullable[string]
 	LastName         utils.Nullable[string]
+	ProfilePicURL    utils.Nullable[string]
 }
 
 type UpdateUserDTO struct {

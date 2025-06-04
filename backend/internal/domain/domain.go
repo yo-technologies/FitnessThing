@@ -60,6 +60,7 @@ func NewUser(
 	TelegramUsername utils.Nullable[string],
 	FirstName utils.Nullable[string],
 	LastName utils.Nullable[string],
+	ProfilePicURL utils.Nullable[string],
 ) User {
 	return User{
 		Model:            NewModel(),
@@ -67,6 +68,7 @@ func NewUser(
 		TelegramUsername: TelegramUsername,
 		FirstName:        FirstName,
 		LastName:         LastName,
+		ProfilePicURL:    ProfilePicURL,
 	}
 }
 

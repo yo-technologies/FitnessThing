@@ -66,6 +66,7 @@ func TelegramAuthInterceptor(
 			dto.TelegramUsername = utils.NewNullable(parsedData.User.Username, parsedData.User.Username != "")
 			dto.FirstName = utils.NewNullable(parsedData.User.FirstName, parsedData.User.FirstName != "")
 			dto.LastName = utils.NewNullable(parsedData.User.LastName, parsedData.User.LastName != "")
+			dto.ProfilePicURL = utils.NewNullable(parsedData.User.PhotoURL, parsedData.User.PhotoURL != "")
 		}
 
 		user, err := userService.GetOrCreateUser(ctx, dto)

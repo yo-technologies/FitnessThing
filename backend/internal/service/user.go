@@ -19,6 +19,7 @@ func (s *Service) GetOrCreateUser(ctx context.Context, dto dto.CreateUserDTO) (d
 		dto.TelegramUsername,
 		dto.FirstName,
 		dto.LastName,
+		dto.ProfilePicURL,
 	)
 
 	err := s.unitOfWork.InTransaction(ctx, func(ctx context.Context) error {
