@@ -15,34 +15,35 @@ var responseSchema = &genai.Schema{
 	Enum:     []string{},
 	Required: []string{"reasoning"},
 	Properties: map[string]*genai.Schema{
-		"exercises": &genai.Schema{
+		"exercises": {
 			Type: genai.TypeArray,
 			Items: &genai.Schema{
 				Type:     genai.TypeObject,
 				Enum:     []string{},
 				Required: []string{"id", "name"},
 				Properties: map[string]*genai.Schema{
-					"id": &genai.Schema{
+					"id": {
 						Type: genai.TypeString,
 					},
-					"name": &genai.Schema{
+					"name": {
 						Type: genai.TypeString,
 					},
 				},
 			},
 		},
-		"reasoning": &genai.Schema{
+		"reasoning": {
 			Type: genai.TypeString,
 		},
 	},
 }
 
 type Client struct {
-	client *genai.Client
+	client    *genai.Client
+	modelName string
 }
 
-func New(client *genai.Client) *Client {
-	return &Client{client: client}
+func New(client *genai.Client, modelName string) *Client {
+	return &Client{client: client, modelName: modelName}
 }
 
 func (c *Client) CreateCompletion(ctx context.Context, userID domain.ID, systemPrompt, prompt string) (string, error) {
@@ -53,7 +54,7 @@ func (c *Client) CreateCompletion(ctx context.Context, userID domain.ID, systemP
 	logger.Debugf("system prompt: %s", systemPrompt)
 	logger.Debugf("user prompt: %s", prompt)
 
-	model := c.client.GenerativeModel("gemini-2.0-flash")
+	model := c.client.GenerativeModel(c.modelName)
 
 	model.SetTemperature(1.8)
 	model.SetTopK(40)

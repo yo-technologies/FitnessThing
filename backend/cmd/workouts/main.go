@@ -98,7 +98,7 @@ func Run() error {
 		return err
 	}
 
-	clientWrapper := genai_client.New(genaiClient)
+	clientWrapper := genai_client.New(genaiClient, os.Getenv("GENAI_MODEL_NAME"))
 
 	// openaiClient := newOpenAIClient()
 
