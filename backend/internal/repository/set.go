@@ -79,6 +79,7 @@ func (r *PGXRepository) GetSetsByExerciseInstanceID(ctx context.Context, exercis
 		SELECT id, exercise_instance_id, reps, weight, time, set_type, updated_at, created_at
 		FROM sets
 		WHERE exercise_instance_id = $1
+		ORDER BY created_at ASC
 	`
 
 	engine := r.contextManager.GetEngineFromContext(ctx)
