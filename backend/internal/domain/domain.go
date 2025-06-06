@@ -149,9 +149,10 @@ func NewExercise(name, description, videoURL string, targetMuscleGroups []Muscle
 type Routine struct {
 	Model
 
-	UserID      ID
-	Name        string
-	Description string
+	UserID        ID
+	Name          string
+	Description   string
+	ExerciseCount int
 }
 
 func NewRoutine(userID ID, name, description string) Routine {

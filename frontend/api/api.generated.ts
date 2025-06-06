@@ -241,13 +241,15 @@ export interface WorkoutPresignUploadResponse {
 /** Структура плана тренировки */
 export interface WorkoutRoutine {
   id?: string;
-  /** @format date-time */
-  createdAt?: string;
   userId?: string;
   name?: string;
   description?: string;
   /** @format date-time */
+  createdAt?: string;
+  /** @format date-time */
   updatedAt?: string;
+  /** @format int32 */
+  exerciseCount?: number;
 }
 
 export interface WorkoutRoutineDetailResponse {

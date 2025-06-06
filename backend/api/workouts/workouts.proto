@@ -73,11 +73,12 @@ message Exercise {
 // Структура плана тренировки
 message Routine {
   string id = 1;
-  google.protobuf.Timestamp created_at = 2;
   string user_id = 3;
   string name = 4;
   string description = 5;
+  google.protobuf.Timestamp created_at = 2;
   google.protobuf.Timestamp updated_at = 6;
+  int32 exercise_count = 7;
 }
 
 // Структура подхода

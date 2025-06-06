@@ -10,12 +10,13 @@ import (
 
 func RoutineToProto(routine domain.Routine) *desc.Routine {
 	return &desc.Routine{
-		Id:          routine.ID.String(),
-		UserId:      routine.UserID.String(),
-		Name:        routine.Name,
-		Description: routine.Description,
-		CreatedAt:   timestamppb.New(routine.CreatedAt),
-		UpdatedAt:   timestamppb.New(routine.UpdatedAt),
+		Id:            routine.ID.String(),
+		UserId:        routine.UserID.String(),
+		Name:          routine.Name,
+		Description:   routine.Description,
+		CreatedAt:     timestamppb.New(routine.CreatedAt),
+		UpdatedAt:     timestamppb.New(routine.UpdatedAt),
+		ExerciseCount: int32(routine.ExerciseCount),
 	}
 }
 
@@ -57,7 +58,7 @@ func ExerciseInstanceDetailToProto(instance dto.ExerciseInstanceDetailsDTO) *des
 			UpdatedAt:  timestamppb.New(instance.UpdatedAt),
 		},
 		Exercise: ExerciseToProto(instance.Exercise),
-		Sets:    SetsToProto(instance.Sets),
+		Sets:     SetsToProto(instance.Sets),
 	}
 }
 

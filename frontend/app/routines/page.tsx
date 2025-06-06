@@ -16,6 +16,7 @@ import { ChevronRightIcon, PlusIcon } from "@/config/icons";
 import { PageHeader } from "@/components/page-header";
 import { Loading } from "@/components/loading";
 import { authApi } from "@/api/api";
+import { WorkoutRoutine } from "@/api/api.generated";
 
 export default function RoutinesPage() {
   const [isLoading, setIsLoading] = useState(true);
@@ -23,7 +24,7 @@ export default function RoutinesPage() {
 
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
 
-  const [routines, setRoutines] = useState<any[]>([]);
+  const [routines, setRoutines] = useState<WorkoutRoutine[]>([]);
 
   const router = useRouter();
 
@@ -62,6 +63,24 @@ export default function RoutinesPage() {
     );
   }
 
+  function declension(
+    exerciseCount: number | undefined,
+    forms: string[],
+  ): import("react").ReactNode {
+    if (exerciseCount === undefined) return null;
+
+    const form =
+      exerciseCount % 10 === 1 && exerciseCount % 100 !== 11
+        ? forms[0]
+        : exerciseCount % 10 >= 2 &&
+            exerciseCount % 10 <= 4 &&
+            (exerciseCount % 100 < 12 || exerciseCount % 100 > 14)
+          ? forms[1]
+          : forms[2];
+
+    return <span>{form}</span>;
+  }
+
   return (
     <>
       <div className="py-4 flex-grow">
@@ -82,7 +101,12 @@ export default function RoutinesPage() {
                 </CardHeader>
                 <CardBody className="p-0">
                   <p className="text-xs text-default-400">
-                    {Math.ceil(Math.random() * (10 - 5) + 5)} упражнений
+                    {routine.exerciseCount}{" "}
+                    {declension(routine.exerciseCount, [
+                      "упражнение",
+                      "упражнения",
+                      "упражнений",
+                    ])}
                   </p>
                 </CardBody>
               </div>

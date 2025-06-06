@@ -14,12 +14,13 @@ import (
 )
 
 type routineEntity struct {
-	ID          pgtype.UUID
-	Name        string
-	Description string
-	UserID      pgtype.UUID
-	CreatedAt   pgtype.Timestamptz
-	UpdatedAt   pgtype.Timestamptz
+	ID            pgtype.UUID
+	Name          string
+	Description   string
+	UserID        pgtype.UUID
+	CreatedAt     pgtype.Timestamptz
+	UpdatedAt     pgtype.Timestamptz
+	ExerciseCount int `db:"exercise_count"`
 }
 
 func (r routineEntity) toDomain() domain.Routine {
@@ -29,9 +30,10 @@ func (r routineEntity) toDomain() domain.Routine {
 			CreatedAt: r.CreatedAt.Time,
 			UpdatedAt: r.UpdatedAt.Time,
 		},
-		Name:        r.Name,
-		Description: r.Description,
-		UserID:      domain.ID(r.UserID.Bytes),
+		Name:          r.Name,
+		Description:   r.Description,
+		UserID:        domain.ID(r.UserID.Bytes),
+		ExerciseCount: r.ExerciseCount,
 	}
 }
 
@@ -51,8 +53,18 @@ func (r *PGXRepository) GetRoutines(ctx context.Context, userID domain.ID) ([]do
 	defer span.Finish()
 
 	query := `
-		SELECT * FROM routines r
+		SELECT 
+			r.id,
+			r.name,
+			r.description,
+			r.user_id,
+			r.created_at,
+			r.updated_at,
+			COUNT(ei.id) AS exercise_count
+		FROM routines r
+		LEFT JOIN exercise_instances ei ON ei.routine_id = r.id
 		WHERE r.user_id = $1
+		GROUP BY r.id, r.name, r.description, r.user_id, r.created_at, r.updated_at
 		ORDER BY r.created_at DESC
 	`
 
@@ -80,7 +92,8 @@ func (r *PGXRepository) CreateRoutine(ctx context.Context, routine domain.Routin
 	query := `
 		INSERT INTO routines (id, name, description, user_id)
 		VALUES ($1, $2, $3, $4)
-		RETURNING *
+		RETURNING 
+			id, name, description, user_id, created_at, updated_at
 	`
 
 	engine := r.contextManager.GetEngineFromContext(ctx)
@@ -100,8 +113,18 @@ func (r *PGXRepository) GetRoutineByID(ctx context.Context, id domain.ID) (domai
 	defer span.Finish()
 
 	query := `
-		SELECT * FROM routines r
+		SELECT
+			r.id,
+			r.name,
+			r.description,
+			r.user_id,
+			r.created_at,
+			r.updated_at,
+			COUNT(ei.id) AS exercise_count
+		FROM routines r
+		LEFT JOIN exercise_instances ei ON ei.routine_id = r.id
 		WHERE r.id = $1
+		GROUP BY r.id, r.name, r.description, r.user_id, r.created_at, r.updated_at
 	`
 
 	engine := r.contextManager.GetEngineFromContext(ctx)
@@ -152,7 +175,7 @@ func (r *PGXRepository) UpdateRoutine(ctx context.Context, id domain.ID, routine
 		UPDATE routines
 		SET name = $2, description = $3
 		WHERE id = $1
-		RETURNING *
+		RETURNING id, name, description, user_id, created_at, updated_at
 	`
 
 	engine := r.contextManager.GetEngineFromContext(ctx)

@@ -2066,10 +2066,6 @@
         "id": {
           "type": "string"
         },
-        "createdAt": {
-          "type": "string",
-          "format": "date-time"
-        },
         "userId": {
           "type": "string"
         },
@@ -2079,9 +2075,17 @@
         "description": {
           "type": "string"
         },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
         "updatedAt": {
           "type": "string",
           "format": "date-time"
+        },
+        "exerciseCount": {
+          "type": "integer",
+          "format": "int32"
         }
       },
       "title": "Структура плана тренировки"

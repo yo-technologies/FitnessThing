@@ -527,6 +527,12 @@ func (m *Routine) validate(all bool) error {
 
 	// no validation rules for Id
 
+	// no validation rules for UserId
+
+	// no validation rules for Name
+
+	// no validation rules for Description
+
 	if all {
 		switch v := interface{}(m.GetCreatedAt()).(type) {
 		case interface{ ValidateAll() error }:
@@ -556,12 +562,6 @@ func (m *Routine) validate(all bool) error {
 		}
 	}
 
-	// no validation rules for UserId
-
-	// no validation rules for Name
-
-	// no validation rules for Description
-
 	if all {
 		switch v := interface{}(m.GetUpdatedAt()).(type) {
 		case interface{ ValidateAll() error }:
@@ -590,6 +590,8 @@ func (m *Routine) validate(all bool) error {
 			}
 		}
 	}
+
+	// no validation rules for ExerciseCount
 
 	if len(errors) > 0 {
 		return RoutineMultiError(errors)
