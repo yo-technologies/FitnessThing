@@ -39,10 +39,10 @@ export default function RecordsPage() {
       });
   }
 
-  function fetchData() {
+  async function fetchData() {
     setIsLoading(true);
     try {
-      fetchSettings();
+      await fetchSettings();
     } catch (error) {
       console.log(error);
       setIsError(true);
