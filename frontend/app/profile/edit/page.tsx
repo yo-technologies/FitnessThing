@@ -20,6 +20,11 @@ function DataForm({ user }: { user: WorkoutUser }) {
       return null;
     }
 
+    // "0001-01-01T00:00:00Z" is a special case for "not set" in protobuf
+    if (s === "0001-01-01T00:00:00Z") {
+      return null;
+    }
+
     const date = new Date(s);
 
     return new CalendarDate(

@@ -106,9 +106,6 @@ func (r *PGXRepository) GetOrCreateUser(ctx context.Context, user domain.User) (
 			username = excluded.username,
 			first_name = excluded.first_name,
 			last_name = excluded.last_name,
-			date_of_birth = excluded.date_of_birth,
-			height = excluded.height,
-			weight = excluded.weight,
 			updated_at = excluded.updated_at,
 			picture_profile_url = excluded.picture_profile_url
 		returning id, telegram_id, username, first_name, last_name, date_of_birth, height, weight, created_at, updated_at, picture_profile_url;
