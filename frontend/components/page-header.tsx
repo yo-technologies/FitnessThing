@@ -14,10 +14,12 @@ export function PageHeader({
   children,
   title,
   enableBackButton,
+  inner,
 }: {
   children?: React.ReactElement[] | React.ReactElement;
   title: string;
   enableBackButton?: boolean;
+  inner?: React.ReactElement;
 }) {
   const router = useRouter();
 
@@ -33,6 +35,7 @@ export function PageHeader({
         </div>
       )}
       <h1 className="text-2xl font-bold w-full">{title}</h1>
+      {inner}
       <div className="h-8 items-center justify-center flex">
         {children && (
           <Dropdown>

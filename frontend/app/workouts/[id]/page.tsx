@@ -10,7 +10,8 @@ import {
   ModalHeader,
   useDisclosure,
 } from "@nextui-org/modal";
-import { Accordion, AccordionItem, DropdownItem } from "@nextui-org/react";
+import { Accordion, AccordionItem } from "@nextui-org/accordion";
+import { DropdownItem } from "@nextui-org/dropdown";
 import { useRouter } from "next/navigation";
 import { use, useEffect, useState } from "react";
 import { toast } from "react-toastify";
@@ -25,6 +26,67 @@ import {
   WorkoutGetWorkoutResponse,
 } from "@/api/api.generated";
 import { authApi } from "@/api/api";
+
+function WorkoutTimer({ startTime }: { startTime: string | undefined }) {
+  const [elapsedTime, setElapsedTime] = useState(() => {
+    // Вычисляем начальное время сразу при создании компонента
+    if (!startTime) return 0;
+    const now = new Date().getTime();
+    const start = new Date(startTime).getTime();
+
+    return Math.floor((now - start) / 1000);
+  });
+
+  useEffect(() => {
+    // Добавим отладочную информацию
+    console.log("WorkoutTimer startTime:", startTime);
+
+    if (!startTime) {
+      console.warn("StartTime is not provided");
+
+      return;
+    }
+
+    // Устанавливаем текущее время сразу
+    const updateElapsedTime = () => {
+      const now = new Date().getTime();
+      const start = new Date(startTime).getTime();
+      const elapsed = Math.floor((now - start) / 1000);
+
+      setElapsedTime(elapsed);
+    };
+
+    // Обновляем время сразу
+    updateElapsedTime();
+
+    const interval = setInterval(updateElapsedTime, 1000);
+
+    return () => clearInterval(interval);
+  }, [startTime]);
+
+  const formatTime = (seconds: number) => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+
+    if (hours > 0) {
+      return `${hours}:${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+    }
+
+    return `${minutes}:${secs.toString().padStart(2, "0")}`;
+  };
+
+  // Добавим fallback если startTime не предоставлен
+  if (!startTime) {
+    return <p className="text-lg font-extralight">(--:--)</p>;
+  }
+
+  return (
+    <p className="text-lg font-extralight">
+      {"(" + formatTime(elapsedTime) + ")"}
+    </p>
+  );
+}
 
 function ExerciseLogCard({
   exerciseLogDetails,
@@ -121,7 +183,8 @@ export default function WorkoutDetailsPage({
     await authApi.v1
       .workoutServiceGetWorkout(id)
       .then((response) => {
-        console.log(response.data);
+        console.log("Workout details response:", response.data);
+        console.log("Workout createdAt:", response.data?.workout?.createdAt);
         setWorkoutDetails(response.data!);
       })
       .catch((error) => {
@@ -274,7 +337,15 @@ export default function WorkoutDetailsPage({
   return (
     <>
       <div className="py-4 flex flex-col h-full flex-grow max-w-full basis-full gap-4">
-        <PageHeader enableBackButton={true} title={"Тренировка"}>
+        <PageHeader
+          enableBackButton={true}
+          inner={
+            <div className="flex flex-row items-end justify-start w-full h-full">
+              <WorkoutTimer startTime={workoutDetails.workout!.createdAt} />
+            </div>
+          }
+          title={"Тренировка"}
+        >
           <DropdownItem
             key="delete"
             className="text-danger"
