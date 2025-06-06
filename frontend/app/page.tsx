@@ -97,6 +97,7 @@ export default function Home() {
       })
       .catch((error) => {
         console.log(error);
+        setIsWorkoutGenerating(false);
 
         if (error.response?.status === 429) {
           toast.error("Превышен лимит генераций на сегодня");
@@ -106,9 +107,6 @@ export default function Home() {
 
         toast.error("Ошибка при начале тренировки");
         throw error;
-      })
-      .finally(() => {
-        setIsWorkoutGenerating(false);
       });
   }
 
@@ -182,7 +180,7 @@ export default function Home() {
           </div>
         </Link>
         <Button
-          className="flex items-center p-2 w-full z-20"
+          className="flex items-center p-2 w-full"
           color="primary"
           size="sm"
           onPress={async () => {
