@@ -1952,6 +1952,16 @@
       },
       "title": "Ожидаемый сет"
     },
+    "workoutExperienceLevel": {
+      "type": "string",
+      "enum": [
+        "EXPERIENCE_LEVEL_UNSPECIFIED",
+        "EXPERIENCE_LEVEL_BEGINNER",
+        "EXPERIENCE_LEVEL_INTERMEDIATE",
+        "EXPERIENCE_LEVEL_ADVANCED"
+      ],
+      "default": "EXPERIENCE_LEVEL_UNSPECIFIED"
+    },
     "workoutGetExerciseAlternativesResponse": {
       "type": "object",
       "properties": {
@@ -2022,6 +2032,18 @@
           }
         }
       }
+    },
+    "workoutGoal": {
+      "type": "string",
+      "enum": [
+        "GOAL_UNSPECIFIED",
+        "GOAL_MUSCLE_GAIN",
+        "GOAL_WEIGHT_LOSS",
+        "GOAL_STRENGTH",
+        "GOAL_ENDURANCE",
+        "GOAL_FLEXIBILITY"
+      ],
+      "default": "GOAL_UNSPECIFIED"
     },
     "workoutMuscleGroup": {
       "type": "object",
@@ -2265,6 +2287,38 @@
         "varietyLevel": {
           "type": "integer",
           "format": "int32"
+        },
+        "primaryGoal": {
+          "$ref": "#/definitions/workoutGoal"
+        },
+        "secondaryGoals": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "experienceLevel": {
+          "$ref": "#/definitions/workoutExperienceLevel"
+        },
+        "daysPerWeek": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "sessionDurationMinutes": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "injuries": {
+          "type": "string"
+        },
+        "priorityMuscleGroupsIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "workoutPlanType": {
+          "$ref": "#/definitions/workoutWorkoutPlanType"
         }
       }
     },
@@ -2369,6 +2423,42 @@
         "varietyLevel": {
           "type": "integer",
           "format": "int32"
+        },
+        "primaryGoal": {
+          "$ref": "#/definitions/workoutGoal"
+        },
+        "secondaryGoals": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "experienceLevel": {
+          "$ref": "#/definitions/workoutExperienceLevel"
+        },
+        "daysPerWeek": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "sessionDurationMinutes": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "injuries": {
+          "type": "string"
+        },
+        "priorityMuscleGroupsIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "workoutPlanType": {
+          "$ref": "#/definitions/workoutWorkoutPlanType"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
         }
       },
       "title": "Настройки генерации тренировок"
@@ -2380,6 +2470,17 @@
           "$ref": "#/definitions/workoutWorkoutGenerationSettings"
         }
       }
+    },
+    "workoutWorkoutPlanType": {
+      "type": "string",
+      "enum": [
+        "WORKOUT_PLAN_TYPE_UNSPECIFIED",
+        "WORKOUT_PLAN_TYPE_FULL_BODY",
+        "WORKOUT_PLAN_TYPE_SPLIT",
+        "WORKOUT_PLAN_TYPE_UPPER_LOWER",
+        "WORKOUT_PLAN_TYPE_PUSH_PULL_LEGS"
+      ],
+      "default": "WORKOUT_PLAN_TYPE_UNSPECIFIED"
     },
     "workoutWorkoutReportResponse": {
       "type": "object",

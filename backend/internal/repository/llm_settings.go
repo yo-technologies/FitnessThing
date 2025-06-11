@@ -12,12 +12,22 @@ import (
 )
 
 type llmSettings struct {
-	ID           pgtype.UUID
-	UserID       pgtype.UUID
-	BasePrompt   pgtype.Text
-	VarietyLevel pgtype.Int8
-	CreatedAt    pgtype.Timestamptz
-	UpdatedAt    pgtype.Timestamptz
+	ID        pgtype.UUID        `db:"id"`
+	CreatedAt pgtype.Timestamptz `db:"created_at"`
+	UpdatedAt pgtype.Timestamptz `db:"updated_at"`
+
+	UserID pgtype.UUID `db:"user_id"`
+
+	BasePrompt              pgtype.Text                   `db:"base_prompt"`
+	VarietyLevel            pgtype.Int8                   `db:"variety_level"`
+	PrimaryGoal             pgtype.Int8                   `db:"primary_goal"`
+	SecondaryGoals          pgtype.FlatArray[pgtype.Text] `db:"secondary_goals"`
+	ExperienceLevel         pgtype.Int8                   `db:"experience_level"`
+	DaysPerWeek             pgtype.Int8                   `db:"days_per_week"`
+	SessionDurationMinutes  pgtype.Int8                   `db:"session_duration_minutes"`
+	Injuries                pgtype.Text                   `db:"injuries"`
+	PriorityMuscleGroupsIDs pgtype.FlatArray[pgtype.UUID] `db:"priority_muscle_groups"`
+	WorkoutPlanType         pgtype.Int8                   `db:"workout_plan_type"`
 }
 
 func (e llmSettings) toDomain() domain.GenerationSettings {
@@ -27,20 +37,39 @@ func (e llmSettings) toDomain() domain.GenerationSettings {
 			CreatedAt: e.CreatedAt.Time,
 			UpdatedAt: e.UpdatedAt.Time,
 		},
-		UserID:       domain.ID(e.UserID.Bytes),
-		BasePrompt:   e.BasePrompt.String,
-		VarietyLevel: int(e.VarietyLevel.Int64),
+		UserID: domain.ID(e.UserID.Bytes),
+
+		BasePrompt:              nullableStringFromPgtype(e.BasePrompt),
+		VarietyLevel:            nullableIntFromPgtype(e.VarietyLevel),
+		PrimaryGoal:             domain.Goal(e.PrimaryGoal.Int64),
+		SecondaryGoals:          arrayToSlice(e.SecondaryGoals, func(t pgtype.Text) string { return t.String }),
+		ExperienceLevel:         domain.ExperienceLevel(e.ExperienceLevel.Int64),
+		DaysPerWeek:             nullableIntFromPgtype(e.DaysPerWeek),
+		SessionDurationMinutes:  nullableIntFromPgtype(e.SessionDurationMinutes),
+		Injuries:                nullableStringFromPgtype(e.Injuries),
+		PriorityMuscleGroupsIDs: arrayToSlice(e.PriorityMuscleGroupsIDs, func(u pgtype.UUID) domain.ID { return domain.ID(u.Bytes) }),
+		WorkoutPlanType:         domain.WorkoutPlanType(e.WorkoutPlanType.Int64),
 	}
 }
 
 func llmSettingsFromDomain(settings domain.GenerationSettings) llmSettings {
 	return llmSettings{
-		ID:           uuidToPgtype(settings.ID),
-		UserID:       uuidToPgtype(settings.UserID),
-		BasePrompt:   pgtype.Text{String: settings.BasePrompt, Valid: true},
-		VarietyLevel: pgtype.Int8{Int64: int64(settings.VarietyLevel), Valid: true},
-		CreatedAt:    timeToPgtype(settings.CreatedAt),
-		UpdatedAt:    timeToPgtype(settings.UpdatedAt),
+		ID:        uuidToPgtype(settings.ID),
+		CreatedAt: timeToPgtype(settings.CreatedAt),
+		UpdatedAt: timeToPgtype(settings.UpdatedAt),
+
+		UserID: uuidToPgtype(settings.UserID),
+
+		BasePrompt:              nullableStringToPgtype(settings.BasePrompt),
+		VarietyLevel:            nullableIntToPgtype(settings.VarietyLevel),
+		PrimaryGoal:             pgtype.Int8{Int64: int64(settings.PrimaryGoal), Valid: true},
+		SecondaryGoals:          sliceToArray(settings.SecondaryGoals, func(s string) pgtype.Text { return pgtype.Text{String: s, Valid: true} }),
+		ExperienceLevel:         pgtype.Int8{Int64: int64(settings.ExperienceLevel), Valid: true},
+		DaysPerWeek:             nullableIntToPgtype(settings.DaysPerWeek),
+		SessionDurationMinutes:  nullableIntToPgtype(settings.SessionDurationMinutes),
+		Injuries:                nullableStringToPgtype(settings.Injuries),
+		PriorityMuscleGroupsIDs: sliceToArray(settings.PriorityMuscleGroupsIDs, func(id domain.ID) pgtype.UUID { return uuidToPgtype(id) }),
+		WorkoutPlanType:         pgtype.Int8{Int64: int64(settings.WorkoutPlanType), Valid: true},
 	}
 }
 
@@ -49,7 +78,21 @@ func (r *PGXRepository) GetGenerationSettings(ctx context.Context, userID domain
 	defer span.Finish()
 
 	const query = `
-		SELECT id, user_id, base_prompt, variety_level, created_at, updated_at
+		SELECT 
+			id, 
+			user_id, 
+			created_at, 
+			updated_at, 
+			base_prompt, 
+			variety_level, 
+			primary_goal, 
+			secondary_goals, 
+			experience_level, 
+			days_per_week, 
+			session_duration_minutes, 
+			injuries, 
+			priority_muscle_groups, 
+			workout_plan_type
 		FROM llm_settings
 		WHERE user_id = $1
 	`
@@ -67,16 +110,58 @@ func (r *PGXRepository) GetGenerationSettings(ctx context.Context, userID domain
 	return settings.toDomain(), nil
 }
 
-func (r *PGXRepository) SaveGenerationSettings(ctx context.Context, settings domain.GenerationSettings) (domain.GenerationSettings, error) {
+func (r *PGXRepository) CreateOrUpdateGenerationSettings(ctx context.Context, settings domain.GenerationSettings) (domain.GenerationSettings, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "repository.SaveGenerationSettings")
 	defer span.Finish()
 
 	const query = `
-		INSERT INTO llm_settings (id, user_id, base_prompt, variety_level, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6)
+		INSERT INTO 
+			llm_settings (
+				id, 
+				user_id, 
+				created_at, 
+				updated_at,
+				base_prompt, 
+				variety_level, 
+				primary_goal,
+				secondary_goals,
+				experience_level,
+				days_per_week,
+				session_duration_minutes,
+				injuries,
+				priority_muscle_groups,
+				workout_plan_type
+			)
+		VALUES (
+			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14
+		)
 		ON CONFLICT (user_id) DO UPDATE
-		SET base_prompt = $3, variety_level = $4, updated_at = $6
-		RETURNING id, user_id, base_prompt, variety_level, created_at, updated_at
+		SET 
+			base_prompt = coalesce(excluded.base_prompt, llm_settings.base_prompt),
+			primary_goal = excluded.primary_goal,
+			secondary_goals = coalesce(excluded.secondary_goals, llm_settings.secondary_goals),
+			experience_level = excluded.experience_level,
+			days_per_week = coalesce(excluded.days_per_week, llm_settings.days_per_week),
+			session_duration_minutes = coalesce(excluded.session_duration_minutes, llm_settings.session_duration_minutes),
+			injuries = coalesce(excluded.injuries, llm_settings.injuries),
+			priority_muscle_groups = coalesce(excluded.priority_muscle_groups, llm_settings.priority_muscle_groups),
+			workout_plan_type = excluded.workout_plan_type,
+			updated_at = excluded.updated_at
+		RETURNING 
+			id, 
+			user_id, 
+			created_at, 
+			updated_at,
+			base_prompt, 
+			variety_level, 
+			primary_goal,
+			secondary_goals,
+			experience_level,
+			days_per_week,
+			session_duration_minutes,
+			injuries,
+			priority_muscle_groups,
+			workout_plan_type	
 	`
 
 	engine := r.contextManager.GetEngineFromContext(ctx)
@@ -84,7 +169,20 @@ func (r *PGXRepository) SaveGenerationSettings(ctx context.Context, settings dom
 	settingsEntity := llmSettingsFromDomain(settings)
 
 	if err := pgxscan.Get(ctx, engine, &settingsEntity, query,
-		settingsEntity.ID, settingsEntity.UserID, settingsEntity.BasePrompt, settingsEntity.VarietyLevel, settingsEntity.CreatedAt, settingsEntity.UpdatedAt,
+		settingsEntity.ID,
+		settingsEntity.UserID,
+		settingsEntity.CreatedAt,
+		settingsEntity.UpdatedAt,
+		settingsEntity.BasePrompt,
+		settingsEntity.VarietyLevel,
+		settingsEntity.PrimaryGoal,
+		settingsEntity.SecondaryGoals,
+		settingsEntity.ExperienceLevel,
+		settingsEntity.DaysPerWeek,
+		settingsEntity.SessionDurationMinutes,
+		settingsEntity.Injuries,
+		settingsEntity.PriorityMuscleGroupsIDs,
+		settingsEntity.WorkoutPlanType,
 	); err != nil {
 		return domain.GenerationSettings{}, err
 	}

@@ -161,12 +161,6 @@ enum SetType {
   SET_TYPE_TIME = 3;
 }
 
-// Настройки генерации тренировок
-message WorkoutGenerationSettings {
-  string base_prompt = 1;
-  int32 variety_level = 2;
-}
-
 service ExerciseService {
   // Метод для получения списка всех упражнений
   rpc GetExercises(GetExercisesRequest) returns (GetExercisesResponse) {
@@ -926,9 +920,56 @@ message WorkoutGenerationSettingsResponse {
   WorkoutGenerationSettings settings = 1;
 }
 
+enum Goal {
+  GOAL_UNSPECIFIED = 0;
+  GOAL_MUSCLE_GAIN = 1;
+  GOAL_WEIGHT_LOSS = 2;
+  GOAL_STRENGTH = 3;
+  GOAL_ENDURANCE = 4;
+  GOAL_FLEXIBILITY = 5;
+}
+
+enum ExperienceLevel {
+  EXPERIENCE_LEVEL_UNSPECIFIED = 0;
+  EXPERIENCE_LEVEL_BEGINNER = 1;
+  EXPERIENCE_LEVEL_INTERMEDIATE = 2;
+  EXPERIENCE_LEVEL_ADVANCED = 3;
+}
+
+enum WorkoutPlanType {
+  WORKOUT_PLAN_TYPE_UNSPECIFIED = 0;
+  WORKOUT_PLAN_TYPE_FULL_BODY = 1;
+  WORKOUT_PLAN_TYPE_SPLIT = 2;
+  WORKOUT_PLAN_TYPE_UPPER_LOWER = 3;
+  WORKOUT_PLAN_TYPE_PUSH_PULL_LEGS = 4;
+}
+
+// Настройки генерации тренировок
+message WorkoutGenerationSettings {
+  optional string base_prompt = 1;
+  optional int32 variety_level = 2;
+  Goal primary_goal = 3;
+  repeated string secondary_goals = 4;
+  ExperienceLevel experience_level = 5;
+  optional int32 days_per_week = 6;
+  optional int32 session_duration_minutes = 7;
+  optional string injuries = 8;
+  repeated string priority_muscle_groups_ids = 9;
+  WorkoutPlanType workout_plan_type = 10;
+  google.protobuf.Timestamp updated_at = 11;
+}
+
 message UpdateWorkoutGenerationSettingsRequest {
   optional string base_prompt = 1;
   optional int32 variety_level = 2;
+  optional Goal primary_goal = 3;
+  repeated string secondary_goals = 4;
+  optional ExperienceLevel experience_level = 5;
+  optional int32 days_per_week = 6;
+  optional int32 session_duration_minutes = 7;
+  optional string injuries = 8;
+  repeated string priority_muscle_groups_ids = 9;
+  optional WorkoutPlanType workout_plan_type = 10;
 }
 
 service FileService {

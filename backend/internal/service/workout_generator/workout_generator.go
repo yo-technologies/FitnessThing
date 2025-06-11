@@ -62,7 +62,7 @@ func (s *Service) GenerateWorkout(ctx context.Context, options *dto.GenerateWork
 		return dto.GeneratedWorkoutDTO{}, fmt.Errorf("failed to marshal exercises: %w", err)
 	}
 
-	innerUserPrompt := fmt.Sprintf(userPromptTemplate, marshaledWorkouts, options.VarietyLevel, options.BaseUserPrompt, options.UserPrompt)
+	innerUserPrompt := fmt.Sprintf(userPromptTemplate, marshaledWorkouts, options.Settings.VarietyLevel.V, options.Settings.BasePrompt.V, options.UserPrompt)
 	systemPrompt := fmt.Sprintf(systemPromptTemplate, marshaledExercises)
 
 	completion, err := s.completionProvider.CreateCompletion(ctx, options.UserID, systemPrompt, innerUserPrompt)

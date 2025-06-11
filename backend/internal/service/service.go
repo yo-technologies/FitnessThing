@@ -84,8 +84,8 @@ type expectedSetRepository interface {
 }
 
 type generationSettingsRepository interface {
+	CreateOrUpdateGenerationSettings(ctx context.Context, settings domain.GenerationSettings) (domain.GenerationSettings, error)
 	GetGenerationSettings(ctx context.Context, userID domain.ID) (domain.GenerationSettings, error)
-	SaveGenerationSettings(ctx context.Context, settings domain.GenerationSettings) (domain.GenerationSettings, error)
 }
 
 type repository interface {

@@ -13,26 +13,22 @@ func (s *Service) SaveGenerationSettings(ctx context.Context, userID domain.ID, 
 	span, ctx := opentracing.StartSpanFromContext(ctx, "service.SaveGenerationSettings")
 	defer span.Finish()
 
-	var settings domain.GenerationSettings
+	settings := domain.NewGenerationSettings(userID)
+	{
+		settings.BasePrompt = createDTO.BasePrompt
+		settings.VarietyLevel = createDTO.VarietyLevel
+		settings.PrimaryGoal = createDTO.PrimaryGoal
+		settings.SecondaryGoals = createDTO.SecondaryGoals
+		settings.ExperienceLevel = createDTO.ExperienceLevel
+		settings.DaysPerWeek = createDTO.DaysPerWeek
+		settings.SessionDurationMinutes = createDTO.SessionDurationMinutes
+		settings.Injuries = createDTO.Injuries
+		settings.PriorityMuscleGroupsIDs = createDTO.PriorityMuscleGroupsIDs
+		settings.WorkoutPlanType = createDTO.WorkoutPlanType
+	}
+
 	if err := s.unitOfWork.InTransaction(ctx, func(ctx context.Context) (err error) {
-		settings, err := s.repository.GetGenerationSettings(ctx, userID)
-		if err != nil {
-			if errors.Is(err, domain.ErrNotFound) {
-				settings = domain.NewGenerationSettings(userID)
-			} else {
-				return err
-			}
-		}
-
-		if createDTO.BasePrompt.IsValid {
-			settings.BasePrompt = createDTO.BasePrompt.V
-		}
-
-		if createDTO.VarietyLevel.IsValid {
-			settings.VarietyLevel = createDTO.VarietyLevel.V
-		}
-
-		settings, err = s.repository.SaveGenerationSettings(ctx, settings)
+		settings, err = s.repository.CreateOrUpdateGenerationSettings(ctx, settings)
 		if err != nil {
 			return err
 		}
@@ -63,7 +59,7 @@ func (s *Service) GetGenerationSettings(ctx context.Context, userID domain.ID) (
 
 	// Create and save new settings
 	settings = domain.NewGenerationSettings(userID)
-	settings, err = s.repository.SaveGenerationSettings(ctx, settings)
+	settings, err = s.repository.CreateOrUpdateGenerationSettings(ctx, settings)
 	if err != nil {
 		return domain.GenerationSettings{}, err
 	}

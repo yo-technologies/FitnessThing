@@ -8,8 +8,6 @@ import (
 	"github.com/google/uuid"
 )
 
-const defaultVarietyLevel = 2
-
 type ID uuid.UUID
 
 func NewID() ID {
@@ -301,44 +299,5 @@ func NewExerciseSetLog(exerciseLogID ID, reps int, weight float32, time time.Dur
 		Reps:          reps,
 		Weight:        weight,
 		Time:          time,
-	}
-}
-
-type Session struct {
-	Model
-
-	UserID    ID
-	ExpiredAt time.Time
-	Token     string
-}
-
-func NewSession(userID ID, expiredAt time.Time, token string) Session {
-	return Session{
-		Model:     NewModel(),
-		UserID:    userID,
-		ExpiredAt: expiredAt,
-		Token:     token,
-	}
-}
-
-type Tokens struct {
-	AccessToken  string
-	RefreshToken string
-}
-
-type GenerationSettings struct {
-	Model
-
-	UserID       ID
-	BasePrompt   string
-	VarietyLevel int
-}
-
-func NewGenerationSettings(userID ID) GenerationSettings {
-	return GenerationSettings{
-		Model:        NewModel(),
-		UserID:       userID,
-		BasePrompt:   "",
-		VarietyLevel: defaultVarietyLevel,
 	}
 }
