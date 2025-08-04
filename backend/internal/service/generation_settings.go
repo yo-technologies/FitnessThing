@@ -82,26 +82,8 @@ func (s *Service) GetGenerationSettings(ctx context.Context, userID domain.ID) (
 	defer span.Finish()
 
 	settings, err := s.repository.GetGenerationSettings(ctx, userID)
-
-	// If the settings are found, return them
-	if err == nil {
-		return settings, nil
-	}
-
-	// If error is not not found, return the error
-	if !errors.Is(err, domain.ErrNotFound) {
+	if err != nil {
 		return domain.GenerationSettings{}, fmt.Errorf("failed to get generation settings: %w", err)
-	}
-
-	// Create and save new settings
-	settings = domain.NewGenerationSettings(userID)
-	settings.Hash, err = hashGenerationSettings(settings)
-	if err != nil {
-		return domain.GenerationSettings{}, fmt.Errorf("failed to hash generation settings: %w", err)
-	}
-	settings, err = s.repository.CreateOrUpdateGenerationSettings(ctx, settings)
-	if err != nil {
-		return domain.GenerationSettings{}, fmt.Errorf("failed to create or update generation settings: %w", err)
 	}
 
 	return settings, nil

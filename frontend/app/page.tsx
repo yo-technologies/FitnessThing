@@ -11,6 +11,7 @@ import { WorkoutWorkout } from "@/api/api.generated";
 import { AnimationProcessor } from "@/components/animated-background";
 import { BoltIcon, ChevronRightIcon, PlayIcon } from "@/config/icons";
 import { Loading } from "@/components/loading";
+import { OnboardingModal } from "@/components/OnboardingModal";
 import { authApi } from "@/api/api";
 
 export default function Home() {
@@ -21,6 +22,10 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
   const [isError, setIsError] = useState(false);
   const [isWorkoutGenerating, setIsWorkoutGenerating] = useState(false);
+
+  // Состояние для онбординга
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [hasCheckedOnboarding, setHasCheckedOnboarding] = useState(false);
 
   const router = useRouter();
 
@@ -68,6 +73,9 @@ export default function Home() {
     try {
       await Promise.all([fetchUser(), fetRoutines(), fetchActiveWorkouts()]);
       setIsError(false);
+
+      // Проверяем, нужно ли показать онбординг
+      checkOnboardingStatus();
     } catch (error) {
       console.log(error);
       setIsError(true);
@@ -75,6 +83,48 @@ export default function Home() {
       setIsLoading(false);
     }
   }
+
+  // Проверяем статус онбординга
+  async function checkOnboardingStatus() {
+    if (hasCheckedOnboarding) return;
+
+    try {
+      const response =
+        await authApi.v1.userServiceGetWorkoutGenerationSettings();
+      const settings = response.data.settings;
+
+      // Если настройки пустые или основные поля не заполнены, показываем онбординг
+      const isOnboardingNeeded =
+        !settings ||
+        !settings.primaryGoal ||
+        !settings.experienceLevel ||
+        !settings.workoutPlanType;
+
+      if (isOnboardingNeeded) {
+        setShowOnboarding(true);
+      }
+
+      setHasCheckedOnboarding(true);
+    } catch (error: any) {
+      console.log("Error checking onboarding status:", error);
+
+      // Если получили 404, значит настройки еще не созданы - нужен онбординг
+      if (error.response?.status === 404) {
+        setShowOnboarding(true);
+      }
+
+      setHasCheckedOnboarding(true);
+    }
+  }
+
+  const handleOnboardingComplete = () => {
+    setShowOnboarding(false);
+    toast.success("Добро пожаловать! Настройки сохранены.");
+  };
+
+  const handleOnboardingClose = () => {
+    setShowOnboarding(false);
+  };
 
   async function startWorkout(
     routineId: string | undefined,
@@ -318,6 +368,13 @@ export default function Home() {
           </div>
         </div>
       )}
+
+      {/* Модальное окно онбординга */}
+      <OnboardingModal
+        isOpen={showOnboarding}
+        onClose={handleOnboardingClose}
+        onComplete={handleOnboardingComplete}
+      />
     </div>
   );
 }
