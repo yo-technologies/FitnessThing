@@ -8,6 +8,7 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.36.1
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.59
 	github.com/envoyproxy/protoc-gen-validate v1.1.0
+	github.com/go-co-op/gocron/v2 v2.16.3
 	github.com/google/generative-ai-go v0.19.0
 	github.com/google/uuid v1.6.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.24.0
@@ -51,8 +52,6 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
-	github.com/go-co-op/gocron v1.37.0 // indirect
-	github.com/go-co-op/gocron/v2 v2.16.3 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect

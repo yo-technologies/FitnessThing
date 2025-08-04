@@ -16,21 +16,48 @@ func (s *Service) SaveGenerationSettings(ctx context.Context, userID domain.ID, 
 	span, ctx := opentracing.StartSpanFromContext(ctx, "service.SaveGenerationSettings")
 	defer span.Finish()
 
-	settings := domain.NewGenerationSettings(userID)
-	{
-		settings.BasePrompt = createDTO.BasePrompt
-		settings.VarietyLevel = createDTO.VarietyLevel
-		settings.PrimaryGoal = createDTO.PrimaryGoal
-		settings.SecondaryGoals = createDTO.SecondaryGoals
-		settings.ExperienceLevel = createDTO.ExperienceLevel
-		settings.DaysPerWeek = createDTO.DaysPerWeek
-		settings.SessionDurationMinutes = createDTO.SessionDurationMinutes
-		settings.Injuries = createDTO.Injuries
-		settings.PriorityMuscleGroupsIDs = createDTO.PriorityMuscleGroupsIDs
-		settings.WorkoutPlanType = createDTO.WorkoutPlanType
+	settings, err := s.repository.GetGenerationSettings(ctx, userID)
+	if err != nil && !errors.Is(err, domain.ErrNotFound) {
+		return domain.GenerationSettings{}, fmt.Errorf("failed to get generation settings: %w", err)
 	}
 
-	var err error
+	if errors.Is(err, domain.ErrNotFound) {
+		settings = domain.NewGenerationSettings(userID)
+	}
+
+	{
+		if createDTO.BasePrompt.IsValid {
+			settings.BasePrompt = createDTO.BasePrompt
+		}
+		if createDTO.VarietyLevel.IsValid {
+			settings.VarietyLevel = createDTO.VarietyLevel
+		}
+		if createDTO.PrimaryGoal.IsValid {
+			settings.PrimaryGoal = createDTO.PrimaryGoal.V
+		}
+		if createDTO.SecondaryGoals != nil {
+			settings.SecondaryGoals = createDTO.SecondaryGoals
+		}
+		if createDTO.ExperienceLevel.IsValid {
+			settings.ExperienceLevel = createDTO.ExperienceLevel.V
+		}
+		if createDTO.DaysPerWeek.IsValid {
+			settings.DaysPerWeek = createDTO.DaysPerWeek
+		}
+		if createDTO.SessionDurationMinutes.IsValid {
+			settings.SessionDurationMinutes = createDTO.SessionDurationMinutes
+		}
+		if createDTO.Injuries.IsValid {
+			settings.Injuries = createDTO.Injuries
+		}
+		if createDTO.PriorityMuscleGroupsIDs != nil {
+			settings.PriorityMuscleGroupsIDs = createDTO.PriorityMuscleGroupsIDs
+		}
+		if createDTO.WorkoutPlanType.IsValid {
+			settings.WorkoutPlanType = createDTO.WorkoutPlanType.V
+		}
+	}
+
 	settings.Hash, err = hashGenerationSettings(settings)
 	if err != nil {
 		return domain.GenerationSettings{}, fmt.Errorf("failed to hash generation settings: %w", err)

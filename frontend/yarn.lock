@@ -2332,10 +2332,10 @@
   dependencies:
     "@types/lodash" "*"
 
-"@types/lodash@*":
-  version "4.17.14"
-  resolved "https://registry.npmjs.org/@types/lodash/-/lodash-4.17.14.tgz"
-  integrity sha512-jsxagdikDiDBeIRaPYtArcT8my4tN1og7MtMRquFT3XNA6axxyHDRUemqDz/taRDdOUn0GnGHRCuff4q48sW9A==
+"@types/lodash@*", "@types/lodash@^4.17.20":
+  version "4.17.20"
+  resolved "https://registry.npmjs.org/@types/lodash/-/lodash-4.17.20.tgz"
+  integrity sha512-H3MHACvFUEiujabxhaI/ImO6gUrd8oOurg7LQtS7mbwIXA/cUqWrvBsaeJ23aZEPk1TAYkurjfMbSELfoCXlGA==
 
 "@types/mdast@^4.0.0":
   version "4.0.4"

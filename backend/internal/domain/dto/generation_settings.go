@@ -8,12 +8,12 @@ import (
 type CreateGenerationSettings struct {
 	BasePrompt              utils.Nullable[string]
 	VarietyLevel            utils.Nullable[int]
-	PrimaryGoal             domain.Goal
+	PrimaryGoal             utils.Nullable[domain.Goal]
 	SecondaryGoals          []string
-	ExperienceLevel         domain.ExperienceLevel
+	ExperienceLevel         utils.Nullable[domain.ExperienceLevel]
 	DaysPerWeek             utils.Nullable[int]
 	SessionDurationMinutes  utils.Nullable[int]
 	Injuries                utils.Nullable[string]
 	PriorityMuscleGroupsIDs []domain.ID
-	WorkoutPlanType         domain.WorkoutPlanType
+	WorkoutPlanType         utils.Nullable[domain.WorkoutPlanType]
 }

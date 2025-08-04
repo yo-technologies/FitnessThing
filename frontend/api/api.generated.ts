@@ -198,6 +198,14 @@ export interface WorkoutExpectedSet {
   updatedAt?: string;
 }
 
+/** @default "EXPERIENCE_LEVEL_UNSPECIFIED" */
+export enum WorkoutExperienceLevel {
+  EXPERIENCE_LEVEL_UNSPECIFIED = "EXPERIENCE_LEVEL_UNSPECIFIED",
+  EXPERIENCE_LEVEL_BEGINNER = "EXPERIENCE_LEVEL_BEGINNER",
+  EXPERIENCE_LEVEL_INTERMEDIATE = "EXPERIENCE_LEVEL_INTERMEDIATE",
+  EXPERIENCE_LEVEL_ADVANCED = "EXPERIENCE_LEVEL_ADVANCED",
+}
+
 export interface WorkoutGetExerciseAlternativesResponse {
   alternatives?: WorkoutExercise[];
 }
@@ -221,6 +229,16 @@ export interface WorkoutGetWorkoutResponse {
 
 export interface WorkoutGetWorkoutsResponse {
   workouts?: GetWorkoutsResponseWorkoutDetails[];
+}
+
+/** @default "GOAL_UNSPECIFIED" */
+export enum WorkoutGoal {
+  GOAL_UNSPECIFIED = "GOAL_UNSPECIFIED",
+  GOAL_MUSCLE_GAIN = "GOAL_MUSCLE_GAIN",
+  GOAL_WEIGHT_LOSS = "GOAL_WEIGHT_LOSS",
+  GOAL_STRENGTH = "GOAL_STRENGTH",
+  GOAL_ENDURANCE = "GOAL_ENDURANCE",
+  GOAL_FLEXIBILITY = "GOAL_FLEXIBILITY",
 }
 
 export interface WorkoutMuscleGroup {
@@ -338,6 +356,16 @@ export interface WorkoutUpdateWorkoutGenerationSettingsRequest {
   basePrompt?: string;
   /** @format int32 */
   varietyLevel?: number;
+  primaryGoal?: WorkoutGoal;
+  secondaryGoals?: string[];
+  experienceLevel?: WorkoutExperienceLevel;
+  /** @format int32 */
+  daysPerWeek?: number;
+  /** @format int32 */
+  sessionDurationMinutes?: number;
+  injuries?: string;
+  priorityMuscleGroupsIds?: string[];
+  workoutPlanType?: WorkoutWorkoutPlanType;
 }
 
 export interface WorkoutUser {
@@ -387,10 +415,31 @@ export interface WorkoutWorkoutGenerationSettings {
   basePrompt?: string;
   /** @format int32 */
   varietyLevel?: number;
+  primaryGoal?: WorkoutGoal;
+  secondaryGoals?: string[];
+  experienceLevel?: WorkoutExperienceLevel;
+  /** @format int32 */
+  daysPerWeek?: number;
+  /** @format int32 */
+  sessionDurationMinutes?: number;
+  injuries?: string;
+  priorityMuscleGroupsIds?: string[];
+  workoutPlanType?: WorkoutWorkoutPlanType;
+  /** @format date-time */
+  updatedAt?: string;
 }
 
 export interface WorkoutWorkoutGenerationSettingsResponse {
   settings?: WorkoutWorkoutGenerationSettings;
+}
+
+/** @default "WORKOUT_PLAN_TYPE_UNSPECIFIED" */
+export enum WorkoutWorkoutPlanType {
+  WORKOUT_PLAN_TYPE_UNSPECIFIED = "WORKOUT_PLAN_TYPE_UNSPECIFIED",
+  WORKOUT_PLAN_TYPE_FULL_BODY = "WORKOUT_PLAN_TYPE_FULL_BODY",
+  WORKOUT_PLAN_TYPE_SPLIT = "WORKOUT_PLAN_TYPE_SPLIT",
+  WORKOUT_PLAN_TYPE_UPPER_LOWER = "WORKOUT_PLAN_TYPE_UPPER_LOWER",
+  WORKOUT_PLAN_TYPE_PUSH_PULL_LEGS = "WORKOUT_PLAN_TYPE_PUSH_PULL_LEGS",
 }
 
 export interface WorkoutWorkoutReportResponse {

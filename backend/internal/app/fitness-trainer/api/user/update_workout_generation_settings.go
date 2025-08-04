@@ -34,11 +34,11 @@ func (i *Implementation) UpdateWorkoutGenerationSettings(ctx context.Context, re
 		createDTO.BasePrompt = utils.NewNullable(req.GetBasePrompt(), req.BasePrompt != nil)
 		createDTO.VarietyLevel = utils.NewNullable(int(req.GetVarietyLevel()), req.VarietyLevel != nil)
 
-		createDTO.PrimaryGoal = mappers.GoalFromProto(req.GetPrimaryGoal())
+		createDTO.PrimaryGoal = utils.NewNullable(mappers.GoalFromProto(req.GetPrimaryGoal()), req.PrimaryGoal != nil)
 		createDTO.SecondaryGoals = req.GetSecondaryGoals() 
 
-		createDTO.ExperienceLevel = mappers.ExperienceLevelFromProto(req.GetExperienceLevel())
-		createDTO.WorkoutPlanType = mappers.WorkoutPlanTypeFromProto(req.GetWorkoutPlanType())
+		createDTO.ExperienceLevel = utils.NewNullable(mappers.ExperienceLevelFromProto(req.GetExperienceLevel()), req.ExperienceLevel != nil)
+		createDTO.WorkoutPlanType = utils.NewNullable(mappers.WorkoutPlanTypeFromProto(req.GetWorkoutPlanType()), req.WorkoutPlanType != nil)
 
 		createDTO.DaysPerWeek = utils.NewNullable(int(req.GetDaysPerWeek()), req.DaysPerWeek != nil)
 		createDTO.SessionDurationMinutes = utils.NewNullable(int(req.GetSessionDurationMinutes()), req.SessionDurationMinutes != nil)

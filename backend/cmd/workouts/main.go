@@ -118,12 +118,15 @@ func Run() error {
 		MaxBurst: 5,
 	}
 
-	inmemmoryStore, err := memstore.NewCtx(65536)
+	workoutGenerationStore, err := memstore.NewCtx(65536)
 	if err != nil {
 		return fmt.Errorf("failed to create in memory store: %w", err)
 	}
 
-	workoutGenerationRateLimiter, err := throttled.NewGCRARateLimiterCtx(inmemmoryStore, workoutGenerationQuota)
+	workoutGenerationRateLimiter, err := throttled.NewGCRARateLimiterCtx(
+		workoutGenerationStore,
+		workoutGenerationQuota,
+	)
 	if err != nil {
 		return fmt.Errorf("failed to create rate limiter: %w", err)
 	}
@@ -140,7 +143,7 @@ func Run() error {
 
 	telegramTokenParser := newTelegramTokenParser()
 
-	promptGenerationDebounce := time.Second * 20
+	promptGenerationDebounce := time.Second * 60
 	promptGenerationPeriod := time.Second * 10
 
 	promptGenerationQuota := throttled.RateQuota{
@@ -148,7 +151,15 @@ func Run() error {
 		MaxBurst: 5,
 	}
 
-	promptGenerationRateLimiter, err := throttled.NewGCRARateLimiterCtx(inmemmoryStore, promptGenerationQuota)
+	promptGenerationInmemmoryStore, err := memstore.NewCtx(65536)
+	if err != nil {
+		return fmt.Errorf("failed to create in memory store: %w", err)
+	}
+
+	promptGenerationRateLimiter, err := throttled.NewGCRARateLimiterCtx(
+		promptGenerationInmemmoryStore,
+		promptGenerationQuota,
+	)
 	if err != nil {
 		return fmt.Errorf("failed to create rate limiter: %w", err)
 	}
