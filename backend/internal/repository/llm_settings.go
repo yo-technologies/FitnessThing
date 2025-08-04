@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fitness-trainer/internal/domain"
+	"fmt"
+	"time"
 
 	"github.com/georgysavva/scany/v2/pgxscan"
 	"github.com/jackc/pgx/v5"
@@ -28,6 +30,7 @@ type llmSettings struct {
 	Injuries                pgtype.Text                   `db:"injuries"`
 	PriorityMuscleGroupsIDs pgtype.FlatArray[pgtype.UUID] `db:"priority_muscle_groups"`
 	WorkoutPlanType         pgtype.Int8                   `db:"workout_plan_type"`
+	Hash                    pgtype.Text                   `db:"hash"`
 }
 
 func (e llmSettings) toDomain() domain.GenerationSettings {
@@ -49,6 +52,7 @@ func (e llmSettings) toDomain() domain.GenerationSettings {
 		Injuries:                nullableStringFromPgtype(e.Injuries),
 		PriorityMuscleGroupsIDs: arrayToSlice(e.PriorityMuscleGroupsIDs, func(u pgtype.UUID) domain.ID { return domain.ID(u.Bytes) }),
 		WorkoutPlanType:         domain.WorkoutPlanType(e.WorkoutPlanType.Int64),
+		Hash:                    e.Hash.String,
 	}
 }
 
@@ -70,7 +74,16 @@ func llmSettingsFromDomain(settings domain.GenerationSettings) llmSettings {
 		Injuries:                nullableStringToPgtype(settings.Injuries),
 		PriorityMuscleGroupsIDs: sliceToArray(settings.PriorityMuscleGroupsIDs, func(id domain.ID) pgtype.UUID { return uuidToPgtype(id) }),
 		WorkoutPlanType:         pgtype.Int8{Int64: int64(settings.WorkoutPlanType), Valid: true},
+		Hash:                    pgtype.Text{String: settings.Hash, Valid: true},
 	}
+}
+
+func llmSettingsToDomainSlice(settings []llmSettings) []domain.GenerationSettings {
+	result := make([]domain.GenerationSettings, 0, len(settings))
+	for _, s := range settings {
+		result = append(result, s.toDomain())
+	}
+	return result
 }
 
 func (r *PGXRepository) GetGenerationSettings(ctx context.Context, userID domain.ID) (domain.GenerationSettings, error) {
@@ -92,7 +105,8 @@ func (r *PGXRepository) GetGenerationSettings(ctx context.Context, userID domain
 			session_duration_minutes, 
 			injuries, 
 			priority_muscle_groups, 
-			workout_plan_type
+			workout_plan_type,
+			hash
 		FROM llm_settings
 		WHERE user_id = $1
 	`
@@ -104,7 +118,7 @@ func (r *PGXRepository) GetGenerationSettings(ctx context.Context, userID domain
 		if errors.Is(err, pgx.ErrNoRows) {
 			return domain.GenerationSettings{}, domain.ErrNotFound
 		}
-		return domain.GenerationSettings{}, err
+		return domain.GenerationSettings{}, fmt.Errorf("failed to get generation settings: %w", err)
 	}
 
 	return settings.toDomain(), nil
@@ -130,10 +144,11 @@ func (r *PGXRepository) CreateOrUpdateGenerationSettings(ctx context.Context, se
 				session_duration_minutes,
 				injuries,
 				priority_muscle_groups,
-				workout_plan_type
+				workout_plan_type,
+				hash
 			)
 		VALUES (
-			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14
+			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15
 		)
 		ON CONFLICT (user_id) DO UPDATE
 		SET 
@@ -146,6 +161,7 @@ func (r *PGXRepository) CreateOrUpdateGenerationSettings(ctx context.Context, se
 			injuries = coalesce(excluded.injuries, llm_settings.injuries),
 			priority_muscle_groups = coalesce(excluded.priority_muscle_groups, llm_settings.priority_muscle_groups),
 			workout_plan_type = excluded.workout_plan_type,
+			hash = excluded.hash,
 			updated_at = excluded.updated_at
 		RETURNING 
 			id, 
@@ -161,7 +177,8 @@ func (r *PGXRepository) CreateOrUpdateGenerationSettings(ctx context.Context, se
 			session_duration_minutes,
 			injuries,
 			priority_muscle_groups,
-			workout_plan_type	
+			workout_plan_type,
+			hash
 	`
 
 	engine := r.contextManager.GetEngineFromContext(ctx)
@@ -183,9 +200,68 @@ func (r *PGXRepository) CreateOrUpdateGenerationSettings(ctx context.Context, se
 		settingsEntity.Injuries,
 		settingsEntity.PriorityMuscleGroupsIDs,
 		settingsEntity.WorkoutPlanType,
+		settingsEntity.Hash,
 	); err != nil {
-		return domain.GenerationSettings{}, err
+		return domain.GenerationSettings{}, fmt.Errorf("failed to create or update generation settings: %w", err)
 	}
 
 	return settingsEntity.toDomain(), nil
+}
+
+func (r *PGXRepository) ListGenerationSettingsToProcess(
+	ctx context.Context,
+	debounceTime time.Duration,
+) ([]domain.GenerationSettings, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "repository.ListGenerationSettingsToProcess")
+	defer span.Finish()
+
+	const query = `
+		SELECT 
+			us.id,
+			us.created_at,
+			us.updated_at,
+			us.user_id,
+			us.base_prompt,
+			us.variety_level,
+			us.primary_goal,
+			us.secondary_goals,
+			us.experience_level,
+			us.days_per_week,
+			us.session_duration_minutes,
+			us.injuries,
+			us.priority_muscle_groups,
+			us.workout_plan_type,
+			us.hash
+		FROM llm_settings us
+		LEFT JOIN LATERAL (
+			SELECT p.settings_hash, p.created_at
+			FROM prompts p
+			WHERE p.user_id = us.user_id
+			ORDER BY p.created_at DESC
+			LIMIT 1
+		) last_prompt ON TRUE
+	WHERE 
+		(
+			last_prompt.settings_hash IS NULL
+			OR last_prompt.settings_hash != us.hash
+			OR last_prompt.created_at < us.updated_at
+		)
+		AND us.updated_at < NOW() - $1::interval
+	ORDER BY us.updated_at ASC
+`
+
+	engine := r.contextManager.GetEngineFromContext(ctx)
+
+	var settings []llmSettings
+	if err := pgxscan.Select(
+		ctx,
+		engine,
+		&settings,
+		query,
+		intervalToPgtype(debounceTime),
+	); err != nil {
+		return nil, fmt.Errorf("failed to list generation settings to process: %w", err)
+	}
+
+	return llmSettingsToDomainSlice(settings), nil
 }

@@ -88,6 +88,10 @@ type generationSettingsRepository interface {
 	GetGenerationSettings(ctx context.Context, userID domain.ID) (domain.GenerationSettings, error)
 }
 
+type promptRepository interface {
+	GetLastPromptByUserID(ctx context.Context, userID domain.ID) (domain.Prompt, error)
+}
+
 type repository interface {
 	userRepository
 	exerciseRepository
@@ -100,6 +104,7 @@ type repository interface {
 	setRepository
 	expectedSetRepository
 	generationSettingsRepository
+	promptRepository
 }
 
 type unitOfWork interface {

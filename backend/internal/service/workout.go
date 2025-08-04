@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -104,7 +105,7 @@ func (s *Service) enrichWorkoutFromRoutine(ctx context.Context, userID, workoutI
 	return nil
 }
 
-func (s *Service) generateWorkout(ctx context.Context, userID domain.ID, userPrompt string) (dto.GeneratedWorkoutDTO, error) {
+func (s *Service) generateWorkout(ctx context.Context, userID domain.ID, _ string) (dto.GeneratedWorkoutDTO, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "service.generateWorkout")
 	defer span.Finish()
 
@@ -144,7 +145,7 @@ func (s *Service) generateWorkout(ctx context.Context, userID domain.ID, userPro
 
 	exercises, err := s.repository.GetExercises(ctx, []domain.ID{}, []domain.ID{})
 	if err != nil {
-		return dto.GeneratedWorkoutDTO{}, err
+		return dto.GeneratedWorkoutDTO{}, fmt.Errorf("failed to get exercises: %w", err)
 	}
 
 	exerciseDTOs := make([]dto.SlimExerciseDTO, 0, len(exercises))
@@ -156,17 +157,16 @@ func (s *Service) generateWorkout(ctx context.Context, userID domain.ID, userPro
 		})
 	}
 
-	generationSettings, err := s.GetGenerationSettings(ctx, userID)
-	if err != nil {
-		return dto.GeneratedWorkoutDTO{}, err
+	prompt, err := s.repository.GetLastPromptByUserID(ctx, userID)
+	if err != nil && !errors.Is(err, domain.ErrNotFound) {
+		return dto.GeneratedWorkoutDTO{}, fmt.Errorf("failed to get last prompt: %w", err)
 	}
 
 	opts := &dto.GenerateWorkoutOptions{
 		UserID:     userID,
 		Exercises:  exerciseDTOs,
 		Workouts:   userWorkoutsDTO,
-		Settings:   generationSettings,
-		UserPrompt: userPrompt,
+		UserPrompt: prompt.PromptText,
 	}
 
 	return s.workoutGenerator.GenerateWorkout(ctx, opts)

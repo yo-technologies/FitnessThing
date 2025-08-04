@@ -27,6 +27,13 @@ func (g Goal) IsValid() bool {
 	return exists
 }
 
+func (g Goal) String() string {
+	if name, exists := goalNames[g]; exists {
+		return name
+	}
+	return "Unknown Goal"
+}
+
 type ExperienceLevel int64
 
 const (
@@ -89,6 +96,7 @@ type GenerationSettings struct {
 	Injuries                utils.Nullable[string]
 	PriorityMuscleGroupsIDs []ID
 	WorkoutPlanType         WorkoutPlanType
+	Hash                    string
 }
 
 func NewGenerationSettings(userID ID) GenerationSettings {

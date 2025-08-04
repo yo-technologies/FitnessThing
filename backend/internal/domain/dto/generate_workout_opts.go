@@ -7,5 +7,4 @@ type GenerateWorkoutOptions struct {
 	Workouts   []SlimWorkoutDTO
 	Exercises  []SlimExerciseDTO
 	UserPrompt string
-	Settings   domain.GenerationSettings
 }

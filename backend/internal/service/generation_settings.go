@@ -2,9 +2,12 @@ package service
 
 import (
 	"context"
+	"crypto/md5"
+	"encoding/json"
 	"errors"
 	"fitness-trainer/internal/domain"
 	"fitness-trainer/internal/domain/dto"
+	"fmt"
 
 	"github.com/opentracing/opentracing-go"
 )
@@ -27,15 +30,21 @@ func (s *Service) SaveGenerationSettings(ctx context.Context, userID domain.ID, 
 		settings.WorkoutPlanType = createDTO.WorkoutPlanType
 	}
 
+	var err error
+	settings.Hash, err = hashGenerationSettings(settings)
+	if err != nil {
+		return domain.GenerationSettings{}, fmt.Errorf("failed to hash generation settings: %w", err)
+	}
+
 	if err := s.unitOfWork.InTransaction(ctx, func(ctx context.Context) (err error) {
 		settings, err = s.repository.CreateOrUpdateGenerationSettings(ctx, settings)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to create or update generation settings: %w", err)
 		}
 
 		return nil
 	}); err != nil {
-		return domain.GenerationSettings{}, err
+		return domain.GenerationSettings{}, fmt.Errorf("failed to save generation settings: %w", err)
 	}
 
 	return settings, nil
@@ -54,15 +63,29 @@ func (s *Service) GetGenerationSettings(ctx context.Context, userID domain.ID) (
 
 	// If error is not not found, return the error
 	if !errors.Is(err, domain.ErrNotFound) {
-		return domain.GenerationSettings{}, err
+		return domain.GenerationSettings{}, fmt.Errorf("failed to get generation settings: %w", err)
 	}
 
 	// Create and save new settings
 	settings = domain.NewGenerationSettings(userID)
+	settings.Hash, err = hashGenerationSettings(settings)
+	if err != nil {
+		return domain.GenerationSettings{}, fmt.Errorf("failed to hash generation settings: %w", err)
+	}
 	settings, err = s.repository.CreateOrUpdateGenerationSettings(ctx, settings)
 	if err != nil {
-		return domain.GenerationSettings{}, err
+		return domain.GenerationSettings{}, fmt.Errorf("failed to create or update generation settings: %w", err)
 	}
 
 	return settings, nil
+}
+
+func hashGenerationSettings(settings domain.GenerationSettings) (string, error) {
+	bytes, err := json.Marshal(settings)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal generation settings: %w", err)
+	}
+
+	hash := md5.Sum(bytes)
+	return fmt.Sprintf("%x", hash), nil
 }
