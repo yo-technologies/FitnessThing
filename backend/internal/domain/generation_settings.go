@@ -101,7 +101,10 @@ type GenerationSettings struct {
 
 func NewGenerationSettings(userID ID) GenerationSettings {
 	return GenerationSettings{
-		Model:  NewModel(),
-		UserID: userID,
+		Model:                  NewModel(),
+		UserID:                 userID,
+		DaysPerWeek:            utils.NewNullable(3, true),
+		SessionDurationMinutes: utils.NewNullable(60, true),
+		VarietyLevel:           utils.NewNullable(2, true),
 	}
 }

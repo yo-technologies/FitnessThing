@@ -36,6 +36,7 @@ interface OptionItem<T> {
 
 // Константы для селектов
 const GOAL_OPTIONS: OptionItem<WorkoutGoal>[] = [
+  { key: WorkoutGoal.GOAL_UNSPECIFIED, label: "Не указано" },
   { key: WorkoutGoal.GOAL_MUSCLE_GAIN, label: "Набор мышечной массы" },
   { key: WorkoutGoal.GOAL_WEIGHT_LOSS, label: "Снижение веса" },
   { key: WorkoutGoal.GOAL_STRENGTH, label: "Увеличение силы" },
@@ -44,6 +45,10 @@ const GOAL_OPTIONS: OptionItem<WorkoutGoal>[] = [
 ];
 
 const EXPERIENCE_LEVEL_OPTIONS: OptionItem<WorkoutExperienceLevel>[] = [
+  {
+    key: WorkoutExperienceLevel.EXPERIENCE_LEVEL_UNSPECIFIED,
+    label: "Не указано",
+  },
   {
     key: WorkoutExperienceLevel.EXPERIENCE_LEVEL_BEGINNER,
     label: "Новичок",
@@ -59,6 +64,10 @@ const EXPERIENCE_LEVEL_OPTIONS: OptionItem<WorkoutExperienceLevel>[] = [
 ];
 
 const WORKOUT_PLAN_TYPE_OPTIONS: OptionItem<WorkoutWorkoutPlanType>[] = [
+  {
+    key: WorkoutWorkoutPlanType.WORKOUT_PLAN_TYPE_UNSPECIFIED,
+    label: "Не указано",
+  },
   {
     key: WorkoutWorkoutPlanType.WORKOUT_PLAN_TYPE_FULL_BODY,
     label: "Фулбоди",
