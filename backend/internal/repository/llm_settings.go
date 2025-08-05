@@ -153,6 +153,7 @@ func (r *PGXRepository) CreateOrUpdateGenerationSettings(ctx context.Context, se
 		ON CONFLICT (user_id) DO UPDATE
 		SET 
 			base_prompt = excluded.base_prompt,
+			variety_level = excluded.variety_level,
 			primary_goal = excluded.primary_goal,
 			secondary_goals = excluded.secondary_goals,
 			experience_level = excluded.experience_level,
