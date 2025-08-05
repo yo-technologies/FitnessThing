@@ -254,9 +254,9 @@ export function OnboardingModal({
               <TextField
                 maxRows={6}
                 minRows={3}
-                placeholder="Например: Я предпочитаю тренироваться утром, люблю когда "
+                placeholder="Например: Я предпочитаю чередовать задействованые группы мышц"
                 title="Дополнительные пожелания:"
-                tooltip="Здесь вы можете указать свои предпочтения, которые будут учтены при генерации тренировок."
+                tooltip="Здесь вы можете указать дополнительные пожелания в свободной форме"
                 value={formData.basePrompt}
                 onChange={(value) => updateFormData({ basePrompt: value })}
               />
