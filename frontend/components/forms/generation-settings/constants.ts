@@ -54,7 +54,7 @@ export const WORKOUT_PLAN_TYPE_OPTIONS: OptionItem<WorkoutWorkoutPlanType>[] = [
   },
   {
     key: WorkoutWorkoutPlanType.WORKOUT_PLAN_TYPE_PUSH_PULL_LEGS,
-    label: "Толкай/Тяни/Ноги",
+    label: "Жим/Тяга/Ноги",
   },
 ];
 

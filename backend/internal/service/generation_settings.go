@@ -69,6 +69,20 @@ func (s *Service) SaveGenerationSettings(ctx context.Context, userID domain.ID, 
 			return fmt.Errorf("failed to create or update generation settings: %w", err)
 		}
 
+		// Обновляем флаг завершения онбординга для пользователя
+		user, err := s.repository.GetUserByID(ctx, userID)
+		if err != nil {
+			return fmt.Errorf("failed to get user: %w", err)
+		}
+
+		if !user.HasCompletedOnboarding {
+			user.HasCompletedOnboarding = true
+			_, err = s.repository.UpdateUser(ctx, user)
+			if err != nil {
+				return fmt.Errorf("failed to update user onboarding status: %w", err)
+			}
+		}
+
 		return nil
 	}); err != nil {
 		return domain.GenerationSettings{}, fmt.Errorf("failed to save generation settings: %w", err)
@@ -82,8 +96,12 @@ func (s *Service) GetGenerationSettings(ctx context.Context, userID domain.ID) (
 	defer span.Finish()
 
 	settings, err := s.repository.GetGenerationSettings(ctx, userID)
-	if err != nil {
+	if err != nil && !errors.Is(err, domain.ErrNotFound) {
 		return domain.GenerationSettings{}, fmt.Errorf("failed to get generation settings: %w", err)
+	}
+
+	if errors.Is(err, domain.ErrNotFound) {
+		settings = domain.NewGenerationSettings(userID)
 	}
 
 	return settings, nil

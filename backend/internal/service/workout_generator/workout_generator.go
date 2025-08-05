@@ -97,7 +97,12 @@ func (s *Service) GenerateWorkout(ctx context.Context, options *dto.GenerateWork
 		return dto.GeneratedWorkoutDTO{}, fmt.Errorf("failed to create completion: %w", err)
 	}
 
-	return unmarshalCompletion(completion)
+	result, err := unmarshalCompletion(completion)
+	if err != nil {
+		return dto.GeneratedWorkoutDTO{}, fmt.Errorf("failed to unmarshal completion: %w", err)
+	}
+
+	return result, nil
 }
 
 func marshalWorkouts(workouts []dto.SlimWorkoutDTO) (string, error) {

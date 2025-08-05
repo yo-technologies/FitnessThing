@@ -53,6 +53,7 @@ message User {
   google.protobuf.Timestamp date_of_birth = 10;
   google.protobuf.Timestamp created_at = 11;
   google.protobuf.Timestamp updated_at = 12;
+  bool has_completed_onboarding = 13;
 }
 
 message MuscleGroup {

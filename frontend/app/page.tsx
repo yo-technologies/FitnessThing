@@ -23,6 +23,9 @@ export default function Home() {
   const [isError, setIsError] = useState(false);
   const [isWorkoutGenerating, setIsWorkoutGenerating] = useState(false);
 
+  // Константы для localStorage
+  const ONBOARDING_SKIPPED_KEY = "fitness-onboarding-skipped";
+
   // Состояние для онбординга
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [hasCheckedOnboarding, setHasCheckedOnboarding] = useState(false);
@@ -73,9 +76,6 @@ export default function Home() {
     try {
       await Promise.all([fetchUser(), fetRoutines(), fetchActiveWorkouts()]);
       setIsError(false);
-
-      // Проверяем, нужно ли показать онбординг
-      checkOnboardingStatus();
     } catch (error) {
       console.log(error);
       setIsError(true);
@@ -84,46 +84,48 @@ export default function Home() {
     }
   }
 
+  // Проверяем онбординг после получения данных пользователя
+  useEffect(() => {
+    if (!isLoading && user.id) {
+      checkOnboardingStatus();
+    }
+  }, [isLoading, user.id]);
+
   // Проверяем статус онбординга
   async function checkOnboardingStatus() {
     if (hasCheckedOnboarding) return;
 
     try {
-      const response =
-        await authApi.v1.userServiceGetWorkoutGenerationSettings();
-      const settings = response.data.settings;
+      // Проверяем флаг в localStorage (если пользователь пропустил онбординг)
+      const onboardingSkipped = localStorage.getItem(ONBOARDING_SKIPPED_KEY);
 
-      // Если настройки пустые или основные поля не заполнены, показываем онбординг
-      const isOnboardingNeeded =
-        !settings ||
-        !settings.primaryGoal ||
-        !settings.experienceLevel ||
-        !settings.workoutPlanType;
+      // Проверяем флаг в профиле пользователя
+      const hasCompletedOnboarding = user.hasCompletedOnboarding;
 
-      if (isOnboardingNeeded) {
+      // Показываем онбординг только если:
+      // 1. Пользователь не завершил онбординг И
+      // 2. Пользователь не пропускал онбординг ранее
+      if (!hasCompletedOnboarding && !onboardingSkipped) {
         setShowOnboarding(true);
       }
 
       setHasCheckedOnboarding(true);
     } catch (error: any) {
       console.log("Error checking onboarding status:", error);
-
-      // Если получили 404, значит настройки еще не созданы - нужен онбординг
-      if (error.response?.status === 404) {
-        setShowOnboarding(true);
-      }
-
       setHasCheckedOnboarding(true);
     }
   }
 
   const handleOnboardingComplete = () => {
     setShowOnboarding(false);
-    toast.success("Добро пожаловать! Настройки сохранены.");
+    // При завершении онбординга флаг hasCompletedOnboarding уже обновится на backend
+    setUser((prev: any) => ({ ...prev, hasCompletedOnboarding: true }));
   };
 
   const handleOnboardingClose = () => {
     setShowOnboarding(false);
+    // Сохраняем в localStorage, что пользователь пропустил онбординг
+    localStorage.setItem(ONBOARDING_SKIPPED_KEY, "true");
   };
 
   async function startWorkout(
@@ -135,6 +137,14 @@ export default function Home() {
 
       return;
     }
+
+    // Проверяем онбординг при попытке ИИ-генерации
+    if (generate && !user.hasCompletedOnboarding) {
+      setShowOnboarding(true);
+
+      return;
+    }
+
     setIsWorkoutGenerating(true);
     await authApi.v1
       .workoutServiceStartWorkout({

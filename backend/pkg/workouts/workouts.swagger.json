@@ -2363,6 +2363,9 @@
         "updatedAt": {
           "type": "string",
           "format": "date-time"
+        },
+        "hasCompletedOnboarding": {
+          "type": "boolean"
         }
       }
     },

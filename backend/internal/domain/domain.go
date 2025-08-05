@@ -43,14 +43,15 @@ func NewModel() Model {
 type User struct {
 	Model
 
-	TelegramID       int64
-	TelegramUsername utils.Nullable[string]
-	FirstName        utils.Nullable[string]
-	LastName         utils.Nullable[string]
-	DateOfBirth      time.Time
-	Height           utils.Nullable[float32]
-	Weight           utils.Nullable[float32]
-	ProfilePicURL    utils.Nullable[string]
+	TelegramID            int64
+	TelegramUsername      utils.Nullable[string]
+	FirstName             utils.Nullable[string]
+	LastName              utils.Nullable[string]
+	DateOfBirth           time.Time
+	Height                utils.Nullable[float32]
+	Weight                utils.Nullable[float32]
+	ProfilePicURL         utils.Nullable[string]
+	HasCompletedOnboarding bool
 }
 
 func NewUser(

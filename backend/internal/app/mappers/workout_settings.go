@@ -2,7 +2,10 @@ package mappers
 
 import (
 	"fitness-trainer/internal/domain"
+	"fitness-trainer/internal/domain/dto"
+	"fitness-trainer/internal/utils"
 	desc "fitness-trainer/pkg/workouts"
+	"fmt"
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -111,4 +114,38 @@ func GenerationSettingsToProto(settings domain.GenerationSettings) *desc.Workout
 		WorkoutPlanType:         WorkoutPlanTypeToProto(settings.WorkoutPlanType),
 		UpdatedAt:               timestamppb.New(settings.UpdatedAt),
 	}
+}
+
+func UpdateGenerationSettingsRequestToCreateDTO(req *desc.UpdateWorkoutGenerationSettingsRequest) (dto.CreateGenerationSettings, error) {
+
+	var createDTO dto.CreateGenerationSettings
+	{
+		createDTO.BasePrompt = utils.NewNullable(req.GetBasePrompt(), req.BasePrompt != nil)
+		createDTO.VarietyLevel = utils.NewNullable(int(req.GetVarietyLevel()), req.VarietyLevel != nil)
+
+		createDTO.PrimaryGoal = utils.NewNullable(GoalFromProto(req.GetPrimaryGoal()), req.PrimaryGoal != nil)
+		createDTO.SecondaryGoals = req.GetSecondaryGoals()
+
+		createDTO.ExperienceLevel = utils.NewNullable(ExperienceLevelFromProto(req.GetExperienceLevel()), req.ExperienceLevel != nil)
+		createDTO.WorkoutPlanType = utils.NewNullable(WorkoutPlanTypeFromProto(req.GetWorkoutPlanType()), req.WorkoutPlanType != nil)
+
+		createDTO.DaysPerWeek = utils.NewNullable(int(req.GetDaysPerWeek()), req.DaysPerWeek != nil)
+		createDTO.SessionDurationMinutes = utils.NewNullable(int(req.GetSessionDurationMinutes()), req.SessionDurationMinutes != nil)
+
+		createDTO.Injuries = utils.NewNullable(req.GetInjuries(), req.Injuries != nil)
+
+		for _, rawID := range req.GetPriorityMuscleGroupsIds() {
+			parsedID, err := domain.ParseID(rawID)
+			if err != nil {
+				return dto.CreateGenerationSettings{}, fmt.Errorf(
+					"%w: %w",
+					domain.ErrInvalidArgument,
+					fmt.Errorf("invalid muscle group id: %v", rawID),
+				)
+			}
+			createDTO.PriorityMuscleGroupsIDs = append(createDTO.PriorityMuscleGroupsIDs, parsedID)
+		}
+	}
+
+	return createDTO, nil
 }

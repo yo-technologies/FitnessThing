@@ -159,6 +159,8 @@ func (m *User) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for HasCompletedOnboarding
+
 	if len(errors) > 0 {
 		return UserMultiError(errors)
 	}

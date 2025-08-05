@@ -95,7 +95,7 @@ export function OnboardingModal({
     setIsSubmitting(true);
     try {
       await authApi.v1.userServiceUpdateWorkoutGenerationSettings(formData);
-      toast.success("Настройки сохранены!");
+      toast.success("Добро пожаловать! Настройки сохранены.");
       onComplete();
       onClose();
     } catch (error) {
@@ -246,9 +246,9 @@ export function OnboardingModal({
               <TextField
                 maxRows={6}
                 minRows={3}
-                placeholder="Например: Моя цель — набрать мышечную массу. Нельзя делать упражнения с осевыми нагрузками на позвоночник."
+                placeholder="Например: Я предпочитаю тренироваться утром, люблю когда "
                 title="Дополнительные пожелания:"
-                tooltip="Здесь вы можете указать свои предпочтения или противопоказания, которые будут учтены при генерации тренировок."
+                tooltip="Здесь вы можете указать свои предпочтения, которые будут учтены при генерации тренировок."
                 value={formData.basePrompt}
                 onChange={(value) => updateFormData({ basePrompt: value })}
               />
@@ -298,7 +298,7 @@ export function OnboardingModal({
       isOpen={isOpen}
       placement="bottom"
       scrollBehavior="inside"
-      size="sm"
+      size="2xl"
       onOpenChange={onClose}
     >
       <ModalContent>

@@ -386,6 +386,7 @@ export interface WorkoutUser {
   createdAt?: string;
   /** @format date-time */
   updatedAt?: string;
+  hasCompletedOnboarding?: boolean;
 }
 
 export interface WorkoutUserResponse {

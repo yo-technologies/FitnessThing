@@ -152,14 +152,14 @@ func (r *PGXRepository) CreateOrUpdateGenerationSettings(ctx context.Context, se
 		)
 		ON CONFLICT (user_id) DO UPDATE
 		SET 
-			base_prompt = coalesce(excluded.base_prompt, llm_settings.base_prompt),
+			base_prompt = excluded.base_prompt,
 			primary_goal = excluded.primary_goal,
-			secondary_goals = coalesce(excluded.secondary_goals, llm_settings.secondary_goals),
+			secondary_goals = excluded.secondary_goals,
 			experience_level = excluded.experience_level,
-			days_per_week = coalesce(excluded.days_per_week, llm_settings.days_per_week),
-			session_duration_minutes = coalesce(excluded.session_duration_minutes, llm_settings.session_duration_minutes),
-			injuries = coalesce(excluded.injuries, llm_settings.injuries),
-			priority_muscle_groups = coalesce(excluded.priority_muscle_groups, llm_settings.priority_muscle_groups),
+			days_per_week = excluded.days_per_week,
+			session_duration_minutes = excluded.session_duration_minutes,
+			injuries = excluded.injuries,
+			priority_muscle_groups = excluded.priority_muscle_groups,
 			workout_plan_type = excluded.workout_plan_type,
 			hash = excluded.hash,
 			updated_at = excluded.updated_at

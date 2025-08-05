@@ -31,6 +31,8 @@ type userEntity struct {
 	Weight pgtype.Float4 `db:"weight"`
 	Height pgtype.Float4 `db:"height"`
 
+	HasCompletedOnboarding pgtype.Bool `db:"has_completed_onboarding"`
+
 	CreatedAt pgtype.Timestamptz `db:"created_at"`
 	UpdatedAt pgtype.Timestamptz `db:"updated_at"`
 }
@@ -42,30 +44,32 @@ func (u userEntity) toDomain() domain.User {
 			CreatedAt: timeFromPgtype(u.CreatedAt),
 			UpdatedAt: timeFromPgtype(u.UpdatedAt),
 		},
-		TelegramID:       u.TelegramID,
-		TelegramUsername: nullableStringFromPgtype(u.Username),
-		FirstName:        nullableStringFromPgtype(u.FirstName),
-		LastName:         nullableStringFromPgtype(u.LastName),
-		DateOfBirth:      timeFromPgtype(u.DateOfBirth),
-		Weight:           utils.NewNullable(u.Weight.Float32, u.Weight.Valid),
-		Height:           utils.NewNullable(u.Height.Float32, u.Height.Valid),
-		ProfilePicURL:    utils.NewNullable(u.PictureProfileURL.String, u.PictureProfileURL.Valid),
+		TelegramID:             u.TelegramID,
+		TelegramUsername:       nullableStringFromPgtype(u.Username),
+		FirstName:              nullableStringFromPgtype(u.FirstName),
+		LastName:               nullableStringFromPgtype(u.LastName),
+		DateOfBirth:            timeFromPgtype(u.DateOfBirth),
+		Weight:                 utils.NewNullable(u.Weight.Float32, u.Weight.Valid),
+		Height:                 utils.NewNullable(u.Height.Float32, u.Height.Valid),
+		ProfilePicURL:          utils.NewNullable(u.PictureProfileURL.String, u.PictureProfileURL.Valid),
+		HasCompletedOnboarding: u.HasCompletedOnboarding.Bool,
 	}
 }
 
 func userFromDomain(user domain.User) userEntity {
 	return userEntity{
-		ID:                uuidToPgtype(user.ID),
-		TelegramID:        user.TelegramID,
-		Username:          nullableStringToPgtype(user.TelegramUsername),
-		FirstName:         nullableStringToPgtype(user.FirstName),
-		LastName:          nullableStringToPgtype(user.LastName),
-		DateOfBirth:       timeToPgtype(user.DateOfBirth),
-		Weight:            nullableFloatToPgtype(user.Weight),
-		Height:            nullableFloatToPgtype(user.Height),
-		CreatedAt:         timeToPgtype(user.CreatedAt),
-		UpdatedAt:         timeToPgtype(user.UpdatedAt),
-		PictureProfileURL: nullableStringToPgtype(user.ProfilePicURL),
+		ID:                     uuidToPgtype(user.ID),
+		TelegramID:             user.TelegramID,
+		Username:               nullableStringToPgtype(user.TelegramUsername),
+		FirstName:              nullableStringToPgtype(user.FirstName),
+		LastName:               nullableStringToPgtype(user.LastName),
+		DateOfBirth:            timeToPgtype(user.DateOfBirth),
+		Weight:                 nullableFloatToPgtype(user.Weight),
+		Height:                 nullableFloatToPgtype(user.Height),
+		CreatedAt:              timeToPgtype(user.CreatedAt),
+		UpdatedAt:              timeToPgtype(user.UpdatedAt),
+		PictureProfileURL:      nullableStringToPgtype(user.ProfilePicURL),
+		HasCompletedOnboarding: pgtype.Bool{Bool: user.HasCompletedOnboarding, Valid: true},
 	}
 }
 
@@ -74,7 +78,7 @@ func (r *PGXRepository) GetUserByID(ctx context.Context, id domain.ID) (domain.U
 	defer span.Finish()
 
 	const query = `
-		select id, telegram_id, username, first_name, last_name, date_of_birth, height, weight, created_at, updated_at, picture_profile_url
+		select id, telegram_id, username, first_name, last_name, date_of_birth, height, weight, created_at, updated_at, picture_profile_url, has_completed_onboarding
 		from users
 		where id = $1;
 	`
@@ -99,8 +103,8 @@ func (r *PGXRepository) GetOrCreateUser(ctx context.Context, user domain.User) (
 	defer span.Finish()
 
 	const query = `
-		insert into users (id, telegram_id, username, first_name, last_name, date_of_birth, height, weight, created_at, updated_at, picture_profile_url)
-		values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+		insert into users (id, telegram_id, username, first_name, last_name, date_of_birth, height, weight, created_at, updated_at, picture_profile_url, has_completed_onboarding)
+		values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 		on conflict (telegram_id) do update
 		set 
 			username = excluded.username,
@@ -108,7 +112,7 @@ func (r *PGXRepository) GetOrCreateUser(ctx context.Context, user domain.User) (
 			last_name = excluded.last_name,
 			updated_at = excluded.updated_at,
 			picture_profile_url = excluded.picture_profile_url
-		returning id, telegram_id, username, first_name, last_name, date_of_birth, height, weight, created_at, updated_at, picture_profile_url;
+		returning id, telegram_id, username, first_name, last_name, date_of_birth, height, weight, created_at, updated_at, picture_profile_url, has_completed_onboarding;
 	`
 
 	userEntity := userFromDomain(user)
@@ -127,6 +131,7 @@ func (r *PGXRepository) GetOrCreateUser(ctx context.Context, user domain.User) (
 		userEntity.CreatedAt,
 		userEntity.UpdatedAt,
 		userEntity.PictureProfileURL,
+		userEntity.HasCompletedOnboarding,
 	)
 	if err != nil {
 		var pgErr *pgconn.PgError
@@ -156,9 +161,10 @@ func (r *PGXRepository) UpdateUser(ctx context.Context, user domain.User) (domai
 			height = $7,
 			weight = $8,
 			updated_at = $9,
-			picture_profile_url = $10
+			picture_profile_url = $10,
+			has_completed_onboarding = $11
 		where id = $1 and telegram_id = $2
-		returning id, telegram_id, username, first_name, last_name, date_of_birth, height, weight, created_at, updated_at, picture_profile_url;
+		returning id, telegram_id, username, first_name, last_name, date_of_birth, height, weight, created_at, updated_at, picture_profile_url, has_completed_onboarding;
 	`
 
 	userEntity := userFromDomain(user)
@@ -177,6 +183,7 @@ func (r *PGXRepository) UpdateUser(ctx context.Context, user domain.User) (domai
 		userEntity.Weight,
 		userEntity.UpdatedAt,
 		userEntity.PictureProfileURL,
+		userEntity.HasCompletedOnboarding,
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
