@@ -8,6 +8,7 @@ import (
 	"fitness-trainer/internal/domain"
 	"fitness-trainer/internal/domain/dto"
 	"fmt"
+	"time"
 
 	"github.com/opentracing/opentracing-go"
 )
@@ -56,6 +57,7 @@ func (s *Service) SaveGenerationSettings(ctx context.Context, userID domain.ID, 
 		if createDTO.WorkoutPlanType.IsValid {
 			settings.WorkoutPlanType = createDTO.WorkoutPlanType.V
 		}
+		settings.UpdatedAt = time.Now()
 	}
 
 	settings.Hash, err = hashGenerationSettings(settings)
