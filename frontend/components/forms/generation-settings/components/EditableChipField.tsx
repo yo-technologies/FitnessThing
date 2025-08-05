@@ -129,7 +129,7 @@ export function EditableChipField({
             {editingIndex === null && (
               <textarea
                 ref={textareaRef}
-                className="flex-1 h-fit resize-none outline-none bg-transparent text-xs placeholder:text-default-400 placeholder:text-xs"
+                className="flex-1 h-fit resize-none outline-none bg-transparent text-xs placeholder:text-default-400 placeholder:text-xs leading-6 placeholder:leading-6"
                 placeholder={
                   value.length === 0 ? placeholder : " добавить цель..."
                 }
