@@ -23,12 +23,15 @@ import (
 
 	genai_client "fitness-trainer/internal/clients/gemini"
 	s3_client "fitness-trainer/internal/clients/s3"
+	"fitness-trainer/internal/service/background"
+	prompt_generator_service "fitness-trainer/internal/service/prompt_generator"
 	workout_generator_service "fitness-trainer/internal/service/workout_generator"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/go-co-op/gocron/v2"
 	"github.com/google/generative-ai-go/genai"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
@@ -98,7 +101,11 @@ func Run() error {
 		return err
 	}
 
-	clientWrapper := genai_client.New(genaiClient, os.Getenv("GENAI_MODEL_NAME"))
+	clientWrapper := genai_client.New(
+		genaiClient,
+		os.Getenv("GENAI_MODEL_NAME"),
+		genai_client.WorkoutResponseSchema,
+	)
 
 	// openaiClient := newOpenAIClient()
 
@@ -106,32 +113,93 @@ func Run() error {
 
 	workoutGenerator := workout_generator_service.New(clientWrapper)
 
-	quota := throttled.RateQuota{
+	workoutGenerationQuota := throttled.RateQuota{
 		MaxRate:  throttled.PerDay(5),
 		MaxBurst: 5,
 	}
 
-	inmemmoryStore, err := memstore.NewCtx(65536)
+	workoutGenerationStore, err := memstore.NewCtx(65536)
 	if err != nil {
 		return fmt.Errorf("failed to create in memory store: %w", err)
 	}
 
-	rateLimiter, err := throttled.NewGCRARateLimiterCtx(inmemmoryStore, quota)
+	workoutGenerationRateLimiter, err := throttled.NewGCRARateLimiterCtx(
+		workoutGenerationStore,
+		workoutGenerationQuota,
+	)
 	if err != nil {
 		return fmt.Errorf("failed to create rate limiter: %w", err)
 	}
 
-	rateLimiterWrapper := ratelimiter.New(rateLimiter)
+	workoutGenerationRateLimiterWrapper := ratelimiter.New(workoutGenerationRateLimiter)
 
 	service := service.New(
 		contextManager,
 		s3ClientWrapper,
 		workoutGenerator,
-		rateLimiterWrapper,
+		workoutGenerationRateLimiterWrapper,
 		repo,
 	)
 
 	telegramTokenParser := newTelegramTokenParser()
+
+	promptGenerationDebounce := time.Second * 60
+	promptGenerationPeriod := time.Second * 10
+
+	promptGenerationQuota := throttled.RateQuota{
+		MaxRate:  throttled.PerHour(5),
+		MaxBurst: 5,
+	}
+
+	promptGenerationInmemmoryStore, err := memstore.NewCtx(65536)
+	if err != nil {
+		return fmt.Errorf("failed to create in memory store: %w", err)
+	}
+
+	promptGenerationRateLimiter, err := throttled.NewGCRARateLimiterCtx(
+		promptGenerationInmemmoryStore,
+		promptGenerationQuota,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to create rate limiter: %w", err)
+	}
+
+	promptGenerationRateLimiterWrapper := ratelimiter.New(promptGenerationRateLimiter)
+
+	promptsClientWrapper := genai_client.New(
+		genaiClient,
+		os.Getenv("GENAI_MODEL_NAME"),
+		nil,
+	)
+
+	promptGenerationService := prompt_generator_service.New(
+		promptsClientWrapper,
+		repo,
+	)
+
+	backgroundService := background.New(
+		promptGenerationDebounce,
+		repo,
+		repo,
+		promptGenerationService,
+		promptGenerationRateLimiterWrapper,
+	)
+
+	scheduler, err := gocron.NewScheduler(
+		gocron.WithLocation(time.UTC),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to create scheduler: %w", err)
+	}
+
+	scheduler.NewJob(
+		gocron.DurationJob(promptGenerationPeriod),
+		gocron.NewTask(backgroundService.GeneratePrompts),
+		gocron.WithSingletonMode(gocron.LimitModeReschedule),
+		gocron.JobOption(gocron.WithStartImmediately()),
+	)
+
+	scheduler.Start()
 
 	app := app.New(
 		service,

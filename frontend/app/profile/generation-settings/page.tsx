@@ -1,30 +1,52 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import {
-  Card,
-  CardBody,
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-  Slider,
-  Textarea,
-} from "@nextui-org/react";
+import { useEffect, useState, useCallback } from "react";
+import { Divider } from "@nextui-org/react";
 import { toast } from "react-toastify";
+import { debounce } from "lodash";
 
 import { PageHeader } from "@/components/page-header";
 import { Loading } from "@/components/loading";
 import { authApi } from "@/api/api";
-import { WorkoutWorkoutGenerationSettings } from "@/api/api.generated";
-import { CircleQuestionIcon } from "@/config/icons";
+import {
+  WorkoutWorkoutGenerationSettings,
+  WorkoutGoal,
+  WorkoutExperienceLevel,
+  WorkoutWorkoutPlanType,
+  WorkoutMuscleGroup,
+} from "@/api/api.generated";
+import {
+  ChipSelector,
+  SliderWithMarks,
+  TextField,
+  MultiChipSelector,
+  EditableChipField,
+  GOAL_OPTIONS,
+  EXPERIENCE_LEVEL_OPTIONS,
+  WORKOUT_PLAN_TYPE_OPTIONS,
+  formatDuration,
+  getVarietyLabel,
+} from "@/components/forms/generation-settings";
 
-export default function RecordsPage() {
+export default function GenerationSettingsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isError, setIsError] = useState(false);
+  const [muscleGroups, setMuscleGroups] = useState<WorkoutMuscleGroup[]>([]);
 
   const [settings, setSettings] = useState<WorkoutWorkoutGenerationSettings>(
     {},
   );
+
+  async function fetchMuscleGroups() {
+    try {
+      const response = await authApi.v1.exerciseServiceGetMuscleGroups();
+
+      setMuscleGroups(response.data.muscleGroups || []);
+    } catch (error) {
+      console.log(error);
+      toast.error("Не удалось загрузить группы мышц");
+    }
+  }
 
   async function fetchSettings() {
     await authApi.v1
@@ -42,7 +64,7 @@ export default function RecordsPage() {
   async function fetchData() {
     setIsLoading(true);
     try {
-      await fetchSettings();
+      await Promise.all([fetchSettings(), fetchMuscleGroups()]);
     } catch (error) {
       console.log(error);
       setIsError(true);
@@ -69,84 +91,322 @@ export default function RecordsPage() {
   }
 
   function SettingsFrom() {
-    function VarietyLevelSlider() {
-      const [varietyLevel, setVarietyLevel] = useState<number>(
-        settings.varietyLevel!,
-      );
-      const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-      const valueRef = useRef(varietyLevel);
-
-      useEffect(() => {
-        valueRef.current = varietyLevel;
-      }, [varietyLevel]);
-
-      async function handleVarietyLevelChange(value: number) {
-        try {
-          await authApi.v1.userServiceUpdateWorkoutGenerationSettings({
-            varietyLevel: value,
-          });
-        } catch (error) {
-          console.log(error);
-          toast.error("Не удалось обновить настройки");
-        }
+    async function updateSettings(
+      updates: Partial<WorkoutWorkoutGenerationSettings>,
+    ) {
+      try {
+        await authApi.v1.userServiceUpdateWorkoutGenerationSettings(updates);
+        // Не обновляем settings, чтобы избежать ререндера
+        // setSettings({ ...settings, ...updates });
+      } catch (error) {
+        console.log(error);
+        toast.error("Не удалось обновить настройки");
       }
+    }
 
-      const handleChange = (value: number | number[]) => {
-        value = value as number;
+    function PrimaryGoalSelect() {
+      const [primaryGoal, setPrimaryGoal] = useState<WorkoutGoal>(
+        WorkoutGoal.GOAL_UNSPECIFIED,
+      );
 
-        setVarietyLevel(value);
+      // Синхронизируем с settings только при изменении settings.primaryGoal
+      useEffect(() => {
+        setPrimaryGoal(settings.primaryGoal || WorkoutGoal.GOAL_UNSPECIFIED);
+      }, [settings.primaryGoal]);
 
-        if (timeoutRef.current) {
-          clearTimeout(timeoutRef.current);
-        }
-
-        timeoutRef.current = setTimeout(() => {
-          handleVarietyLevelChange(valueRef.current);
-        }, 300);
+      const handleChange = (goal: WorkoutGoal) => {
+        setPrimaryGoal(goal);
+        updateSettings({ primaryGoal: goal });
       };
 
-      const popoverContent = (
-        <PopoverContent>
-          <p className="text-xs font-light text-default-600 p-1">
-            Чем выше уровень, тем сильнее новые тренировки будут отличаться от
-            предыдущих.
-          </p>
-        </PopoverContent>
+      return (
+        <ChipSelector
+          color="primary"
+          options={GOAL_OPTIONS}
+          title="Основная цель:"
+          tooltip="Выберите основную цель ваших тренировок."
+          value={primaryGoal}
+          onChange={handleChange}
+        />
+      );
+    }
+
+    function SecondaryGoalsField() {
+      const [secondaryGoals, setSecondaryGoals] = useState<string[]>([]);
+
+      // Синхронизируем с settings только при изменении settings.secondaryGoals
+      useEffect(() => {
+        setSecondaryGoals(settings.secondaryGoals || []);
+      }, [settings.secondaryGoals]);
+
+      // Создаем debounced функцию для обновления настроек
+      const debouncedUpdate = useCallback(
+        debounce((goals: string[]) => {
+          updateSettings({ secondaryGoals: goals });
+        }, 1000),
+        [updateSettings],
       );
 
+      const handleChange = (goals: string[]) => {
+        setSecondaryGoals(goals);
+        debouncedUpdate(goals);
+      };
+
       return (
-        <Card>
-          <CardBody>
-            <div className="flex flex-col gap-4">
-              <div className="flex flex-row gap-2 items-center justify-between">
-                <div className="flex flex-row gap-2 items-center">
-                  <p>Уровень разнообразия:</p>
-                  <p>{varietyLevel ?? "не известно"}</p>
-                </div>
-                <Popover
-                  backdrop="opaque"
-                  className="relative w-1/2 transform translate-x-[90%]"
-                >
-                  <PopoverTrigger>
-                    <CircleQuestionIcon className="w-4 h-4 text-default-500" />
-                  </PopoverTrigger>
-                  {popoverContent}
-                </Popover>
-              </div>
-              <Slider
-                aria-label="Variety level"
-                className="w-full"
-                color="primary"
-                maxValue={3}
-                minValue={1}
-                size="sm"
-                step={1}
-                value={varietyLevel}
-                onChange={handleChange}
-              />
-            </div>
-          </CardBody>
-        </Card>
+        <EditableChipField
+          color="primary"
+          placeholder="Например: Улучшить осанку, увеличить гибкость, развить координацию..."
+          title="Дополнительные цели:"
+          tooltip="Укажите дополнительные цели, которые важны для вас помимо основной."
+          value={secondaryGoals}
+          onChange={handleChange}
+        />
+      );
+    }
+
+    function ExperienceLevelSelect() {
+      const [experienceLevel, setExperienceLevel] =
+        useState<WorkoutExperienceLevel>(
+          WorkoutExperienceLevel.EXPERIENCE_LEVEL_UNSPECIFIED,
+        );
+
+      // Синхронизируем с settings только при изменении settings.experienceLevel
+      useEffect(() => {
+        setExperienceLevel(
+          settings.experienceLevel ||
+            WorkoutExperienceLevel.EXPERIENCE_LEVEL_UNSPECIFIED,
+        );
+      }, [settings.experienceLevel]);
+
+      const handleChange = (level: WorkoutExperienceLevel) => {
+        setExperienceLevel(level);
+        updateSettings({ experienceLevel: level });
+      };
+
+      return (
+        <ChipSelector
+          color="success"
+          options={EXPERIENCE_LEVEL_OPTIONS}
+          title="Уровень опыта:"
+          tooltip="Укажите ваш уровень опыта в тренировках."
+          value={experienceLevel}
+          onChange={handleChange}
+        />
+      );
+    }
+
+    function WorkoutPlanTypeSelect() {
+      const [workoutPlanType, setWorkoutPlanType] =
+        useState<WorkoutWorkoutPlanType>(
+          WorkoutWorkoutPlanType.WORKOUT_PLAN_TYPE_UNSPECIFIED,
+        );
+
+      // Синхронизируем с settings только при изменении settings.workoutPlanType
+      useEffect(() => {
+        setWorkoutPlanType(
+          settings.workoutPlanType ||
+            WorkoutWorkoutPlanType.WORKOUT_PLAN_TYPE_UNSPECIFIED,
+        );
+      }, [settings.workoutPlanType]);
+
+      const handleChange = (planType: WorkoutWorkoutPlanType) => {
+        setWorkoutPlanType(planType);
+        updateSettings({ workoutPlanType: planType });
+      };
+
+      return (
+        <ChipSelector
+          color="secondary"
+          options={WORKOUT_PLAN_TYPE_OPTIONS}
+          title="Тип тренировочного плана:"
+          tooltip="Выберите предпочитаемый тип тренировочного плана."
+          value={workoutPlanType}
+          onChange={handleChange}
+        />
+      );
+    }
+
+    function DaysPerWeekSlider() {
+      const [daysPerWeek, setDaysPerWeek] = useState<number>(
+        settings.daysPerWeek || 3,
+      );
+
+      // Создаем debounced функцию для обновления настроек
+      const debouncedUpdate = useCallback(
+        debounce((days: number) => {
+          updateSettings({ daysPerWeek: days });
+        }, 500),
+        [updateSettings],
+      );
+
+      const handleChange = (value: number | number[]) => {
+        const days = value as number;
+
+        setDaysPerWeek(days);
+        debouncedUpdate(days);
+      };
+
+      return (
+        <SliderWithMarks
+          color="primary"
+          formatValue={(value) => String(value)}
+          marks={[
+            { value: 1, label: "1" },
+            { value: 2, label: "2" },
+            { value: 3, label: "3" },
+            { value: 4, label: "4" },
+            { value: 5, label: "5" },
+            { value: 6, label: "6" },
+            { value: 7, label: "7" },
+          ]}
+          maxValue={7}
+          minValue={1}
+          step={1}
+          title="Дней в неделю:"
+          tooltip="Количество тренировочных дней в неделю."
+          value={daysPerWeek}
+          onChange={handleChange}
+        />
+      );
+    }
+
+    function SessionDurationSlider() {
+      const [sessionDuration, setSessionDuration] = useState<number>(
+        settings.sessionDurationMinutes || 60,
+      );
+
+      // Создаем debounced функцию для обновления настроек
+      const debouncedUpdate = useCallback(
+        debounce((duration: number) => {
+          updateSettings({ sessionDurationMinutes: duration });
+        }, 500),
+        [updateSettings],
+      );
+
+      const handleChange = (value: number | number[]) => {
+        const duration = value as number;
+
+        setSessionDuration(duration);
+        debouncedUpdate(duration);
+      };
+
+      return (
+        <SliderWithMarks
+          color="secondary"
+          formatValue={formatDuration}
+          marks={[
+            { value: 30, label: "30м" },
+            { value: 60, label: "1ч" },
+            { value: 90, label: "1.5ч" },
+            { value: 120, label: "2ч" },
+          ]}
+          maxValue={120}
+          minValue={30}
+          step={15}
+          title="Продолжительность:"
+          tooltip="Желаемая продолжительность тренировки."
+          value={sessionDuration}
+          onChange={handleChange}
+        />
+      );
+    }
+
+    function InjuriesField() {
+      const [injuries, setInjuries] = useState<string>(settings.injuries || "");
+
+      // Создаем debounced функцию для обновления настроек
+      const debouncedUpdate = useCallback(
+        debounce((injuriesText: string) => {
+          updateSettings({ injuries: injuriesText });
+        }, 1000),
+        [updateSettings],
+      );
+
+      const handleChange = (value: string) => {
+        setInjuries(value);
+        debouncedUpdate(value);
+      };
+
+      return (
+        <TextField
+          maxRows={4}
+          minRows={2}
+          placeholder="Например: Болит спина, нельзя делать становую тягу. Травма колена - избегать приседаний."
+          title="Травмы и ограничения:"
+          tooltip="Опишите имеющиеся травмы или физические ограничения."
+          value={injuries}
+          onChange={handleChange}
+        />
+      );
+    }
+
+    function PriorityMuscleGroupsField() {
+      const [priorityMuscleGroups, setPriorityMuscleGroups] = useState<
+        string[]
+      >(settings.priorityMuscleGroupsIds || []);
+
+      const handleChange = (selectedIds: string[]) => {
+        setPriorityMuscleGroups(selectedIds);
+        updateSettings({ priorityMuscleGroupsIds: selectedIds });
+      };
+
+      const handleClear = () => {
+        setPriorityMuscleGroups([]);
+        updateSettings({ priorityMuscleGroupsIds: [] });
+      };
+
+      return (
+        <MultiChipSelector
+          color="success"
+          options={muscleGroups.map((group) => ({
+            id: group.id!,
+            name: group.name!,
+          }))}
+          selectedIds={priorityMuscleGroups}
+          title="Приоритетные группы мышц:"
+          tooltip="Выберите группы мышц, на которые хотите сделать акцент."
+          onChange={handleChange}
+        />
+      );
+    }
+
+    function VarietyLevelSlider() {
+      const [varietyLevel, setVarietyLevel] = useState<number>(
+        settings.varietyLevel || 2,
+      );
+
+      // Создаем debounced функцию для обновления настроек
+      const debouncedUpdate = useCallback(
+        debounce((level: number) => {
+          updateSettings({ varietyLevel: level });
+        }, 500),
+        [updateSettings],
+      );
+
+      const handleChange = (value: number | number[]) => {
+        const level = value as number;
+
+        setVarietyLevel(level);
+        debouncedUpdate(level);
+      };
+
+      return (
+        <SliderWithMarks
+          color="secondary"
+          formatValue={getVarietyLabel}
+          marks={[
+            { value: 1, label: "Мин" },
+            { value: 2, label: "Сред" },
+            { value: 3, label: "Макс" },
+          ]}
+          maxValue={3}
+          minValue={1}
+          step={1}
+          title="Уровень разнообразия:"
+          tooltip="Чем выше уровень, тем сильнее новые тренировки будут отличаться от предыдущих."
+          value={varietyLevel}
+          onChange={handleChange}
+        />
       );
     }
 
@@ -155,58 +415,45 @@ export default function RecordsPage() {
         settings.basePrompt || "",
       );
 
-      const popoverContent = (
-        <PopoverContent>
-          <p className="text-xs font-light text-default-600 p-1">
-            Здесь вы можете указать свои предпочтения или противопоказания,
-            которые будут учтены при генерации тренировок.
-          </p>
-        </PopoverContent>
+      // Создаем debounced функцию для обновления настроек
+      const debouncedUpdate = useCallback(
+        debounce((promptText: string) => {
+          updateSettings({ basePrompt: promptText });
+        }, 1000),
+        [updateSettings],
       );
 
-      async function handleBasePromptChange() {
-        try {
-          await authApi.v1.userServiceUpdateWorkoutGenerationSettings({
-            basePrompt,
-          });
-        } catch (error) {
-          console.log(error);
-          toast.error("Не удалось обновить настройки");
-        }
-      }
+      const handleChange = (value: string) => {
+        setBasePrompt(value);
+        debouncedUpdate(value);
+      };
 
       return (
-        <Card>
-          <CardBody className="flex flex-col gap-4">
-            <div className="flex flex-row gap-2 items-center justify-between">
-              <p>Базовый запрос:</p>
-              <Popover
-                backdrop="opaque"
-                className="relative w-1/2 transform translate-x-[90%]"
-              >
-                <PopoverTrigger>
-                  <CircleQuestionIcon className="w-4 h-4 text-default-500" />
-                </PopoverTrigger>
-                {popoverContent}
-              </Popover>
-            </div>
-            <Textarea
-              fullWidth
-              classNames={{
-                input: "text-xs font-light placeholder:text-default-400",
-              }}
-              placeholder="Моя текущая цель — набрать мышечную массу. Мне нельзя делать упражнения с осевыми нагрузками."
-              value={basePrompt}
-              onBlur={handleBasePromptChange}
-              onValueChange={(value) => setBasePrompt(value)}
-            />
-          </CardBody>
-        </Card>
+        <TextField
+          maxRows={6}
+          minRows={3}
+          placeholder="Например: Я люблю чередовать задействованные группы мышц"
+          title="Дополнительные пожелания:"
+          tooltip="Здесь вы можете указать дополнительные пожелания в свободной форме"
+          value={basePrompt}
+          onChange={handleChange}
+        />
       );
     }
 
     return (
-      <div className="flex flex-col gap-4 px-4">
+      <div className="flex flex-col gap-4 px-4 pb-4">
+        <PrimaryGoalSelect />
+        <SecondaryGoalsField />
+        <ExperienceLevelSelect />
+        <WorkoutPlanTypeSelect />
+        <Divider />
+        <DaysPerWeekSlider />
+        <SessionDurationSlider />
+        <Divider />
+        <InjuriesField />
+        <PriorityMuscleGroupsField />
+        <Divider />
         <BasePromptField />
         <VarietyLevelSlider />
       </div>

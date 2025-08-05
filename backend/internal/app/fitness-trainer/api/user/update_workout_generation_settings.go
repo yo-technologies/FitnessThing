@@ -2,12 +2,13 @@ package user
 
 import (
 	"context"
-	"fitness-trainer/internal/app/interceptors"
-	"fitness-trainer/internal/domain"
-	"fitness-trainer/internal/domain/dto"
-	"fitness-trainer/internal/utils"
-	desc "fitness-trainer/pkg/workouts"
 	"fmt"
+
+	"fitness-trainer/internal/app/interceptors"
+	"fitness-trainer/internal/app/mappers"
+	"fitness-trainer/internal/domain"
+
+	desc "fitness-trainer/pkg/workouts"
 
 	"github.com/opentracing/opentracing-go"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -26,10 +27,9 @@ func (i *Implementation) UpdateWorkoutGenerationSettings(ctx context.Context, re
 		return nil, fmt.Errorf("user id not found in context: %w", domain.ErrUnauthorized)
 	}
 
-	var createDTO dto.CreateGenerationSettings
-	{
-		createDTO.BasePrompt = utils.NewNullable(req.GetBasePrompt(), req.BasePrompt != nil)
-		createDTO.VarietyLevel = utils.NewNullable(int(req.GetVarietyLevel()), req.VarietyLevel != nil)
+	createDTO, err := mappers.UpdateGenerationSettingsRequestToCreateDTO(req)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", domain.ErrInvalidArgument, err)
 	}
 
 	if _, err := i.service.SaveGenerationSettings(ctx, id, createDTO); err != nil {

@@ -67,3 +67,32 @@ func (r *PGXRepository) GetMuscleGroupByName(ctx context.Context, name string) (
 
 	return muscleGroup.toDTO(), nil
 }
+
+func (r *PGXRepository) GetMuscleGroupsByIDs(ctx context.Context, ids []domain.ID) ([]dto.MuscleGroupDTO, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "repository.GetMuscleGroupsByIDs")
+	defer span.Finish()
+
+	if len(ids) == 0 {
+		return []dto.MuscleGroupDTO{}, nil
+	}
+
+	query := `
+		SELECT * FROM muscle_groups
+		WHERE id = ANY($1)
+	`
+
+	engine := r.contextManager.GetEngineFromContext(ctx)
+
+	var muscleGroups []muscleGroupEntity
+	if err := pgxscan.Select(ctx, engine, &muscleGroups, query, pgtype.FlatArray[pgtype.UUID](uuidsToPgtype(ids))); err != nil {
+		logger.Errorf("failed to get muscle groups by IDs: %v", err)
+			return nil, err
+		}
+
+	var muscleGroupsDTO []dto.MuscleGroupDTO
+	for _, muscleGroup := range muscleGroups {
+		muscleGroupsDTO = append(muscleGroupsDTO, muscleGroup.toDTO())
+	}
+
+	return muscleGroupsDTO, nil
+}

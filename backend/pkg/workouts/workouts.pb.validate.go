@@ -159,6 +159,8 @@ func (m *User) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for HasCompletedOnboarding
+
 	if len(errors) > 0 {
 		return UserMultiError(errors)
 	}
@@ -1801,112 +1803,6 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = SetLogValidationError{}
-
-// Validate checks the field values on WorkoutGenerationSettings with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *WorkoutGenerationSettings) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on WorkoutGenerationSettings with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// WorkoutGenerationSettingsMultiError, or nil if none found.
-func (m *WorkoutGenerationSettings) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *WorkoutGenerationSettings) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	// no validation rules for BasePrompt
-
-	// no validation rules for VarietyLevel
-
-	if len(errors) > 0 {
-		return WorkoutGenerationSettingsMultiError(errors)
-	}
-
-	return nil
-}
-
-// WorkoutGenerationSettingsMultiError is an error wrapping multiple validation
-// errors returned by WorkoutGenerationSettings.ValidateAll() if the
-// designated constraints aren't met.
-type WorkoutGenerationSettingsMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m WorkoutGenerationSettingsMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m WorkoutGenerationSettingsMultiError) AllErrors() []error { return m }
-
-// WorkoutGenerationSettingsValidationError is the validation error returned by
-// WorkoutGenerationSettings.Validate if the designated constraints aren't met.
-type WorkoutGenerationSettingsValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e WorkoutGenerationSettingsValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e WorkoutGenerationSettingsValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e WorkoutGenerationSettingsValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e WorkoutGenerationSettingsValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e WorkoutGenerationSettingsValidationError) ErrorName() string {
-	return "WorkoutGenerationSettingsValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e WorkoutGenerationSettingsValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sWorkoutGenerationSettings.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = WorkoutGenerationSettingsValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = WorkoutGenerationSettingsValidationError{}
 
 // Validate checks the field values on GetExercisesRequest with the rules
 // defined in the proto definition for this message. If any rules are
@@ -9457,6 +9353,163 @@ var _ interface {
 	ErrorName() string
 } = WorkoutGenerationSettingsResponseValidationError{}
 
+// Validate checks the field values on WorkoutGenerationSettings with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *WorkoutGenerationSettings) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on WorkoutGenerationSettings with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// WorkoutGenerationSettingsMultiError, or nil if none found.
+func (m *WorkoutGenerationSettings) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *WorkoutGenerationSettings) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for PrimaryGoal
+
+	// no validation rules for ExperienceLevel
+
+	// no validation rules for WorkoutPlanType
+
+	if all {
+		switch v := interface{}(m.GetUpdatedAt()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, WorkoutGenerationSettingsValidationError{
+					field:  "UpdatedAt",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, WorkoutGenerationSettingsValidationError{
+					field:  "UpdatedAt",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetUpdatedAt()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return WorkoutGenerationSettingsValidationError{
+				field:  "UpdatedAt",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if m.BasePrompt != nil {
+		// no validation rules for BasePrompt
+	}
+
+	if m.VarietyLevel != nil {
+		// no validation rules for VarietyLevel
+	}
+
+	if m.DaysPerWeek != nil {
+		// no validation rules for DaysPerWeek
+	}
+
+	if m.SessionDurationMinutes != nil {
+		// no validation rules for SessionDurationMinutes
+	}
+
+	if m.Injuries != nil {
+		// no validation rules for Injuries
+	}
+
+	if len(errors) > 0 {
+		return WorkoutGenerationSettingsMultiError(errors)
+	}
+
+	return nil
+}
+
+// WorkoutGenerationSettingsMultiError is an error wrapping multiple validation
+// errors returned by WorkoutGenerationSettings.ValidateAll() if the
+// designated constraints aren't met.
+type WorkoutGenerationSettingsMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m WorkoutGenerationSettingsMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m WorkoutGenerationSettingsMultiError) AllErrors() []error { return m }
+
+// WorkoutGenerationSettingsValidationError is the validation error returned by
+// WorkoutGenerationSettings.Validate if the designated constraints aren't met.
+type WorkoutGenerationSettingsValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e WorkoutGenerationSettingsValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e WorkoutGenerationSettingsValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e WorkoutGenerationSettingsValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e WorkoutGenerationSettingsValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e WorkoutGenerationSettingsValidationError) ErrorName() string {
+	return "WorkoutGenerationSettingsValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e WorkoutGenerationSettingsValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sWorkoutGenerationSettings.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = WorkoutGenerationSettingsValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = WorkoutGenerationSettingsValidationError{}
+
 // Validate checks the field values on UpdateWorkoutGenerationSettingsRequest
 // with the rules defined in the proto definition for this message. If any
 // rules are violated, the first error encountered is returned, or nil if
@@ -9487,6 +9540,30 @@ func (m *UpdateWorkoutGenerationSettingsRequest) validate(all bool) error {
 
 	if m.VarietyLevel != nil {
 		// no validation rules for VarietyLevel
+	}
+
+	if m.PrimaryGoal != nil {
+		// no validation rules for PrimaryGoal
+	}
+
+	if m.ExperienceLevel != nil {
+		// no validation rules for ExperienceLevel
+	}
+
+	if m.DaysPerWeek != nil {
+		// no validation rules for DaysPerWeek
+	}
+
+	if m.SessionDurationMinutes != nil {
+		// no validation rules for SessionDurationMinutes
+	}
+
+	if m.Injuries != nil {
+		// no validation rules for Injuries
+	}
+
+	if m.WorkoutPlanType != nil {
+		// no validation rules for WorkoutPlanType
 	}
 
 	if len(errors) > 0 {

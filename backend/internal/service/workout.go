@@ -2,14 +2,18 @@ package service
 
 import (
 	"context"
-	"fitness-trainer/internal/domain"
-	"fitness-trainer/internal/domain/dto"
-	"fitness-trainer/internal/logger"
+	"errors"
 	"fmt"
 	"time"
 
+	"fitness-trainer/internal/domain"
+	"fitness-trainer/internal/domain/dto"
+	"fitness-trainer/internal/logger"
+
 	"github.com/opentracing/opentracing-go"
 )
+
+const workoutsCount = 8
 
 func (s *Service) StartWorkout(ctx context.Context, userID domain.ID, opts domain.StartWorkoutOpts) (domain.Workout, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "service.StartWorkout")
@@ -101,13 +105,11 @@ func (s *Service) enrichWorkoutFromRoutine(ctx context.Context, userID, workoutI
 	return nil
 }
 
-func (s *Service) generateWorkout(ctx context.Context, userID domain.ID, userPrompt string) (dto.GeneratedWorkoutDTO, error) {
+func (s *Service) generateWorkout(ctx context.Context, userID domain.ID, _ string) (dto.GeneratedWorkoutDTO, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "service.generateWorkout")
 	defer span.Finish()
 
-	const numExercises = 8
-
-	userWorkouts, err := s.repository.GetWorkouts(ctx, userID, numExercises, 0)
+	userWorkouts, err := s.repository.GetWorkouts(ctx, userID, workoutsCount, 0)
 	if err != nil {
 		return dto.GeneratedWorkoutDTO{}, err
 	}
@@ -143,7 +145,7 @@ func (s *Service) generateWorkout(ctx context.Context, userID domain.ID, userPro
 
 	exercises, err := s.repository.GetExercises(ctx, []domain.ID{}, []domain.ID{})
 	if err != nil {
-		return dto.GeneratedWorkoutDTO{}, err
+		return dto.GeneratedWorkoutDTO{}, fmt.Errorf("failed to get exercises: %w", err)
 	}
 
 	exerciseDTOs := make([]dto.SlimExerciseDTO, 0, len(exercises))
@@ -155,18 +157,16 @@ func (s *Service) generateWorkout(ctx context.Context, userID domain.ID, userPro
 		})
 	}
 
-	generationSettings, err := s.GetGenerationSettings(ctx, userID)
-	if err != nil {
-		return dto.GeneratedWorkoutDTO{}, err
+	prompt, err := s.repository.GetLastPromptByUserID(ctx, userID)
+	if err != nil && !errors.Is(err, domain.ErrNotFound) {
+		return dto.GeneratedWorkoutDTO{}, fmt.Errorf("failed to get last prompt: %w", err)
 	}
 
 	opts := &dto.GenerateWorkoutOptions{
-		UserID:         userID,
-		Exercises:      exerciseDTOs,
-		Workouts:       userWorkoutsDTO,
-		VarietyLevel:   generationSettings.VarietyLevel,
-		BaseUserPrompt: generationSettings.BasePrompt,
-		UserPrompt:     userPrompt,
+		UserID:     userID,
+		Exercises:  exerciseDTOs,
+		Workouts:   userWorkoutsDTO,
+		UserPrompt: prompt.PromptText,
 	}
 
 	return s.workoutGenerator.GenerateWorkout(ctx, opts)

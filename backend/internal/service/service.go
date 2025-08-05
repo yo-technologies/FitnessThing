@@ -84,8 +84,12 @@ type expectedSetRepository interface {
 }
 
 type generationSettingsRepository interface {
+	CreateOrUpdateGenerationSettings(ctx context.Context, settings domain.GenerationSettings) (domain.GenerationSettings, error)
 	GetGenerationSettings(ctx context.Context, userID domain.ID) (domain.GenerationSettings, error)
-	SaveGenerationSettings(ctx context.Context, settings domain.GenerationSettings) (domain.GenerationSettings, error)
+}
+
+type promptRepository interface {
+	GetLastPromptByUserID(ctx context.Context, userID domain.ID) (domain.Prompt, error)
 }
 
 type repository interface {
@@ -100,6 +104,7 @@ type repository interface {
 	setRepository
 	expectedSetRepository
 	generationSettingsRepository
+	promptRepository
 }
 
 type unitOfWork interface {

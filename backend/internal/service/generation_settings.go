@@ -2,9 +2,13 @@ package service
 
 import (
 	"context"
+	"crypto/md5"
+	"encoding/json"
 	"errors"
 	"fitness-trainer/internal/domain"
 	"fitness-trainer/internal/domain/dto"
+	"fmt"
+	"time"
 
 	"github.com/opentracing/opentracing-go"
 )
@@ -13,33 +17,77 @@ func (s *Service) SaveGenerationSettings(ctx context.Context, userID domain.ID, 
 	span, ctx := opentracing.StartSpanFromContext(ctx, "service.SaveGenerationSettings")
 	defer span.Finish()
 
-	var settings domain.GenerationSettings
-	if err := s.unitOfWork.InTransaction(ctx, func(ctx context.Context) (err error) {
-		settings, err := s.repository.GetGenerationSettings(ctx, userID)
-		if err != nil {
-			if errors.Is(err, domain.ErrNotFound) {
-				settings = domain.NewGenerationSettings(userID)
-			} else {
-				return err
-			}
-		}
+	settings, err := s.repository.GetGenerationSettings(ctx, userID)
+	if err != nil && !errors.Is(err, domain.ErrNotFound) {
+		return domain.GenerationSettings{}, fmt.Errorf("failed to get generation settings: %w", err)
+	}
 
+	if errors.Is(err, domain.ErrNotFound) {
+		settings = domain.NewGenerationSettings(userID)
+	}
+
+	{
 		if createDTO.BasePrompt.IsValid {
-			settings.BasePrompt = createDTO.BasePrompt.V
+			settings.BasePrompt = createDTO.BasePrompt
 		}
-
 		if createDTO.VarietyLevel.IsValid {
-			settings.VarietyLevel = createDTO.VarietyLevel.V
+			settings.VarietyLevel = createDTO.VarietyLevel
+		}
+		if createDTO.PrimaryGoal.IsValid {
+			settings.PrimaryGoal = createDTO.PrimaryGoal.V
+		}
+		if createDTO.SecondaryGoals != nil {
+			settings.SecondaryGoals = createDTO.SecondaryGoals
+		}
+		if createDTO.ExperienceLevel.IsValid {
+			settings.ExperienceLevel = createDTO.ExperienceLevel.V
+		}
+		if createDTO.DaysPerWeek.IsValid {
+			settings.DaysPerWeek = createDTO.DaysPerWeek
+		}
+		if createDTO.SessionDurationMinutes.IsValid {
+			settings.SessionDurationMinutes = createDTO.SessionDurationMinutes
+		}
+		if createDTO.Injuries.IsValid {
+			settings.Injuries = createDTO.Injuries
+		}
+		if createDTO.PriorityMuscleGroupsIDs != nil {
+			settings.PriorityMuscleGroupsIDs = createDTO.PriorityMuscleGroupsIDs
+		}
+		if createDTO.WorkoutPlanType.IsValid {
+			settings.WorkoutPlanType = createDTO.WorkoutPlanType.V
+		}
+		settings.UpdatedAt = time.Now()
+	}
+
+	settings.Hash, err = hashGenerationSettings(settings)
+	if err != nil {
+		return domain.GenerationSettings{}, fmt.Errorf("failed to hash generation settings: %w", err)
+	}
+
+	if err := s.unitOfWork.InTransaction(ctx, func(ctx context.Context) (err error) {
+		settings, err = s.repository.CreateOrUpdateGenerationSettings(ctx, settings)
+		if err != nil {
+			return fmt.Errorf("failed to create or update generation settings: %w", err)
 		}
 
-		settings, err = s.repository.SaveGenerationSettings(ctx, settings)
+		// Обновляем флаг завершения онбординга для пользователя
+		user, err := s.repository.GetUserByID(ctx, userID)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to get user: %w", err)
+		}
+
+		if !user.HasCompletedOnboarding {
+			user.HasCompletedOnboarding = true
+			_, err = s.repository.UpdateUser(ctx, user)
+			if err != nil {
+				return fmt.Errorf("failed to update user onboarding status: %w", err)
+			}
 		}
 
 		return nil
 	}); err != nil {
-		return domain.GenerationSettings{}, err
+		return domain.GenerationSettings{}, fmt.Errorf("failed to save generation settings: %w", err)
 	}
 
 	return settings, nil
@@ -50,23 +98,23 @@ func (s *Service) GetGenerationSettings(ctx context.Context, userID domain.ID) (
 	defer span.Finish()
 
 	settings, err := s.repository.GetGenerationSettings(ctx, userID)
-
-	// If the settings are found, return them
-	if err == nil {
-		return settings, nil
+	if err != nil && !errors.Is(err, domain.ErrNotFound) {
+		return domain.GenerationSettings{}, fmt.Errorf("failed to get generation settings: %w", err)
 	}
 
-	// If error is not not found, return the error
-	if !errors.Is(err, domain.ErrNotFound) {
-		return domain.GenerationSettings{}, err
-	}
-
-	// Create and save new settings
-	settings = domain.NewGenerationSettings(userID)
-	settings, err = s.repository.SaveGenerationSettings(ctx, settings)
-	if err != nil {
-		return domain.GenerationSettings{}, err
+	if errors.Is(err, domain.ErrNotFound) {
+		settings = domain.NewGenerationSettings(userID)
 	}
 
 	return settings, nil
+}
+
+func hashGenerationSettings(settings domain.GenerationSettings) (string, error) {
+	bytes, err := json.Marshal(settings)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal generation settings: %w", err)
+	}
+
+	hash := md5.Sum(bytes)
+	return fmt.Sprintf("%x", hash), nil
 }

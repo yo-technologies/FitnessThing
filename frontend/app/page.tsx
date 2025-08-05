@@ -11,6 +11,7 @@ import { WorkoutWorkout } from "@/api/api.generated";
 import { AnimationProcessor } from "@/components/animated-background";
 import { BoltIcon, ChevronRightIcon, PlayIcon } from "@/config/icons";
 import { Loading } from "@/components/loading";
+import { OnboardingModal } from "@/components/OnboardingModal";
 import { authApi } from "@/api/api";
 
 export default function Home() {
@@ -21,6 +22,13 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
   const [isError, setIsError] = useState(false);
   const [isWorkoutGenerating, setIsWorkoutGenerating] = useState(false);
+
+  // Константы для localStorage
+  const ONBOARDING_SKIPPED_KEY = "fitness-onboarding-skipped";
+
+  // Состояние для онбординга
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [hasCheckedOnboarding, setHasCheckedOnboarding] = useState(false);
 
   const router = useRouter();
 
@@ -76,6 +84,50 @@ export default function Home() {
     }
   }
 
+  // Проверяем онбординг после получения данных пользователя
+  useEffect(() => {
+    if (!isLoading && user.id) {
+      checkOnboardingStatus();
+    }
+  }, [isLoading, user.id]);
+
+  // Проверяем статус онбординга
+  async function checkOnboardingStatus() {
+    if (hasCheckedOnboarding) return;
+
+    try {
+      // Проверяем флаг в localStorage (если пользователь пропустил онбординг)
+      const onboardingSkipped = localStorage.getItem(ONBOARDING_SKIPPED_KEY);
+
+      // Проверяем флаг в профиле пользователя
+      const hasCompletedOnboarding = user.hasCompletedOnboarding;
+
+      // Показываем онбординг только если:
+      // 1. Пользователь не завершил онбординг И
+      // 2. Пользователь не пропускал онбординг ранее
+      if (!hasCompletedOnboarding && !onboardingSkipped) {
+        setShowOnboarding(true);
+      }
+
+      setHasCheckedOnboarding(true);
+    } catch (error: any) {
+      console.log("Error checking onboarding status:", error);
+      setHasCheckedOnboarding(true);
+    }
+  }
+
+  const handleOnboardingComplete = () => {
+    setShowOnboarding(false);
+    // При завершении онбординга флаг hasCompletedOnboarding уже обновится на backend
+    setUser((prev: any) => ({ ...prev, hasCompletedOnboarding: true }));
+  };
+
+  const handleOnboardingClose = () => {
+    setShowOnboarding(false);
+    // Сохраняем в localStorage, что пользователь пропустил онбординг
+    localStorage.setItem(ONBOARDING_SKIPPED_KEY, "true");
+  };
+
   async function startWorkout(
     routineId: string | undefined,
     generate: boolean = false,
@@ -85,6 +137,14 @@ export default function Home() {
 
       return;
     }
+
+    // Проверяем онбординг при попытке ИИ-генерации
+    if (generate && !user.hasCompletedOnboarding) {
+      setShowOnboarding(true);
+
+      return;
+    }
+
     setIsWorkoutGenerating(true);
     await authApi.v1
       .workoutServiceStartWorkout({
@@ -318,6 +378,13 @@ export default function Home() {
           </div>
         </div>
       )}
+
+      {/* Модальное окно онбординга */}
+      <OnboardingModal
+        isOpen={showOnboarding}
+        onClose={handleOnboardingClose}
+        onComplete={handleOnboardingComplete}
+      />
     </div>
   );
 }

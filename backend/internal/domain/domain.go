@@ -8,8 +8,6 @@ import (
 	"github.com/google/uuid"
 )
 
-const defaultVarietyLevel = 2
-
 type ID uuid.UUID
 
 func NewID() ID {
@@ -45,14 +43,15 @@ func NewModel() Model {
 type User struct {
 	Model
 
-	TelegramID       int64
-	TelegramUsername utils.Nullable[string]
-	FirstName        utils.Nullable[string]
-	LastName         utils.Nullable[string]
-	DateOfBirth      time.Time
-	Height           utils.Nullable[float32]
-	Weight           utils.Nullable[float32]
-	ProfilePicURL    utils.Nullable[string]
+	TelegramID            int64
+	TelegramUsername      utils.Nullable[string]
+	FirstName             utils.Nullable[string]
+	LastName              utils.Nullable[string]
+	DateOfBirth           time.Time
+	Height                utils.Nullable[float32]
+	Weight                utils.Nullable[float32]
+	ProfilePicURL         utils.Nullable[string]
+	HasCompletedOnboarding bool
 }
 
 func NewUser(
@@ -301,44 +300,5 @@ func NewExerciseSetLog(exerciseLogID ID, reps int, weight float32, time time.Dur
 		Reps:          reps,
 		Weight:        weight,
 		Time:          time,
-	}
-}
-
-type Session struct {
-	Model
-
-	UserID    ID
-	ExpiredAt time.Time
-	Token     string
-}
-
-func NewSession(userID ID, expiredAt time.Time, token string) Session {
-	return Session{
-		Model:     NewModel(),
-		UserID:    userID,
-		ExpiredAt: expiredAt,
-		Token:     token,
-	}
-}
-
-type Tokens struct {
-	AccessToken  string
-	RefreshToken string
-}
-
-type GenerationSettings struct {
-	Model
-
-	UserID       ID
-	BasePrompt   string
-	VarietyLevel int
-}
-
-func NewGenerationSettings(userID ID) GenerationSettings {
-	return GenerationSettings{
-		Model:        NewModel(),
-		UserID:       userID,
-		BasePrompt:   "",
-		VarietyLevel: defaultVarietyLevel,
 	}
 }
