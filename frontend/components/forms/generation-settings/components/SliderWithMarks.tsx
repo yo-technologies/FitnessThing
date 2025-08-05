@@ -41,6 +41,7 @@ export function SliderWithMarks({
           marks={marks}
           maxValue={maxValue}
           minValue={minValue}
+          size="sm"
           step={step}
           value={value}
           onChange={onChange}

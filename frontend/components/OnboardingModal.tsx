@@ -26,6 +26,7 @@ import {
   SliderWithMarks,
   TextField,
   MultiChipSelector,
+  EditableChipField,
   OnboardingFormData,
 } from "./forms/generation-settings";
 
@@ -143,6 +144,14 @@ export function OnboardingModal({
                 value={formData.primaryGoal}
                 onChange={(goal) => updateFormData({ primaryGoal: goal })}
               />
+              <EditableChipField
+                color="primary"
+                placeholder="Например: Улучшить осанку, увеличить гибкость, развить координацию..."
+                title="Дополнительные цели:"
+                tooltip="Укажите дополнительные цели, которые важны для вас помимо основной."
+                value={formData.secondaryGoals}
+                onChange={(goals) => updateFormData({ secondaryGoals: goals })}
+              />
               <ChipSelector
                 color="success"
                 options={EXPERIENCE_LEVEL_OPTIONS}
@@ -235,7 +244,6 @@ export function OnboardingModal({
                 onChange={(selectedIds) =>
                   updateFormData({ priorityMuscleGroupsIds: selectedIds })
                 }
-                onClear={() => updateFormData({ priorityMuscleGroupsIds: [] })}
               />
             </div>
           );

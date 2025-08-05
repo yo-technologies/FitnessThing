@@ -24,7 +24,7 @@ export function TextField({
         <Textarea
           classNames={{
             input:
-              "text-sm placeholder:text-default-400 placeholder:text-xs placeholder:font-light",
+              "text-xs text-default-600 placeholder:text-default-400 placeholder:text-xs placeholder:font-normal",
           }}
           maxRows={maxRows}
           minRows={minRows}

@@ -58,7 +58,6 @@ export interface MultiChipSelectorProps {
   selectedIds: string[];
   color: "primary" | "secondary" | "success" | "warning" | "danger" | "default";
   onChange: (selectedIds: string[]) => void;
-  onClear: () => void;
 }
 
 // Типы для шагов онбординга
@@ -70,6 +69,7 @@ export interface OnboardingStep {
 
 export interface OnboardingFormData {
   primaryGoal: WorkoutGoal;
+  secondaryGoals: string[];
   experienceLevel: WorkoutExperienceLevel;
   workoutPlanType: WorkoutWorkoutPlanType;
   daysPerWeek: number;

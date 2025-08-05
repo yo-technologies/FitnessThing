@@ -20,6 +20,7 @@ import {
   SliderWithMarks,
   TextField,
   MultiChipSelector,
+  EditableChipField,
   GOAL_OPTIONS,
   EXPERIENCE_LEVEL_OPTIONS,
   WORKOUT_PLAN_TYPE_OPTIONS,
@@ -95,7 +96,8 @@ export default function GenerationSettingsPage() {
     ) {
       try {
         await authApi.v1.userServiceUpdateWorkoutGenerationSettings(updates);
-        setSettings({ ...settings, ...updates });
+        // Не обновляем settings, чтобы избежать ререндера
+        // setSettings({ ...settings, ...updates });
       } catch (error) {
         console.log(error);
         toast.error("Не удалось обновить настройки");
@@ -104,8 +106,13 @@ export default function GenerationSettingsPage() {
 
     function PrimaryGoalSelect() {
       const [primaryGoal, setPrimaryGoal] = useState<WorkoutGoal>(
-        settings.primaryGoal || WorkoutGoal.GOAL_UNSPECIFIED,
+        WorkoutGoal.GOAL_UNSPECIFIED,
       );
+
+      // Синхронизируем с settings только при изменении settings.primaryGoal
+      useEffect(() => {
+        setPrimaryGoal(settings.primaryGoal || WorkoutGoal.GOAL_UNSPECIFIED);
+      }, [settings.primaryGoal]);
 
       const handleChange = (goal: WorkoutGoal) => {
         setPrimaryGoal(goal);
@@ -124,12 +131,52 @@ export default function GenerationSettingsPage() {
       );
     }
 
+    function SecondaryGoalsField() {
+      const [secondaryGoals, setSecondaryGoals] = useState<string[]>([]);
+
+      // Синхронизируем с settings только при изменении settings.secondaryGoals
+      useEffect(() => {
+        setSecondaryGoals(settings.secondaryGoals || []);
+      }, [settings.secondaryGoals]);
+
+      // Создаем debounced функцию для обновления настроек
+      const debouncedUpdate = useCallback(
+        debounce((goals: string[]) => {
+          updateSettings({ secondaryGoals: goals });
+        }, 1000),
+        [updateSettings],
+      );
+
+      const handleChange = (goals: string[]) => {
+        setSecondaryGoals(goals);
+        debouncedUpdate(goals);
+      };
+
+      return (
+        <EditableChipField
+          color="primary"
+          placeholder="Например: Улучшить осанку, увеличить гибкость, развить координацию..."
+          title="Дополнительные цели:"
+          tooltip="Укажите дополнительные цели, которые важны для вас помимо основной."
+          value={secondaryGoals}
+          onChange={handleChange}
+        />
+      );
+    }
+
     function ExperienceLevelSelect() {
       const [experienceLevel, setExperienceLevel] =
         useState<WorkoutExperienceLevel>(
+          WorkoutExperienceLevel.EXPERIENCE_LEVEL_UNSPECIFIED,
+        );
+
+      // Синхронизируем с settings только при изменении settings.experienceLevel
+      useEffect(() => {
+        setExperienceLevel(
           settings.experienceLevel ||
             WorkoutExperienceLevel.EXPERIENCE_LEVEL_UNSPECIFIED,
         );
+      }, [settings.experienceLevel]);
 
       const handleChange = (level: WorkoutExperienceLevel) => {
         setExperienceLevel(level);
@@ -151,9 +198,16 @@ export default function GenerationSettingsPage() {
     function WorkoutPlanTypeSelect() {
       const [workoutPlanType, setWorkoutPlanType] =
         useState<WorkoutWorkoutPlanType>(
+          WorkoutWorkoutPlanType.WORKOUT_PLAN_TYPE_UNSPECIFIED,
+        );
+
+      // Синхронизируем с settings только при изменении settings.workoutPlanType
+      useEffect(() => {
+        setWorkoutPlanType(
           settings.workoutPlanType ||
             WorkoutWorkoutPlanType.WORKOUT_PLAN_TYPE_UNSPECIFIED,
         );
+      }, [settings.workoutPlanType]);
 
       const handleChange = (planType: WorkoutWorkoutPlanType) => {
         setWorkoutPlanType(planType);
@@ -312,7 +366,6 @@ export default function GenerationSettingsPage() {
           title="Приоритетные группы мышц:"
           tooltip="Выберите группы мышц, на которые хотите сделать акцент."
           onChange={handleChange}
-          onClear={handleClear}
         />
       );
     }
@@ -391,6 +444,7 @@ export default function GenerationSettingsPage() {
     return (
       <div className="flex flex-col gap-4 px-4 pb-4">
         <PrimaryGoalSelect />
+        <SecondaryGoalsField />
         <ExperienceLevelSelect />
         <WorkoutPlanTypeSelect />
         <Divider />

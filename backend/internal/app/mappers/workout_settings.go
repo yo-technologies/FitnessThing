@@ -124,7 +124,11 @@ func UpdateGenerationSettingsRequestToCreateDTO(req *desc.UpdateWorkoutGeneratio
 		createDTO.VarietyLevel = utils.NewNullable(int(req.GetVarietyLevel()), req.VarietyLevel != nil)
 
 		createDTO.PrimaryGoal = utils.NewNullable(GoalFromProto(req.GetPrimaryGoal()), req.PrimaryGoal != nil)
+
 		createDTO.SecondaryGoals = req.GetSecondaryGoals()
+		if len(createDTO.SecondaryGoals) == 0 {
+			createDTO.SecondaryGoals = []string{}
+		}
 
 		createDTO.ExperienceLevel = utils.NewNullable(ExperienceLevelFromProto(req.GetExperienceLevel()), req.ExperienceLevel != nil)
 		createDTO.WorkoutPlanType = utils.NewNullable(WorkoutPlanTypeFromProto(req.GetWorkoutPlanType()), req.WorkoutPlanType != nil)

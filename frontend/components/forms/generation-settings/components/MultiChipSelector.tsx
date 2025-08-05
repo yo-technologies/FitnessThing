@@ -14,7 +14,6 @@ export function MultiChipSelector({
   selectedIds,
   color,
   onChange,
-  onClear,
 }: MultiChipSelectorProps) {
   const handleToggle = (id: string) => {
     const newSelection = selectedIds.includes(id)
@@ -28,25 +27,6 @@ export function MultiChipSelector({
     <Card>
       <CardBody className="flex flex-col gap-2">
         <SectionHeader title={title} tooltip={tooltip} />
-
-        {selectedIds.length > 0 ? (
-          <div className="flex justify-between items-center">
-            <p className="text-xs text-default-500">
-              Выбрано: {selectedIds.length}
-            </p>
-            <Button
-              className="p-0"
-              color="danger"
-              size="sm"
-              variant="light"
-              onPress={onClear}
-            >
-              Очистить
-            </Button>
-          </div>
-        ) : (
-          <div />
-        )}
 
         <div className="flex flex-wrap gap-2">
           {options.map((option) => (

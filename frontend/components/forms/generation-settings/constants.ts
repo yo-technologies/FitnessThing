@@ -115,6 +115,7 @@ export const getVarietyLabel = (level: number): string => {
 // Значения по умолчанию
 export const DEFAULT_FORM_DATA = {
   primaryGoal: WorkoutGoal.GOAL_UNSPECIFIED,
+  secondaryGoals: [],
   experienceLevel: WorkoutExperienceLevel.EXPERIENCE_LEVEL_UNSPECIFIED,
   workoutPlanType: WorkoutWorkoutPlanType.WORKOUT_PLAN_TYPE_UNSPECIFIED,
   daysPerWeek: 3,
