@@ -174,7 +174,7 @@ func Run() error {
 
 	promptGenerationService := prompt_generator_service.New(
 		promptsClientWrapper,
-		repo, // добавляем репозиторий для получения muscle groups
+		repo,
 	)
 
 	backgroundService := background.New(

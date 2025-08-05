@@ -13,7 +13,7 @@ type generationSettingsRepository interface {
 	ListGenerationSettingsToProcess(ctx context.Context, debounceTime time.Duration) ([]domain.GenerationSettings, error)
 }
 
-type promptRepositry interface {
+type promptRepository interface {
 	CreatePrompt(ctx context.Context, prompt domain.Prompt) (domain.Prompt, error)
 }
 
@@ -29,7 +29,7 @@ type rateLimiter interface {
 type Service struct {
 	debounceTime                 time.Duration
 	generationSettingsRepository generationSettingsRepository
-	promptRepository             promptRepositry
+	promptRepository             promptRepository
 	promptGenerator              promptGenerator
 	rateLimiter                  rateLimiter
 }
@@ -38,7 +38,7 @@ type Service struct {
 func New(
 	debounceTime time.Duration,
 	generationSettingsRepository generationSettingsRepository,
-	promptRepository promptRepositry,
+	promptRepository promptRepository,
 	promptGenerator promptGenerator,
 	rateLimiter rateLimiter,
 ) *Service {
