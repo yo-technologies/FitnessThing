@@ -3,6 +3,7 @@ import { Card, CardBody } from "@nextui-org/card";
 import { Chip } from "@nextui-org/chip";
 
 import { SectionHeader } from "./SectionHeader";
+import clsx from "clsx";
 
 export interface EditableChipFieldProps {
   title: string;
@@ -129,7 +130,10 @@ export function EditableChipField({
             {editingIndex === null && (
               <textarea
                 ref={textareaRef}
-                className="flex-1 h-fit resize-none outline-none bg-transparent text-xs placeholder:text-default-400 placeholder:text-xs leading-6 placeholder:leading-6"
+                className={clsx(
+                  "flex-1 h-fit resize-none outline-none bg-transparent text-xs placeholder:text-default-400 placeholder:text-xs",
+                  value.length > 0 && "leading-6 placeholder:leading-6",
+                )}
                 placeholder={
                   value.length === 0 ? placeholder : " добавить цель..."
                 }
