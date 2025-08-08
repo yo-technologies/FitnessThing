@@ -27,6 +27,7 @@ import {
   formatDuration,
   getVarietyLabel,
 } from "@/components/forms/generation-settings";
+import { translateMuscleGroup } from "@/config/muscle-groups";
 
 export default function GenerationSettingsPage() {
   const [isLoading, setIsLoading] = useState(true);
@@ -96,8 +97,6 @@ export default function GenerationSettingsPage() {
     ) {
       try {
         await authApi.v1.userServiceUpdateWorkoutGenerationSettings(updates);
-        // Не обновляем settings, чтобы избежать ререндера
-        // setSettings({ ...settings, ...updates });
       } catch (error) {
         console.log(error);
         toast.error("Не удалось обновить настройки");
@@ -350,17 +349,12 @@ export default function GenerationSettingsPage() {
         updateSettings({ priorityMuscleGroupsIds: selectedIds });
       };
 
-      const handleClear = () => {
-        setPriorityMuscleGroups([]);
-        updateSettings({ priorityMuscleGroupsIds: [] });
-      };
-
       return (
         <MultiChipSelector
           color="success"
           options={muscleGroups.map((group) => ({
             id: group.id!,
-            name: group.name!,
+            name: translateMuscleGroup(group.name!),
           }))}
           selectedIds={priorityMuscleGroups}
           title="Приоритетные группы мышц:"

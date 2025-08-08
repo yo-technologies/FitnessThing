@@ -36,6 +36,7 @@ import { ChevronRightIcon, GripVerticalIcon, PlusIcon } from "@/config/icons";
 import { ModalSelectExercise } from "@/components/pick-exercises-modal";
 import { PageHeader } from "@/components/page-header";
 import { Loading } from "@/components/loading";
+import { translateMuscleGroups } from "@/config/muscle-groups";
 import {
   WorkoutExerciseInstanceDetails,
   WorkoutRoutineDetailResponse,
@@ -252,9 +253,9 @@ export default function RoutineDetailsPage({
                           ? "а"
                           : "ов")}
                     {" • "}
-                    {exerciseInstanceDetails.exercise!.targetMuscleGroups!.join(
-                      ", ",
-                    )}
+                    {translateMuscleGroups(
+                      exerciseInstanceDetails.exercise!.targetMuscleGroups!,
+                    ).join(", ")}
                   </p>
                 </div>
               </CardBody>

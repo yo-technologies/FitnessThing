@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Card, CardBody } from "@nextui-org/card";
 import { Chip } from "@nextui-org/chip";
+import clsx from "clsx";
 
 import { SectionHeader } from "./SectionHeader";
-import clsx from "clsx";
 
 export interface EditableChipFieldProps {
   title: string;

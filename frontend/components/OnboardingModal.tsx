@@ -32,6 +32,7 @@ import {
 
 import { authApi } from "@/api/api";
 import { WorkoutMuscleGroup } from "@/api/api.generated";
+import { translateMuscleGroup } from "@/config/muscle-groups";
 
 interface OnboardingModalProps {
   isOpen: boolean;
@@ -236,7 +237,7 @@ export function OnboardingModal({
                 color="success"
                 options={muscleGroups.map((group) => ({
                   id: group.id!,
-                  name: group.name!,
+                  name: translateMuscleGroup(group.name!),
                 }))}
                 selectedIds={formData.priorityMuscleGroupsIds}
                 title="Приоритетные группы мышц:"

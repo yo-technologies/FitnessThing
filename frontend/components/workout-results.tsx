@@ -19,6 +19,7 @@ import {
 import { WorkoutGetWorkoutResponse } from "@/api/api.generated";
 import { authApi } from "@/api/api";
 import { Loading } from "@/components/loading";
+import { translateMuscleGroups } from "@/config/muscle-groups";
 
 export function WorkoutResults({
   id,
@@ -219,7 +220,9 @@ export function WorkoutResults({
           <div className="flex flex-row items-center justify-center w-3">
             <PersonIcon className="w-4 h-4" />
           </div>
-          <p className="text-sm">{distinctMuscleGroups.join(", ")}</p>
+          <p className="text-sm">
+            {translateMuscleGroups(distinctMuscleGroups).join(", ")}
+          </p>
         </div>
         {/* общий вес упражнений */}
         <div className="flex flex-row gap-2 items-center">

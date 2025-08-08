@@ -12,6 +12,7 @@ import { Button } from "@nextui-org/button";
 import InfiniteScroll, { useInfiniteScroll } from "./infinite-scroll";
 
 import { authApi } from "@/api/api";
+import { translateMuscleGroup, translateMuscleGroups } from "@/config/muscle-groups";
 import { WorkoutExercise } from "@/api/api.generated";
 
 function SkeletonExerciseCard() {
@@ -84,7 +85,7 @@ function ExerciseCard({
           {exercise.targetMuscleGroups ? (
             <div className="flex flex-row gap-2">
               <p className="text-xs text-gray-400">
-                {exercise.targetMuscleGroups.join(", ")}
+                {translateMuscleGroups(exercise.targetMuscleGroups).join(", ")}
               </p>
             </div>
           ) : null}
@@ -272,7 +273,7 @@ export function ModalSelectExercise({
               >
                 {muscleGroups.map((muscleGroup) => (
                   <SelectItem key={muscleGroup.id} value={muscleGroup.id}>
-                    {muscleGroup.name}
+                    {translateMuscleGroup(muscleGroup.name)}
                   </SelectItem>
                 ))}
               </Select>
