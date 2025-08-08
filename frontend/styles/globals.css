@@ -7,3 +7,18 @@
     padding: 0;
     margin: 0;
 }
+
+/* Когда открыта клавиатура (управляется через documentElement.classList) */
+.kb-open body .app-navbar {
+    transform: translateY(100%);
+}
+
+/* Включаем утилиту для варианта kb-open, чтобы использовать kb-open:mb-0 и т.п. */
+.kb-open body .app-main {
+    margin-bottom: 0 !important;
+}
+
+/* Помощники для iOS safe-area */
+:root {
+    --safe-bottom: env(safe-area-inset-bottom);
+}

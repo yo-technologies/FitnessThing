@@ -74,7 +74,13 @@ export default function RootLayout({
               enableSystem: true,
             }}
           >
-            <main className="flex mx-auto flex-grow overflow-y-auto mb-[4.5rem] w-full h-full">
+            <main
+              className={clsx(
+                "app-main flex mx-auto flex-grow overflow-y-auto w-full h-full",
+                // Отступ под navbar; убираем при открытой клавиатуре (см. globals.css)
+                "mb-[max(4.5rem,env(safe-area-inset-bottom))]",
+              )}
+            >
               <div className="flex flex-grow max-h-full flex-col w-full">
                 {children}
               </div>
