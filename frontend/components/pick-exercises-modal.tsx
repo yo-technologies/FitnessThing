@@ -214,6 +214,12 @@ export function ModalSelectExercise({
     fetchExercises();
   }, [muscleGroup, isOpen]);
 
+  useEffect(() => {
+    if (!isOpen) {
+      setSelectedExercisesIds([]);
+    }
+  }, [isOpen]);
+
   function ExerciseList({
     exercises,
     selectedExercisesIds,
@@ -301,6 +307,7 @@ export function ModalSelectExercise({
                 color="primary"
                 onPress={() => {
                   onSubmit(selectedExercisesIds);
+                  setSelectedExercisesIds([]);
                   onClose();
                 }}
               >
