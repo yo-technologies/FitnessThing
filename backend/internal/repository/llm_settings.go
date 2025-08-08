@@ -247,8 +247,13 @@ func (r *PGXRepository) ListGenerationSettingsToProcess(
 			OR last_prompt.settings_hash != us.hash
 			OR last_prompt.created_at < us.updated_at
 		)
-		AND us.updated_at < NOW() - $1::interval
-	ORDER BY us.updated_at ASC
+		AND (
+			-- Если промптов еще нет, берём без дебаунса
+			last_prompt.settings_hash IS NULL 
+			OR us.updated_at < NOW() - $1::interval
+		)
+	-- Сначала обрабатываем тех, у кого ещё нет промптов, затем по времени обновления
+	ORDER BY (last_prompt.settings_hash IS NULL) DESC, us.updated_at ASC
 `
 
 	engine := r.contextManager.GetEngineFromContext(ctx)
