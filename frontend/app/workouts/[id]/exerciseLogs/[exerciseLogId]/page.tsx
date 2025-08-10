@@ -2,11 +2,15 @@
 
 import { Button } from "@nextui-org/button";
 import { Card, CardBody } from "@nextui-org/card";
+import { Divider } from "@nextui-org/divider";
+import {
+  Dropdown,
+  DropdownItem,
+  DropdownMenu,
+  DropdownTrigger,
+} from "@nextui-org/dropdown";
 import { Form } from "@nextui-org/form";
 import { Textarea } from "@nextui-org/input";
-import { Slider } from "@nextui-org/slider";
-import { Tabs, Tab } from "@nextui-org/tabs";
-import { DropdownItem } from "@nextui-org/dropdown";
 import {
   Modal,
   ModalBody,
@@ -15,10 +19,11 @@ import {
   ModalHeader,
   useDisclosure,
 } from "@nextui-org/modal";
+import { Tabs, Tab } from "@nextui-org/tabs";
+import { Slider } from "@nextui-org/slider";
 import { useRouter } from "next/navigation";
 import { use, useEffect, useRef, useState } from "react";
 import { toast } from "react-toastify";
-import { Divider } from "@nextui-org/divider";
 import { Spinner } from "@nextui-org/react";
 
 import { PageHeader } from "@/components/page-header";
@@ -28,6 +33,7 @@ import {
   WorkoutExerciseLogDetails,
   WorkoutExpectedSet,
   WorkoutSetLog,
+  WorkoutWeightUnit,
 } from "@/api/api.generated";
 import { authApi } from "@/api/api";
 import { InputWithIncrement } from "@/components/input-with-increments";
@@ -45,6 +51,13 @@ export default function RoutineDetailsPage({
 
   const [exerciseLogDetails, setExerciseLogDetails] =
     useState<WorkoutExerciseLogDetails>({});
+
+  const currentUnit: WorkoutWeightUnit =
+    exerciseLogDetails.exerciseLog?.weightUnit ||
+    WorkoutWeightUnit.WEIGHT_UNIT_KG;
+  const unitLabel =
+    currentUnit === WorkoutWeightUnit.WEIGHT_UNIT_LB ? "lb" : "кг";
+
   const [exerciseLogHistory, setExerciseLogHistory] = useState<
     WorkoutExerciseLogDetails[]
   >([]);
@@ -158,7 +171,7 @@ export default function RoutineDetailsPage({
               {setNum + 1}
             </div>
             <div className="text-sm font-semibold justify-self-start">
-              {setLog.weight! > 0 ? `${setLog.weight} кг` : ""}
+              {setLog.weight! > 0 ? `${setLog.weight} ${unitLabel}` : ""}
             </div>
             <div className="text-sm font-semibold justify-self-center">x</div>
             <div className="text-sm font-semibold justify-self-start">
@@ -267,7 +280,49 @@ export default function RoutineDetailsPage({
                     <InputWithIncrement
                       className="h-10"
                       classNames={{ incrementButton: "w-12" }}
-                      label="Вес"
+                      labelNode={
+                        <Dropdown>
+                          <DropdownTrigger>
+                            <p className="cursor-pointer text-md font-light">
+                              Вес {unitLabel} ▾
+                            </p>
+                          </DropdownTrigger>
+                          <DropdownMenu
+                            disallowEmptySelection
+                            aria-label="Выбор единиц"
+                            selectedKeys={
+                              new Set([
+                                currentUnit === WorkoutWeightUnit.WEIGHT_UNIT_LB
+                                  ? "lb"
+                                  : "kg",
+                              ])
+                            }
+                            selectionMode="single"
+                            onSelectionChange={async (keys) => {
+                              const key = Array.from(keys)[0] as string;
+                              const nextUnit =
+                                key === "lb"
+                                  ? WorkoutWeightUnit.WEIGHT_UNIT_LB
+                                  : WorkoutWeightUnit.WEIGHT_UNIT_KG;
+
+                              if (nextUnit === currentUnit) return;
+                              try {
+                                await authApi.v1.workoutServiceUpdateExerciseLogWeightUnit(
+                                  id,
+                                  exerciseLogId,
+                                  { weightUnit: nextUnit },
+                                );
+                                await fetchExerciseLogDetails();
+                              } catch {
+                                toast.error("Не удалось сменить единицу веса");
+                              }
+                            }}
+                          >
+                            <DropdownItem key="kg">кг</DropdownItem>
+                            <DropdownItem key="lb">lb</DropdownItem>
+                          </DropdownMenu>
+                        </Dropdown>
+                      }
                       min={0}
                       placeholder="10"
                       setValue={setWeight}
@@ -289,10 +344,20 @@ export default function RoutineDetailsPage({
                   </div>
                 </ModalBody>
                 <ModalFooter className="flex flex-col gap-2 w-full justify-around px-2 py-0">
-                  <Button className="w-full" color="success" type="submit">
+                  <Button
+                    className="w-full"
+                    color="success"
+                    size="sm"
+                    type="submit"
+                  >
                     Изменить
                   </Button>
-                  <Button className="w-full" color="danger" onPress={onClose}>
+                  <Button
+                    className="w-full"
+                    color="danger"
+                    size="sm"
+                    onPress={onClose}
+                  >
                     Отмена
                   </Button>
                 </ModalFooter>
@@ -373,7 +438,51 @@ export default function RoutineDetailsPage({
                     <InputWithIncrement
                       className="h-10"
                       classNames={{ incrementButton: "w-12" }}
-                      label="Вес"
+                      labelNode={
+                        <Dropdown>
+                          <DropdownTrigger>
+                            <p className="cursor-pointer text-md font-light">
+                              Вес {unitLabel} ▾
+                            </p>
+                          </DropdownTrigger>
+                          <DropdownMenu
+                            disallowEmptySelection
+                            aria-label="Выбор единиц"
+                            selectedKeys={
+                              new Set([
+                                currentUnit === WorkoutWeightUnit.WEIGHT_UNIT_LB
+                                  ? "lb"
+                                  : "kg",
+                              ])
+                            }
+                            selectionMode="single"
+                            onSelectionChange={async (keys) => {
+                              const key = Array.from(keys)[0] as string;
+                              const nextUnit =
+                                key === "lb"
+                                  ? WorkoutWeightUnit.WEIGHT_UNIT_LB
+                                  : WorkoutWeightUnit.WEIGHT_UNIT_KG;
+
+                              if (nextUnit === currentUnit) return;
+                              try {
+                                await authApi.v1.workoutServiceUpdateExerciseLogWeightUnit(
+                                  id,
+                                  exerciseLogId,
+                                  { weightUnit: nextUnit },
+                                );
+                                await fetchExerciseLogDetails();
+                              } catch {
+                                toast.error(
+                                  "Не удалось сменить единицы измерения",
+                                );
+                              }
+                            }}
+                          >
+                            <DropdownItem key="kg">кг</DropdownItem>
+                            <DropdownItem key="lb">lb</DropdownItem>
+                          </DropdownMenu>
+                        </Dropdown>
+                      }
                       min={0}
                       placeholder="10"
                       setValue={setWeight}

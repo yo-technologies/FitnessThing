@@ -78,14 +78,14 @@ func (s *Service) fillRoutineWithWorkout(ctx context.Context, routine domain.Rou
 		}
 
 		for _, set := range sets {
-			set := domain.NewSet(
+			newSet := domain.NewSet(
 				exerciseInstance.ID,
 				domain.SetTypeReps,
 				set.Reps,
 				set.Weight,
 				set.Time,
 			)
-			if _, err := s.repository.CreateSet(ctx, set); err != nil {
+			if _, err := s.repository.CreateSet(ctx, newSet); err != nil {
 				return err
 			}
 		}

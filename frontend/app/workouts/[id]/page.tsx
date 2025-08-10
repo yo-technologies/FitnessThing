@@ -24,6 +24,7 @@ import { Loading } from "@/components/loading";
 import {
   WorkoutExerciseLogDetails,
   WorkoutGetWorkoutResponse,
+  WorkoutWeightUnit,
 } from "@/api/api.generated";
 import { authApi } from "@/api/api";
 
@@ -142,7 +143,9 @@ function ExerciseLogCard({
                   {setNum + 1}
                 </div>
                 <div className="text-sm font-semibold justify-self-start">
-                  {setLog.weight! > 0 ? `${setLog.weight} кг` : ""}
+                  {setLog.weight! > 0
+                    ? `${setLog.weight} ${exerciseLogDetails.exerciseLog?.weightUnit === WorkoutWeightUnit.WEIGHT_UNIT_LB ? "lb" : "кг"}`
+                    : ""}
                 </div>
                 <div className="text-sm font-semibold justify-self-center">
                   x

@@ -130,6 +130,7 @@ message ExerciseLog {
   string notes = 5;
   int32 power_rating = 6;
   google.protobuf.Timestamp updated_at = 7;
+  WeightUnit weight_unit = 8;
 }
 
 // Ожидаемый сет
@@ -160,6 +161,13 @@ enum SetType {
   SET_TYPE_REPS = 1;
   SET_TYPE_WEIGHT = 2;
   SET_TYPE_TIME = 3;
+}
+
+// Единицы измерения веса
+enum WeightUnit {
+  WEIGHT_UNIT_UNSPECIFIED = 0;
+  WEIGHT_UNIT_KG = 1;
+  WEIGHT_UNIT_LB = 2;
 }
 
 service ExerciseService {
@@ -650,6 +658,14 @@ service WorkoutService {
       body: "*"
     };
   }
+
+  // Изменить единицу измерения веса для ExerciseLog
+  rpc UpdateExerciseLogWeightUnit(UpdateExerciseLogWeightUnitRequest) returns (ExerciseLogResponse) {
+    option (google.api.http) = {
+      patch: "/v1/workouts/{workout_id}/log/exercise/{exercise_log_id}/weight_unit"
+      body: "*"
+    };
+  }
 }
 
 message StartWorkoutRequest {
@@ -660,6 +676,18 @@ message StartWorkoutRequest {
 
 message GetWorkoutRequest {
   string workout_id = 1 [
+    (google.api.field_behavior) = REQUIRED
+  ];
+}
+
+message UpdateExerciseLogWeightUnitRequest {
+  string workout_id = 1 [
+    (google.api.field_behavior) = REQUIRED
+  ];
+  string exercise_log_id = 2 [
+    (google.api.field_behavior) = REQUIRED
+  ];
+  WeightUnit weight_unit = 3 [
     (google.api.field_behavior) = REQUIRED
   ];
 }

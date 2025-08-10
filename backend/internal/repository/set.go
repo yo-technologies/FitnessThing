@@ -166,7 +166,7 @@ func (r *PGXRepository) UpdateSet(ctx context.Context, id domain.ID, set domain.
 
 	engine := r.contextManager.GetEngineFromContext(ctx)
 
-	if err := pgxscan.Get(ctx, engine,  &entity.UpdatedAt, query, entity.Reps, entity.Weight, entity.Time, entity.SetType, entity.ID); err != nil {
+	if err := pgxscan.Get(ctx, engine, &entity.UpdatedAt, query, entity.Reps, entity.Weight, entity.Time, entity.SetType, entity.ID); err != nil {
 		return domain.Set{}, err
 	}
 

@@ -253,13 +253,18 @@ type ExerciseLog struct {
 	ExerciseID  ID
 	Notes       string
 	PowerRating int
+	WeightUnit  WeightUnit
 }
 
-func NewExerciseLog(workoutID, exerciseID ID) ExerciseLog {
+func NewExerciseLog(workoutID, exerciseID ID, weightUnit WeightUnit) ExerciseLog {
+	if weightUnit == WeightUnitUnknown {
+		weightUnit = WeightUnitKG
+	}
 	return ExerciseLog{
 		Model:      NewModel(),
 		WorkoutID:  workoutID,
 		ExerciseID: exerciseID,
+		WeightUnit: weightUnit,
 	}
 }
 
@@ -300,5 +305,29 @@ func NewExerciseSetLog(exerciseLogID ID, reps int, weight float32, time time.Dur
 		Reps:          reps,
 		Weight:        weight,
 		Time:          time,
+	}
+}
+
+// WeightUnit определяет единицы измерения веса
+type WeightUnit string
+
+const (
+	WeightUnitUnknown WeightUnit = ""
+	WeightUnitKG      WeightUnit = "kg"
+	WeightUnitLB      WeightUnit = "lb"
+)
+
+func (w WeightUnit) String() string { return string(w) }
+
+func NewWeightUnit(s string) (WeightUnit, error) {
+	switch s {
+	case "kg":
+		return WeightUnitKG, nil
+	case "lb":
+		return WeightUnitLB, nil
+	case "":
+		return WeightUnitUnknown, nil
+	default:
+		return "", fmt.Errorf("unknown weight unit: %w", ErrInvalidArgument)
 	}
 }

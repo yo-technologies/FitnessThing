@@ -89,7 +89,18 @@ func (r *PGXRepository) CreateSetLog(ctx context.Context, setLog domain.Exercise
 
 	setLogEntity := setLogFromDomain(setLog)
 
-	if err := pgxscan.Get(ctx, engine, &setLogEntity, query, setLogEntity.ID, setLogEntity.CreatedAt, setLogEntity.ExerciseLogID, setLogEntity.Reps, setLogEntity.Weight, setLogEntity.Time); err != nil {
+	if err := pgxscan.Get(
+		ctx,
+		engine,
+		&setLogEntity,
+		query,
+		setLogEntity.ID,
+		setLogEntity.CreatedAt,
+		setLogEntity.ExerciseLogID,
+		setLogEntity.Reps,
+		setLogEntity.Weight,
+		setLogEntity.Time,
+	); err != nil {
 		return domain.ExerciseSetLog{}, err
 	}
 
@@ -149,7 +160,17 @@ func (r *PGXRepository) UpdateSetLog(ctx context.Context, id domain.ID, setLog d
 	engine := r.contextManager.GetEngineFromContext(ctx)
 
 	setLogEntity := setLogFromDomain(setLog)
-	if err := pgxscan.Get(ctx, engine, &setLogEntity, query, setLogEntity.ID, setLogEntity.Reps, setLogEntity.Weight, setLogEntity.Time, timeToPgtype(setLog.UpdatedAt)); err != nil {
+	if err := pgxscan.Get(
+		ctx,
+		engine,
+		&setLogEntity,
+		query,
+		setLogEntity.ID,
+		setLogEntity.Reps,
+		setLogEntity.Weight,
+		setLogEntity.Time,
+		timeToPgtype(setLog.UpdatedAt),
+	); err != nil {
 		return domain.ExerciseSetLog{}, err
 	}
 
