@@ -4,6 +4,7 @@ import (
 	"fitness-trainer/internal/utils"
 	"fmt"
 	"time"
+	"math"
 
 	"github.com/google/uuid"
 )
@@ -308,6 +309,12 @@ func NewExerciseSetLog(exerciseLogID ID, reps int, weight float32, time time.Dur
 	}
 }
 
+// UpdateWeight sets a new weight and updates the timestamp
+func (s *ExerciseSetLog) UpdateWeight(weight float32) {
+	s.Weight = weight
+	s.UpdatedAt = time.Now()
+}
+
 // WeightUnit определяет единицы измерения веса
 type WeightUnit string
 
@@ -330,4 +337,38 @@ func NewWeightUnit(s string) (WeightUnit, error) {
 	default:
 		return "", fmt.Errorf("unknown weight unit: %w", ErrInvalidArgument)
 	}
+}
+
+// Conversion factors between weight units
+const (
+	lbToKg float32 = 0.45359237
+	kgToLb float32 = 2.2046226218
+)
+
+// ConversionFactor returns multiplicative factor to convert a value from current unit to target unit
+func (from WeightUnit) ConversionFactor(to WeightUnit) float32 {
+	if from == to || from == WeightUnitUnknown || to == WeightUnitUnknown {
+		return 1
+	}
+	if from == WeightUnitKG && to == WeightUnitLB {
+		return kgToLb
+	}
+	if from == WeightUnitLB && to == WeightUnitKG {
+		return lbToKg
+	}
+	return 1
+}
+
+// roundToStep rounds value to the nearest multiple of step (e.g., 2.5)
+func roundToStep(value, step float32) float32 {
+	if step <= 0 {
+		return value
+	}
+	return float32(math.Round(float64(value/step))) * step
+}
+
+// ConvertWeight converts a numeric weight value between units
+func ConvertWeight(value float32, from, to WeightUnit) float32 {
+	raw := value * from.ConversionFactor(to)
+	return roundToStep(raw, 2.5)
 }

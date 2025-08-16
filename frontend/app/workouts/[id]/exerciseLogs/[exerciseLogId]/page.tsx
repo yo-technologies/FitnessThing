@@ -143,6 +143,57 @@ export default function RoutineDetailsPage({
     );
   }
 
+  // Обработчик смены единиц измерения вынесен отдельно от разметки
+  async function handleWeightUnitSelectionChange(keys: any) {
+    const key = Array.from(keys)[0] as string;
+    const nextUnit = unitFromKey(key);
+
+    if (nextUnit === currentUnit) return;
+    const prevUnit = currentUnit;
+
+    // оптимистичное обновление локального состояния (моментально меняем юниты в UI)
+    setExerciseLogDetails((prev) => ({
+      ...prev,
+      exerciseLog: {
+        ...prev.exerciseLog,
+        weightUnit: nextUnit,
+      },
+    }));
+
+    try {
+      const res = await authApi.v1.workoutServiceUpdateExerciseLogWeightUnit(
+        id,
+        exerciseLogId,
+        { weightUnit: nextUnit },
+      );
+
+      // сохраняем данные из ответа (пересчитанные веса сетов)
+      const { exerciseLogDetails: updated } = res.data;
+
+      if (updated) {
+        setExerciseLogDetails(updated);
+      } else {
+        setExerciseLogDetails((prev) => ({
+          ...prev,
+          exerciseLog: (res.data as any)?.exerciseLog ?? prev.exerciseLog,
+          setLogs: (res.data as any)?.setLogs ?? prev.setLogs,
+          expectedSets: (res.data as any)?.expectedSets ?? prev.expectedSets,
+        }));
+      }
+    } catch (error) {
+      console.log(error);
+      // откатываем оптимистичное изменение
+      setExerciseLogDetails((prev) => ({
+        ...prev,
+        exerciseLog: {
+          ...prev.exerciseLog,
+          weightUnit: prevUnit,
+        },
+      }));
+      toast.error("Не удалось сменить единицы измерения");
+    }
+  }
+
   function WeightUnitSelectorLabel() {
     return (
       <Dropdown>
@@ -154,39 +205,7 @@ export default function RoutineDetailsPage({
           aria-label="Выбор единиц"
           selectedKeys={new Set([unitKey(currentUnit)])}
           selectionMode="single"
-          onSelectionChange={async (keys) => {
-            const key = Array.from(keys)[0] as string;
-            const nextUnit = unitFromKey(key);
-
-            if (nextUnit === currentUnit) return;
-            const prevUnit = currentUnit;
-
-            // оптимистичное обновление локального состояния
-            setExerciseLogDetails((prev) => ({
-              ...prev,
-              exerciseLog: {
-                ...prev.exerciseLog,
-                weightUnit: nextUnit,
-              },
-            }));
-
-            try {
-              await authApi.v1.workoutServiceUpdateExerciseLogWeightUnit(
-                id,
-                exerciseLogId,
-                { weightUnit: nextUnit },
-              );
-            } catch {
-              setExerciseLogDetails((prev) => ({
-                ...prev,
-                exerciseLog: {
-                  ...prev.exerciseLog,
-                  weightUnit: prevUnit,
-                },
-              }));
-              toast.error("Не удалось сменить единицы измерения");
-            }
-          }}
+          onSelectionChange={handleWeightUnitSelectionChange}
         >
           <DropdownItem key="kg">кг</DropdownItem>
           <DropdownItem key="lb">lb</DropdownItem>
@@ -331,7 +350,7 @@ export default function RoutineDetailsPage({
                     <InputWithIncrement
                       className="h-10"
                       classNames={{ incrementButton: "w-12" }}
-                      labelNode={<WeightUnitSelectorLabel />}
+                      label={`Вес ${unitLabel}`}
                       min={0}
                       placeholder="10"
                       setValue={setWeight}

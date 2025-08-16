@@ -247,7 +247,7 @@ func (s *Service) GetWorkout(ctx context.Context, userID domain.ID, workoutID do
 	}, nil
 }
 
-// UpdateExerciseLogWeightUnit changes the weight unit for an existing exercise log without converting stored weights
+// UpdateExerciseLogWeightUnit changes the weight unit for an existing exercise log and converts existing set logs to the new unit
 func (s *Service) UpdateExerciseLogWeightUnit(ctx context.Context, userID, workoutID, exerciseLogID domain.ID, unit domain.WeightUnit) (dto.ExerciseLogDTO, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "service.UpdateExerciseLogWeightUnit")
 	defer span.Finish()
@@ -261,34 +261,65 @@ func (s *Service) UpdateExerciseLogWeightUnit(ctx context.Context, userID, worko
 		return dto.ExerciseLogDTO{}, domain.ErrForbidden
 	}
 
-	log, err := s.repository.GetExerciseLogByID(ctx, exerciseLogID)
+	exerciseLog, err := s.repository.GetExerciseLogByID(ctx, exerciseLogID)
 	if err != nil {
 		return dto.ExerciseLogDTO{}, err
 	}
-	if log.WorkoutID != workoutID {
+	if exerciseLog.WorkoutID != workoutID {
 		return dto.ExerciseLogDTO{}, domain.ErrInvalidArgument
 	}
 
 	if unit == domain.WeightUnitUnknown {
 		unit = domain.WeightUnitKG
 	}
-	log.WeightUnit = unit
 
-	log, err = s.repository.UpdateExerciseLog(ctx, log.ID, log)
+	updateSets := func(txCtx context.Context) (err error) {
+		sets, err := s.repository.GetSetLogsByExerciseLogID(txCtx, exerciseLog.ID)
+		if err != nil {
+			return err
+		}
+
+		for _, set := range sets {
+			set.UpdateWeight(domain.ConvertWeight(set.Weight, exerciseLog.WeightUnit, unit))
+			if _, err := s.repository.UpdateSetLog(txCtx, set.ID, set); err != nil {
+				return err
+			}
+		}
+
+		exerciseLog.WeightUnit = unit
+		exerciseLog, err = s.repository.UpdateExerciseLog(txCtx, exerciseLog.ID, exerciseLog)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	if unit != exerciseLog.WeightUnit {
+		if err := s.unitOfWork.InTransaction(ctx, updateSets); err != nil {
+			return dto.ExerciseLogDTO{}, err
+		}
+	}
+
+	setLogs, err := s.repository.GetSetLogsByExerciseLogID(ctx, exerciseLog.ID)
+	if err != nil {
+		return dto.ExerciseLogDTO{}, err
+	}
+	expectedSets, err := s.repository.GetExpectedSetsByExerciseLogID(ctx, exerciseLog.ID)
+	if err != nil {
+		return dto.ExerciseLogDTO{}, err
+	}
+	exercise, err := s.repository.GetExerciseByID(ctx, exerciseLog.ExerciseID)
 	if err != nil {
 		return dto.ExerciseLogDTO{}, err
 	}
 
-	sets, err := s.repository.GetSetLogsByExerciseLogID(ctx, log.ID)
-	if err != nil {
-		return dto.ExerciseLogDTO{}, err
-	}
-	expected, err := s.repository.GetExpectedSetsByExerciseLogID(ctx, log.ID)
-	if err != nil {
-		return dto.ExerciseLogDTO{}, err
-	}
-
-	return dto.ExerciseLogDTO{ExerciseLog: log, SetLogs: sets, ExpectedSets: expected}, nil
+	return dto.ExerciseLogDTO{
+		ExerciseLog:  exerciseLog,
+		SetLogs:      setLogs,
+		ExpectedSets: expectedSets,
+		Exercise:     exercise,
+	}, nil
 }
 
 func (s *Service) GetExerciseLog(ctx context.Context, userID, exerciseLogID domain.ID) (dto.ExerciseLogDTO, error) {
@@ -604,7 +635,6 @@ func (s *Service) UpdateSetLog(ctx context.Context, userID, workoutID, exerciseL
 	if setlogDTO.Weight.IsValid {
 		setLog.Weight = setlogDTO.Weight.V
 	}
-
 
 	setLog.UpdatedAt = time.Now()
 
