@@ -38,6 +38,7 @@ import {
 import { authApi } from "@/api/api";
 import { InputWithIncrement } from "@/components/input-with-increments";
 import InfiniteScroll from "@/components/infinite-scroll";
+import { unitFromKey, unitKey, weightUnitLabel } from "@/utils/units";
 
 export default function RoutineDetailsPage({
   params,
@@ -55,8 +56,7 @@ export default function RoutineDetailsPage({
   const currentUnit: WorkoutWeightUnit =
     exerciseLogDetails.exerciseLog?.weightUnit ||
     WorkoutWeightUnit.WEIGHT_UNIT_KG;
-  const unitLabel =
-    currentUnit === WorkoutWeightUnit.WEIGHT_UNIT_LB ? "lb" : "кг";
+  const unitLabel = weightUnitLabel(currentUnit);
 
   const [exerciseLogHistory, setExerciseLogHistory] = useState<
     WorkoutExerciseLogDetails[]
@@ -152,18 +152,11 @@ export default function RoutineDetailsPage({
         <DropdownMenu
           disallowEmptySelection
           aria-label="Выбор единиц"
-          selectedKeys={
-            new Set([
-              currentUnit === WorkoutWeightUnit.WEIGHT_UNIT_LB ? "lb" : "kg",
-            ])
-          }
+          selectedKeys={new Set([unitKey(currentUnit)])}
           selectionMode="single"
           onSelectionChange={async (keys) => {
             const key = Array.from(keys)[0] as string;
-            const nextUnit =
-              key === "lb"
-                ? WorkoutWeightUnit.WEIGHT_UNIT_LB
-                : WorkoutWeightUnit.WEIGHT_UNIT_KG;
+            const nextUnit = unitFromKey(key);
 
             if (nextUnit === currentUnit) return;
             try {
@@ -184,7 +177,6 @@ export default function RoutineDetailsPage({
       </Dropdown>
     );
   }
-
   function SetLogCard({
     setLog,
     setNum,

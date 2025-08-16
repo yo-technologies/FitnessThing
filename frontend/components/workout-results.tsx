@@ -23,6 +23,7 @@ import {
 import { authApi } from "@/api/api";
 import { Loading } from "@/components/loading";
 import { translateMuscleGroups } from "@/config/muscle-groups";
+import { convertWeight, weightUnitLabel } from "@/utils/units";
 
 export function WorkoutResults({
   id,
@@ -179,11 +180,8 @@ export function WorkoutResults({
               </p>
               <p className="text-sm font-light min-w-fit">
                 {workoutExercise?.setLogs?.[0]?.weight || 0}{" "}
-                {workoutExercise?.exerciseLog?.weightUnit ===
-                WorkoutWeightUnit.WEIGHT_UNIT_LB
-                  ? "lb"
-                  : "кг"}{" "}
-                x {workoutExercise?.setLogs?.[0]?.reps || 0} раз
+                {weightUnitLabel(workoutExercise?.exerciseLog?.weightUnit)} x{" "}
+                {workoutExercise?.setLogs?.[0]?.reps || 0} раз
               </p>
             </div>
           ))}
@@ -193,16 +191,14 @@ export function WorkoutResults({
   }
 
   function WorkoutResultsAdditionalInfo() {
-    const LB_TO_KG = 0.45359237;
     const totalWeightKg = (workoutDetails?.exerciseLogs || []).reduce(
       (total, exerciseLog) => {
-        const factor =
-          exerciseLog.exerciseLog?.weightUnit ===
-          WorkoutWeightUnit.WEIGHT_UNIT_LB
-            ? LB_TO_KG
-            : 1;
         const sum = (exerciseLog.setLogs || []).reduce((acc, setLog) => {
-          const weightKg = (setLog.weight || 0) * factor;
+          const weightKg = convertWeight(
+            setLog.weight || 0,
+            exerciseLog.exerciseLog?.weightUnit,
+            WorkoutWeightUnit.WEIGHT_UNIT_KG,
+          );
 
           return acc + weightKg * (setLog.reps || 0);
         }, 0);

@@ -24,9 +24,9 @@ import { Loading } from "@/components/loading";
 import {
   WorkoutExerciseLogDetails,
   WorkoutGetWorkoutResponse,
-  WorkoutWeightUnit,
 } from "@/api/api.generated";
 import { authApi } from "@/api/api";
+import { weightUnitLabel } from "@/utils/units";
 
 function WorkoutTimer({ startTime }: { startTime: string | undefined }) {
   const [elapsedTime, setElapsedTime] = useState(() => {
@@ -144,7 +144,7 @@ function ExerciseLogCard({
                 </div>
                 <div className="text-sm font-semibold justify-self-start">
                   {setLog.weight! > 0
-                    ? `${setLog.weight} ${exerciseLogDetails.exerciseLog?.weightUnit === WorkoutWeightUnit.WEIGHT_UNIT_LB ? "lb" : "кг"}`
+                    ? `${setLog.weight} ${weightUnitLabel(exerciseLogDetails.exerciseLog?.weightUnit)}`
                     : ""}
                 </div>
                 <div className="text-sm font-semibold justify-self-center">
