@@ -159,14 +159,31 @@ export default function RoutineDetailsPage({
             const nextUnit = unitFromKey(key);
 
             if (nextUnit === currentUnit) return;
+            const prevUnit = currentUnit;
+
+            // оптимистичное обновление локального состояния
+            setExerciseLogDetails((prev) => ({
+              ...prev,
+              exerciseLog: {
+                ...prev.exerciseLog,
+                weightUnit: nextUnit,
+              },
+            }));
+
             try {
               await authApi.v1.workoutServiceUpdateExerciseLogWeightUnit(
                 id,
                 exerciseLogId,
                 { weightUnit: nextUnit },
               );
-              await fetchExerciseLogDetails();
             } catch {
+              setExerciseLogDetails((prev) => ({
+                ...prev,
+                exerciseLog: {
+                  ...prev.exerciseLog,
+                  weightUnit: prevUnit,
+                },
+              }));
               toast.error("Не удалось сменить единицы измерения");
             }
           }}
