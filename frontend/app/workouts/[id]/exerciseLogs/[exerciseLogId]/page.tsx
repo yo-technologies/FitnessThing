@@ -401,6 +401,7 @@ export default function RoutineDetailsPage({
     function SetLogsCard() {
       const [weight, setWeight] = useState<number>(0);
       const [reps, setReps] = useState<number>(0);
+      const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
       useEffect(() => {
         if (exerciseLogDetails.setLogs?.length) {
@@ -418,6 +419,7 @@ export default function RoutineDetailsPage({
 
       async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
+        if (isSubmitting) return;
         if (weight < 0) {
           toast.error("Вес не может быть отрицательным");
 
@@ -431,6 +433,7 @@ export default function RoutineDetailsPage({
         }
 
         try {
+          setIsSubmitting(true);
           await authApi.v1.workoutServiceLogSet(id, exerciseLogId, {
             weight: weight!,
             reps: reps!,
@@ -439,6 +442,8 @@ export default function RoutineDetailsPage({
         } catch (error) {
           console.log(error);
           toast.error("Ошибка при добавлении сета");
+        } finally {
+          setIsSubmitting(false);
         }
       }
 
@@ -491,7 +496,16 @@ export default function RoutineDetailsPage({
                 <Button
                   className="w-full"
                   color="primary"
+                  isDisabled={isSubmitting}
+                  isLoading={isSubmitting}
                   size="sm"
+                  spinner={
+                    <Spinner
+                      classNames={{ wrapper: "w-3 h-3" }}
+                      color="white"
+                      size="sm"
+                    />
+                  }
                   type="submit"
                 >
                   Добавить
