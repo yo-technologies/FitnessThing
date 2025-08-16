@@ -22,7 +22,12 @@ type exerciseLogEntity struct {
 }
 
 func (e exerciseLogEntity) toDomain() domain.ExerciseLog {
-	wu, _ := domain.NewWeightUnit(e.WeightUnit)
+	wu, err := domain.NewWeightUnit(e.WeightUnit)
+	if err != nil {
+		logger.Errorf("failed to convert weight unit: %v", err)
+		wu = domain.WeightUnitKG
+	}
+
 	return domain.ExerciseLog{
 		Model: domain.Model{
 			ID:        domain.ID(e.ID.Bytes),
