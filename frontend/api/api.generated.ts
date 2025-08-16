@@ -87,6 +87,10 @@ export interface WorkoutServiceRateWorkoutBody {
   rating?: number;
 }
 
+export interface WorkoutServiceUpdateExerciseLogWeightUnitBody {
+  weightUnit: WorkoutWeightUnit;
+}
+
 export interface WorkoutServiceUpdateSetLogBody {
   setType?: WorkoutSetType;
   /** @format int32 */
@@ -166,6 +170,7 @@ export interface WorkoutExerciseLog {
   powerRating?: number;
   /** @format date-time */
   updatedAt?: string;
+  weightUnit?: WorkoutWeightUnit;
 }
 
 export interface WorkoutExerciseLogDetails {
@@ -391,6 +396,16 @@ export interface WorkoutUser {
 
 export interface WorkoutUserResponse {
   user?: WorkoutUser;
+}
+
+/**
+ * Единицы измерения веса
+ * @default "WEIGHT_UNIT_UNSPECIFIED"
+ */
+export enum WorkoutWeightUnit {
+  WEIGHT_UNIT_UNSPECIFIED = "WEIGHT_UNIT_UNSPECIFIED",
+  WEIGHT_UNIT_KG = "WEIGHT_UNIT_KG",
+  WEIGHT_UNIT_LB = "WEIGHT_UNIT_LB",
 }
 
 /** Структура тренировки */
@@ -1420,6 +1435,31 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
       this.request<WorkoutSetLogResponse, RpcStatus>({
         path: `/v1/workouts/${workoutId}/log/exercise/${exerciseLogId}/set/${setId}`,
         method: "PUT",
+        body: body,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags WorkoutService
+     * @name WorkoutServiceUpdateExerciseLogWeightUnit
+     * @summary Изменить единицу измерения веса для ExerciseLog
+     * @request PATCH:/v1/workouts/{workoutId}/log/exercise/{exerciseLogId}/weight_unit
+     * @secure
+     */
+    workoutServiceUpdateExerciseLogWeightUnit: (
+      workoutId: string,
+      exerciseLogId: string,
+      body: WorkoutServiceUpdateExerciseLogWeightUnitBody,
+      params: RequestParams = {},
+    ) =>
+      this.request<WorkoutExerciseLogResponse, RpcStatus>({
+        path: `/v1/workouts/${workoutId}/log/exercise/${exerciseLogId}/weight_unit`,
+        method: "PATCH",
         body: body,
         secure: true,
         type: ContentType.Json,

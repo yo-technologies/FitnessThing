@@ -43,6 +43,7 @@ export function InputWithIncrement({
   value,
   setValue,
   label,
+  labelNode,
   placeholder,
   type,
   className,
@@ -52,7 +53,8 @@ export function InputWithIncrement({
 }: {
   value: number;
   setValue: (value: number) => void;
-  label: string;
+  label?: string;
+  labelNode?: React.ReactNode;
   placeholder: string;
   type: string;
   className?: string;
@@ -62,7 +64,7 @@ export function InputWithIncrement({
 }) {
   return (
     <>
-      <p>{label}</p>
+      {labelNode ? labelNode : <p className="text-md font-light">{label}</p>}
       <div className="flex flex-row gap-2 items-center h-full">
         <IncrementButtons
           isSubtract

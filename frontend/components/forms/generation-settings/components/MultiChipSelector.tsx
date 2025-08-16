@@ -1,6 +1,5 @@
 import React from "react";
 import { Card, CardBody } from "@nextui-org/card";
-import { Button } from "@nextui-org/button";
 import { Chip } from "@nextui-org/chip";
 
 import { MultiChipSelectorProps } from "../types";

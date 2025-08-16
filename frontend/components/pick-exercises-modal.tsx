@@ -12,7 +12,10 @@ import { Button } from "@nextui-org/button";
 import InfiniteScroll, { useInfiniteScroll } from "./infinite-scroll";
 
 import { authApi } from "@/api/api";
-import { translateMuscleGroup, translateMuscleGroups } from "@/config/muscle-groups";
+import {
+  translateMuscleGroup,
+  translateMuscleGroups,
+} from "@/config/muscle-groups";
 import { WorkoutExercise } from "@/api/api.generated";
 
 function SkeletonExerciseCard() {

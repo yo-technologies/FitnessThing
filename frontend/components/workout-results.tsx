@@ -16,10 +16,14 @@ import {
   StarIcon,
   WeightIcon,
 } from "@/config/icons";
-import { WorkoutGetWorkoutResponse } from "@/api/api.generated";
+import {
+  WorkoutGetWorkoutResponse,
+  WorkoutWeightUnit,
+} from "@/api/api.generated";
 import { authApi } from "@/api/api";
 import { Loading } from "@/components/loading";
 import { translateMuscleGroups } from "@/config/muscle-groups";
+import { convertWeight, weightUnitLabel } from "@/utils/units";
 
 export function WorkoutResults({
   id,
@@ -175,11 +179,9 @@ export function WorkoutResults({
                 {workoutExercise?.exercise?.name}
               </p>
               <p className="text-sm font-light min-w-fit">
-                {workoutExercise?.setLogs?.[0]?.weight || 0}
-                {" кг"}
-                {" x "}
-                {workoutExercise?.setLogs?.[0]?.reps || 0}
-                {" раз"}
+                {workoutExercise?.setLogs?.[0]?.weight || 0}{" "}
+                {weightUnitLabel(workoutExercise?.exerciseLog?.weightUnit)} x{" "}
+                {workoutExercise?.setLogs?.[0]?.reps || 0} раз
               </p>
             </div>
           ))}
@@ -189,15 +191,19 @@ export function WorkoutResults({
   }
 
   function WorkoutResultsAdditionalInfo() {
-    const totalWeight = workoutDetails?.exerciseLogs?.reduce(
+    const totalWeightKg = (workoutDetails?.exerciseLogs || []).reduce(
       (total, exerciseLog) => {
-        return (
-          total +
-            exerciseLog.setLogs!.reduce(
-              (total, setLog) => total + setLog.weight! * setLog.reps!,
-              0,
-            ) || 0
-        );
+        const sum = (exerciseLog.setLogs || []).reduce((acc, setLog) => {
+          const weightKg = convertWeight(
+            setLog.weight || 0,
+            exerciseLog.exerciseLog?.weightUnit,
+            WorkoutWeightUnit.WEIGHT_UNIT_KG,
+          );
+
+          return acc + weightKg * (setLog.reps || 0);
+        }, 0);
+
+        return total + sum;
       },
       0,
     );
@@ -230,7 +236,7 @@ export function WorkoutResults({
             <WeightIcon className="w-3 h-3" />
           </div>
           <p className="text-sm">
-            {totalWeight}
+            {Math.round((totalWeightKg || 0) * 10) / 10}
             {" кг"}
           </p>
         </div>

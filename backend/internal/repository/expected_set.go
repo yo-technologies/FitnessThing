@@ -62,7 +62,8 @@ func (r *PGXRepository) GetExpectedSetsByExerciseLogID(ctx context.Context, exer
 	defer span.Finish()
 	
 	query := `
-		SELECT * FROM expected_sets es
+		SELECT id, exercise_log_id, set_type, reps, weight, time, created_at, updated_at
+		FROM expected_sets es
 		WHERE es.exercise_log_id = $1
 		ORDER BY es.created_at
 	`
@@ -85,7 +86,7 @@ func (r *PGXRepository) CreateExpectedSet(ctx context.Context, expectedSet domai
 	query := `
 		INSERT INTO expected_sets (id, exercise_log_id, set_type, reps, weight, time)
 		VALUES ($1, $2, $3, $4, $5, $6)
-		RETURNING *
+		RETURNING id, exercise_log_id, set_type, reps, weight, time, created_at, updated_at
 	`
 
 	engine := r.contextManager.GetEngineFromContext(ctx)

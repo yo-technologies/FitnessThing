@@ -1431,6 +1431,51 @@
         ]
       }
     },
+    "/v1/workouts/{workoutId}/log/exercise/{exerciseLogId}/weight_unit": {
+      "patch": {
+        "summary": "Изменить единицу измерения веса для ExerciseLog",
+        "operationId": "WorkoutService_UpdateExerciseLogWeightUnit",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/workoutExerciseLogResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "workoutId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "exerciseLogId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/WorkoutServiceUpdateExerciseLogWeightUnitBody"
+            }
+          }
+        ],
+        "tags": [
+          "WorkoutService"
+        ]
+      }
+    },
     "/v1/workouts/{workoutId}/rate": {
       "post": {
         "summary": "Метод для установки оценки тренировки",
@@ -1679,6 +1724,17 @@
         }
       }
     },
+    "WorkoutServiceUpdateExerciseLogWeightUnitBody": {
+      "type": "object",
+      "properties": {
+        "weightUnit": {
+          "$ref": "#/definitions/workoutWeightUnit"
+        }
+      },
+      "required": [
+        "weightUnit"
+      ]
+    },
     "WorkoutServiceUpdateSetLogBody": {
       "type": "object",
       "properties": {
@@ -1876,6 +1932,9 @@
         "updatedAt": {
           "type": "string",
           "format": "date-time"
+        },
+        "weightUnit": {
+          "$ref": "#/definitions/workoutWeightUnit"
         }
       },
       "title": "Лог выполнения упражнения"
@@ -2376,6 +2435,16 @@
           "$ref": "#/definitions/workoutUser"
         }
       }
+    },
+    "workoutWeightUnit": {
+      "type": "string",
+      "enum": [
+        "WEIGHT_UNIT_UNSPECIFIED",
+        "WEIGHT_UNIT_KG",
+        "WEIGHT_UNIT_LB"
+      ],
+      "default": "WEIGHT_UNIT_UNSPECIFIED",
+      "title": "Единицы измерения веса"
     },
     "workoutWorkout": {
       "type": "object",

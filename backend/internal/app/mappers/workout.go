@@ -42,11 +42,11 @@ func WorkoutToProto(workout domain.Workout) *desc.Workout {
 
 func SetLogToProto(setLog domain.ExerciseSetLog) *desc.SetLog {
 	return &desc.SetLog{
-		Id:        setLog.ID.String(),
-		Reps:      int32(setLog.Reps),
-		Weight:    setLog.Weight,
-		CreatedAt: timestamppb.New(setLog.CreatedAt),
-		UpdatedAt: timestamppb.New(setLog.UpdatedAt),
+		Id:         setLog.ID.String(),
+		Reps:       int32(setLog.Reps),
+		Weight:     setLog.Weight,
+		CreatedAt:  timestamppb.New(setLog.CreatedAt),
+		UpdatedAt:  timestamppb.New(setLog.UpdatedAt),
 	}
 }
 
@@ -59,6 +59,7 @@ func ExerciseLogToProto(exerciseLog domain.ExerciseLog) *desc.ExerciseLog {
 		Notes:       exerciseLog.Notes,
 		CreatedAt:   timestamppb.New(exerciseLog.CreatedAt),
 		UpdatedAt:   timestamppb.New(exerciseLog.UpdatedAt),
+		WeightUnit:  weightUnitToProto(exerciseLog.WeightUnit),
 	}
 }
 

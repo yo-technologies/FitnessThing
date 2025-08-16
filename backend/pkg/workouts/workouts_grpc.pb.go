@@ -885,6 +885,7 @@ const (
 	WorkoutService_GetWorkoutReport_FullMethodName            = "/fitness_trainer.api.workout.WorkoutService/GetWorkoutReport"
 	WorkoutService_RateWorkout_FullMethodName                 = "/fitness_trainer.api.workout.WorkoutService/RateWorkout"
 	WorkoutService_AddCommentToWorkout_FullMethodName         = "/fitness_trainer.api.workout.WorkoutService/AddCommentToWorkout"
+	WorkoutService_UpdateExerciseLogWeightUnit_FullMethodName = "/fitness_trainer.api.workout.WorkoutService/UpdateExerciseLogWeightUnit"
 )
 
 // WorkoutServiceClient is the client API for WorkoutService service.
@@ -925,6 +926,8 @@ type WorkoutServiceClient interface {
 	RateWorkout(ctx context.Context, in *RateWorkoutRequest, opts ...grpc.CallOption) (*WorkoutResponse, error)
 	// Метод для добавления комментария к тренировке
 	AddCommentToWorkout(ctx context.Context, in *AddCommentToWorkoutRequest, opts ...grpc.CallOption) (*WorkoutResponse, error)
+	// Изменить единицу измерения веса для ExerciseLog
+	UpdateExerciseLogWeightUnit(ctx context.Context, in *UpdateExerciseLogWeightUnitRequest, opts ...grpc.CallOption) (*ExerciseLogResponse, error)
 }
 
 type workoutServiceClient struct {
@@ -1105,6 +1108,16 @@ func (c *workoutServiceClient) AddCommentToWorkout(ctx context.Context, in *AddC
 	return out, nil
 }
 
+func (c *workoutServiceClient) UpdateExerciseLogWeightUnit(ctx context.Context, in *UpdateExerciseLogWeightUnitRequest, opts ...grpc.CallOption) (*ExerciseLogResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ExerciseLogResponse)
+	err := c.cc.Invoke(ctx, WorkoutService_UpdateExerciseLogWeightUnit_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // WorkoutServiceServer is the server API for WorkoutService service.
 // All implementations must embed UnimplementedWorkoutServiceServer
 // for forward compatibility.
@@ -1143,6 +1156,8 @@ type WorkoutServiceServer interface {
 	RateWorkout(context.Context, *RateWorkoutRequest) (*WorkoutResponse, error)
 	// Метод для добавления комментария к тренировке
 	AddCommentToWorkout(context.Context, *AddCommentToWorkoutRequest) (*WorkoutResponse, error)
+	// Изменить единицу измерения веса для ExerciseLog
+	UpdateExerciseLogWeightUnit(context.Context, *UpdateExerciseLogWeightUnitRequest) (*ExerciseLogResponse, error)
 	mustEmbedUnimplementedWorkoutServiceServer()
 }
 
@@ -1203,6 +1218,9 @@ func (UnimplementedWorkoutServiceServer) RateWorkout(context.Context, *RateWorko
 }
 func (UnimplementedWorkoutServiceServer) AddCommentToWorkout(context.Context, *AddCommentToWorkoutRequest) (*WorkoutResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AddCommentToWorkout not implemented")
+}
+func (UnimplementedWorkoutServiceServer) UpdateExerciseLogWeightUnit(context.Context, *UpdateExerciseLogWeightUnitRequest) (*ExerciseLogResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateExerciseLogWeightUnit not implemented")
 }
 func (UnimplementedWorkoutServiceServer) mustEmbedUnimplementedWorkoutServiceServer() {}
 func (UnimplementedWorkoutServiceServer) testEmbeddedByValue()                        {}
@@ -1531,6 +1549,24 @@ func _WorkoutService_AddCommentToWorkout_Handler(srv interface{}, ctx context.Co
 	return interceptor(ctx, in, info, handler)
 }
 
+func _WorkoutService_UpdateExerciseLogWeightUnit_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateExerciseLogWeightUnitRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(WorkoutServiceServer).UpdateExerciseLogWeightUnit(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: WorkoutService_UpdateExerciseLogWeightUnit_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(WorkoutServiceServer).UpdateExerciseLogWeightUnit(ctx, req.(*UpdateExerciseLogWeightUnitRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // WorkoutService_ServiceDesc is the grpc.ServiceDesc for WorkoutService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -1605,6 +1641,10 @@ var WorkoutService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "AddCommentToWorkout",
 			Handler:    _WorkoutService_AddCommentToWorkout_Handler,
+		},
+		{
+			MethodName: "UpdateExerciseLogWeightUnit",
+			Handler:    _WorkoutService_UpdateExerciseLogWeightUnit_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -90,14 +90,6 @@ function DataForm({ user }: { user: WorkoutUser }) {
   );
 }
 
-function AvatarSection({ src }: { src: string }) {
-  return (
-    <div className="flex flex-col gap-2 items-center justify-around pt-4 px-4">
-      <Avatar src={src} />
-    </div>
-  );
-}
-
 export default function EditProfilePage() {
   const [user, setUser] = useState<WorkoutUser>();
 

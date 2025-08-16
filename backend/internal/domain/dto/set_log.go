@@ -1,6 +1,8 @@
 package dto
 
-import "fitness-trainer/internal/utils"
+import (
+	"fitness-trainer/internal/utils"
+)
 
 type CreateSetLogDTO struct {
 	Reps   int

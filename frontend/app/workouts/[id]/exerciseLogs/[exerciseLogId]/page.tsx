@@ -2,11 +2,15 @@
 
 import { Button } from "@nextui-org/button";
 import { Card, CardBody } from "@nextui-org/card";
+import { Divider } from "@nextui-org/divider";
+import {
+  Dropdown,
+  DropdownItem,
+  DropdownMenu,
+  DropdownTrigger,
+} from "@nextui-org/dropdown";
 import { Form } from "@nextui-org/form";
 import { Textarea } from "@nextui-org/input";
-import { Slider } from "@nextui-org/slider";
-import { Tabs, Tab } from "@nextui-org/tabs";
-import { DropdownItem } from "@nextui-org/dropdown";
 import {
   Modal,
   ModalBody,
@@ -15,10 +19,11 @@ import {
   ModalHeader,
   useDisclosure,
 } from "@nextui-org/modal";
+import { Tabs, Tab } from "@nextui-org/tabs";
+import { Slider } from "@nextui-org/slider";
 import { useRouter } from "next/navigation";
 import { use, useEffect, useRef, useState } from "react";
 import { toast } from "react-toastify";
-import { Divider } from "@nextui-org/divider";
 import { Spinner } from "@nextui-org/react";
 
 import { PageHeader } from "@/components/page-header";
@@ -28,10 +33,12 @@ import {
   WorkoutExerciseLogDetails,
   WorkoutExpectedSet,
   WorkoutSetLog,
+  WorkoutWeightUnit,
 } from "@/api/api.generated";
 import { authApi } from "@/api/api";
 import { InputWithIncrement } from "@/components/input-with-increments";
 import InfiniteScroll from "@/components/infinite-scroll";
+import { unitFromKey, unitKey, weightUnitLabel } from "@/utils/units";
 
 export default function RoutineDetailsPage({
   params,
@@ -45,6 +52,12 @@ export default function RoutineDetailsPage({
 
   const [exerciseLogDetails, setExerciseLogDetails] =
     useState<WorkoutExerciseLogDetails>({});
+
+  const currentUnit: WorkoutWeightUnit =
+    exerciseLogDetails.exerciseLog?.weightUnit ||
+    WorkoutWeightUnit.WEIGHT_UNIT_KG;
+  const unitLabel = weightUnitLabel(currentUnit);
+
   const [exerciseLogHistory, setExerciseLogHistory] = useState<
     WorkoutExerciseLogDetails[]
   >([]);
@@ -130,6 +143,76 @@ export default function RoutineDetailsPage({
     );
   }
 
+  // Обработчик смены единиц измерения вынесен отдельно от разметки
+  async function handleWeightUnitSelectionChange(keys: any) {
+    const key = Array.from(keys)[0] as string;
+    const nextUnit = unitFromKey(key);
+
+    if (nextUnit === currentUnit) return;
+    const prevUnit = currentUnit;
+
+    // оптимистичное обновление локального состояния (моментально меняем юниты в UI)
+    setExerciseLogDetails((prev) => ({
+      ...prev,
+      exerciseLog: {
+        ...prev.exerciseLog,
+        weightUnit: nextUnit,
+      },
+    }));
+
+    try {
+      const res = await authApi.v1.workoutServiceUpdateExerciseLogWeightUnit(
+        id,
+        exerciseLogId,
+        { weightUnit: nextUnit },
+      );
+
+      // сохраняем данные из ответа (пересчитанные веса сетов)
+      const { exerciseLogDetails: updated } = res.data;
+
+      if (updated) {
+        setExerciseLogDetails(updated);
+      } else {
+        setExerciseLogDetails((prev) => ({
+          ...prev,
+          exerciseLog: (res.data as any)?.exerciseLog ?? prev.exerciseLog,
+          setLogs: (res.data as any)?.setLogs ?? prev.setLogs,
+          expectedSets: (res.data as any)?.expectedSets ?? prev.expectedSets,
+        }));
+      }
+    } catch (error) {
+      console.log(error);
+      // откатываем оптимистичное изменение
+      setExerciseLogDetails((prev) => ({
+        ...prev,
+        exerciseLog: {
+          ...prev.exerciseLog,
+          weightUnit: prevUnit,
+        },
+      }));
+      toast.error("Не удалось сменить единицы измерения");
+    }
+  }
+
+  function WeightUnitSelectorLabel() {
+    return (
+      <Dropdown>
+        <DropdownTrigger>
+          <p className="cursor-pointer text-md font-light">Вес {unitLabel} ▾</p>
+        </DropdownTrigger>
+        <DropdownMenu
+          disallowEmptySelection
+          aria-label="Выбор единиц"
+          selectedKeys={new Set([unitKey(currentUnit)])}
+          selectionMode="single"
+          onSelectionChange={handleWeightUnitSelectionChange}
+        >
+          <DropdownItem key="kg">кг</DropdownItem>
+          <DropdownItem key="lb">lb</DropdownItem>
+        </DropdownMenu>
+      </Dropdown>
+    );
+  }
   function SetLogCard({
     setLog,
     setNum,
@@ -158,7 +241,7 @@ export default function RoutineDetailsPage({
               {setNum + 1}
             </div>
             <div className="text-sm font-semibold justify-self-start">
-              {setLog.weight! > 0 ? `${setLog.weight} кг` : ""}
+              {setLog.weight! > 0 ? `${setLog.weight} ${unitLabel}` : ""}
             </div>
             <div className="text-sm font-semibold justify-self-center">x</div>
             <div className="text-sm font-semibold justify-self-start">
@@ -267,7 +350,7 @@ export default function RoutineDetailsPage({
                     <InputWithIncrement
                       className="h-10"
                       classNames={{ incrementButton: "w-12" }}
-                      label="Вес"
+                      label={`Вес ${unitLabel}`}
                       min={0}
                       placeholder="10"
                       setValue={setWeight}
@@ -289,10 +372,20 @@ export default function RoutineDetailsPage({
                   </div>
                 </ModalBody>
                 <ModalFooter className="flex flex-col gap-2 w-full justify-around px-2 py-0">
-                  <Button className="w-full" color="success" type="submit">
+                  <Button
+                    className="w-full"
+                    color="success"
+                    size="sm"
+                    type="submit"
+                  >
                     Изменить
                   </Button>
-                  <Button className="w-full" color="danger" onPress={onClose}>
+                  <Button
+                    className="w-full"
+                    color="danger"
+                    size="sm"
+                    onPress={onClose}
+                  >
                     Отмена
                   </Button>
                 </ModalFooter>
@@ -373,7 +466,7 @@ export default function RoutineDetailsPage({
                     <InputWithIncrement
                       className="h-10"
                       classNames={{ incrementButton: "w-12" }}
-                      label="Вес"
+                      labelNode={<WeightUnitSelectorLabel />}
                       min={0}
                       placeholder="10"
                       setValue={setWeight}

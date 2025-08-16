@@ -26,6 +26,7 @@ import {
   WorkoutGetWorkoutResponse,
 } from "@/api/api.generated";
 import { authApi } from "@/api/api";
+import { weightUnitLabel } from "@/utils/units";
 
 function WorkoutTimer({ startTime }: { startTime: string | undefined }) {
   const [elapsedTime, setElapsedTime] = useState(() => {
@@ -142,7 +143,9 @@ function ExerciseLogCard({
                   {setNum + 1}
                 </div>
                 <div className="text-sm font-semibold justify-self-start">
-                  {setLog.weight! > 0 ? `${setLog.weight} кг` : ""}
+                  {setLog.weight! > 0
+                    ? `${setLog.weight} ${weightUnitLabel(exerciseLogDetails.exerciseLog?.weightUnit)}`
+                    : ""}
                 </div>
                 <div className="text-sm font-semibold justify-self-center">
                   x
