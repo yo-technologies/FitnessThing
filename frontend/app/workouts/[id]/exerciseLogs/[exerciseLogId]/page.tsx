@@ -143,6 +143,48 @@ export default function RoutineDetailsPage({
     );
   }
 
+  function WeightUnitSelectorLabel() {
+    return (
+      <Dropdown>
+        <DropdownTrigger>
+          <p className="cursor-pointer text-md font-light">Вес {unitLabel} ▾</p>
+        </DropdownTrigger>
+        <DropdownMenu
+          disallowEmptySelection
+          aria-label="Выбор единиц"
+          selectedKeys={
+            new Set([
+              currentUnit === WorkoutWeightUnit.WEIGHT_UNIT_LB ? "lb" : "kg",
+            ])
+          }
+          selectionMode="single"
+          onSelectionChange={async (keys) => {
+            const key = Array.from(keys)[0] as string;
+            const nextUnit =
+              key === "lb"
+                ? WorkoutWeightUnit.WEIGHT_UNIT_LB
+                : WorkoutWeightUnit.WEIGHT_UNIT_KG;
+
+            if (nextUnit === currentUnit) return;
+            try {
+              await authApi.v1.workoutServiceUpdateExerciseLogWeightUnit(
+                id,
+                exerciseLogId,
+                { weightUnit: nextUnit },
+              );
+              await fetchExerciseLogDetails();
+            } catch {
+              toast.error("Не удалось сменить единицы измерения");
+            }
+          }}
+        >
+          <DropdownItem key="kg">кг</DropdownItem>
+          <DropdownItem key="lb">lb</DropdownItem>
+        </DropdownMenu>
+      </Dropdown>
+    );
+  }
+
   function SetLogCard({
     setLog,
     setNum,
@@ -280,49 +322,7 @@ export default function RoutineDetailsPage({
                     <InputWithIncrement
                       className="h-10"
                       classNames={{ incrementButton: "w-12" }}
-                      labelNode={
-                        <Dropdown>
-                          <DropdownTrigger>
-                            <p className="cursor-pointer text-md font-light">
-                              Вес {unitLabel} ▾
-                            </p>
-                          </DropdownTrigger>
-                          <DropdownMenu
-                            disallowEmptySelection
-                            aria-label="Выбор единиц"
-                            selectedKeys={
-                              new Set([
-                                currentUnit === WorkoutWeightUnit.WEIGHT_UNIT_LB
-                                  ? "lb"
-                                  : "kg",
-                              ])
-                            }
-                            selectionMode="single"
-                            onSelectionChange={async (keys) => {
-                              const key = Array.from(keys)[0] as string;
-                              const nextUnit =
-                                key === "lb"
-                                  ? WorkoutWeightUnit.WEIGHT_UNIT_LB
-                                  : WorkoutWeightUnit.WEIGHT_UNIT_KG;
-
-                              if (nextUnit === currentUnit) return;
-                              try {
-                                await authApi.v1.workoutServiceUpdateExerciseLogWeightUnit(
-                                  id,
-                                  exerciseLogId,
-                                  { weightUnit: nextUnit },
-                                );
-                                await fetchExerciseLogDetails();
-                              } catch {
-                                toast.error("Не удалось сменить единицу веса");
-                              }
-                            }}
-                          >
-                            <DropdownItem key="kg">кг</DropdownItem>
-                            <DropdownItem key="lb">lb</DropdownItem>
-                          </DropdownMenu>
-                        </Dropdown>
-                      }
+                      labelNode={<WeightUnitSelectorLabel />}
                       min={0}
                       placeholder="10"
                       setValue={setWeight}
@@ -438,51 +438,7 @@ export default function RoutineDetailsPage({
                     <InputWithIncrement
                       className="h-10"
                       classNames={{ incrementButton: "w-12" }}
-                      labelNode={
-                        <Dropdown>
-                          <DropdownTrigger>
-                            <p className="cursor-pointer text-md font-light">
-                              Вес {unitLabel} ▾
-                            </p>
-                          </DropdownTrigger>
-                          <DropdownMenu
-                            disallowEmptySelection
-                            aria-label="Выбор единиц"
-                            selectedKeys={
-                              new Set([
-                                currentUnit === WorkoutWeightUnit.WEIGHT_UNIT_LB
-                                  ? "lb"
-                                  : "kg",
-                              ])
-                            }
-                            selectionMode="single"
-                            onSelectionChange={async (keys) => {
-                              const key = Array.from(keys)[0] as string;
-                              const nextUnit =
-                                key === "lb"
-                                  ? WorkoutWeightUnit.WEIGHT_UNIT_LB
-                                  : WorkoutWeightUnit.WEIGHT_UNIT_KG;
-
-                              if (nextUnit === currentUnit) return;
-                              try {
-                                await authApi.v1.workoutServiceUpdateExerciseLogWeightUnit(
-                                  id,
-                                  exerciseLogId,
-                                  { weightUnit: nextUnit },
-                                );
-                                await fetchExerciseLogDetails();
-                              } catch {
-                                toast.error(
-                                  "Не удалось сменить единицы измерения",
-                                );
-                              }
-                            }}
-                          >
-                            <DropdownItem key="kg">кг</DropdownItem>
-                            <DropdownItem key="lb">lb</DropdownItem>
-                          </DropdownMenu>
-                        </Dropdown>
-                      }
+                      labelNode={<WeightUnitSelectorLabel />}
                       min={0}
                       placeholder="10"
                       setValue={setWeight}

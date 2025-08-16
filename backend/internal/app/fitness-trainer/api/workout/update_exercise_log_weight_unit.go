@@ -37,7 +37,13 @@ func (s *Implementation) UpdateExerciseLogWeightUnit(ctx context.Context, in *de
 		return nil, fmt.Errorf("%w: %w", domain.ErrInvalidArgument, err)
 	}
 
-	logDTO, err := s.service.UpdateExerciseLogWeightUnit(ctx, userID, workoutID, exerciseLogID, domain.WeightUnit(in.GetWeightUnit()))
+	logDTO, err := s.service.UpdateExerciseLogWeightUnit(
+		ctx,
+		userID,
+		workoutID,
+		exerciseLogID,
+		mappers.WeightUnitFromProto(in.GetWeightUnit()),
+	)
 	if err != nil {
 		return nil, err
 	}
