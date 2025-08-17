@@ -202,12 +202,13 @@ export default function ExerciseInstancePage({
                     <div className="flex flex-row items-center gap-2">
                       <div className="flex flex-row items-center h-7">
                         <InputWithIncrement
+                          allowFloat={false}
                           className="w-14 h-7"
                           classNames={{ incrementButton: "h-7 w-7" }}
-                          label=""
                           placeholder="10"
                           setValue={onChange}
                           size="sm"
+                          step={1}
                           value={value}
                         />
                       </div>

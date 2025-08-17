@@ -1,6 +1,7 @@
 import { Button } from "@nextui-org/button";
 import { Input } from "@nextui-org/input";
 import clsx from "clsx";
+import { useEffect, useState } from "react";
 
 function getStepDecimals(step: number) {
   const s = step.toString();
@@ -21,21 +22,15 @@ function snapToStep(value: number, step: number, min?: number) {
 }
 
 export function IncrementButtons({
-  value,
-  setValue,
+  onPress,
   isSubtract,
   radius,
   className,
-  step = 2.5,
-  min,
 }: {
-  value: number;
-  setValue: (value: number) => void;
+  onPress: () => void;
   isSubtract?: boolean;
   radius?: "sm" | "md" | "lg";
   className?: string;
-  step?: number;
-  min?: number;
 }) {
   return (
     <div className={clsx(className, "flex flex-col h-full")}>
@@ -44,24 +39,131 @@ export function IncrementButtons({
         className="min-w-fit h-full w-full max-w-full"
         radius={radius}
         size={radius}
-        onPress={() => {
-          if (isSubtract) {
-            const next = snapToStep(value - step, step, min);
-
-            if (typeof min === "number" && value <= min) return;
-            setValue(next);
-
-            return;
-          }
-          const next = snapToStep(value + step, step, min);
-
-          setValue(next);
-        }}
+        onPress={onPress}
       >
         {isSubtract ? "-" : "+"}
       </Button>
     </div>
   );
+}
+
+function normalize(str: string) {
+  return str.replace(",", ".");
+}
+
+function isIntermediateInput(normalized: string, allowFloat: boolean) {
+  if (allowFloat) {
+    return (
+      normalized === "" ||
+      normalized === "." ||
+      normalized === "-" ||
+      normalized === "-." ||
+      normalized.endsWith(".")
+    );
+  }
+
+  // int-only: допускаем только пустую строку и минус как промежуточные
+  return normalized === "" || normalized === "-";
+}
+
+function clampMin(num: number, min?: number) {
+  if (typeof min === "number" && num < min) return min;
+
+  return num;
+}
+
+function useNumericInput({
+  value,
+  setValue,
+  min,
+  step = 2.5,
+  allowFloat = true,
+}: {
+  value: number;
+  setValue: (v: number) => void;
+  min?: number;
+  step?: number;
+  allowFloat?: boolean;
+}) {
+  const [inputStr, setInputStr] = useState<string>(String(value));
+
+  useEffect(() => {
+    const n = normalize(inputStr);
+    const intermediate = isIntermediateInput(n, allowFloat);
+
+    if (!intermediate) {
+      const parsed = Number(n);
+
+      if (!Number.isNaN(parsed) && parsed !== value) {
+        setInputStr(String(value));
+      }
+    }
+  }, [value, allowFloat]);
+
+  const onChange = (str: string) => {
+    // sanitize for int-only: удаляем запятые и точки
+    const sanitized = allowFloat ? str : str.replace(/[.,]/g, "");
+
+    setInputStr(sanitized);
+
+    const n = normalize(sanitized);
+
+    if (isIntermediateInput(n, allowFloat)) return;
+
+    const num = allowFloat ? Number(n) : parseInt(n, 10);
+
+    if (Number.isNaN(num)) return;
+
+    const clamped = clampMin(num, min);
+
+    setValue(clamped);
+  };
+
+  const onBlur = () => {
+    const n = normalize(inputStr).trim();
+
+    if (isIntermediateInput(n, allowFloat)) {
+      const fallback = typeof min === "number" ? min : 0;
+
+      setValue(fallback);
+      setInputStr(String(fallback));
+
+      return;
+    }
+
+    const num = allowFloat ? Number(n) : parseInt(n, 10);
+
+    if (Number.isNaN(num)) {
+      setInputStr(String(value));
+
+      return;
+    }
+
+    const clamped = clampMin(num, min);
+
+    setValue(clamped);
+    setInputStr(String(clamped));
+  };
+
+  const inc = () => {
+    let next = clampMin(snapToStep(value + step, step, min), min);
+
+    if (!allowFloat) next = Math.round(next);
+
+    setValue(next);
+    setInputStr(String(next));
+  };
+
+  const dec = () => {
+    let next = clampMin(snapToStep(value - step, step, min), min);
+
+    if (!allowFloat) next = Math.round(next);
+
+    setValue(next);
+    setInputStr(String(next));
+  };
+
+  return { inputStr, onChange, onBlur, inc, dec };
 }
 
 export function InputWithIncrement({
@@ -75,6 +177,7 @@ export function InputWithIncrement({
   classNames,
   min,
   step = 2.5,
+  allowFloat = true,
 }: {
   value: number;
   setValue: (value: number) => void;
@@ -86,7 +189,16 @@ export function InputWithIncrement({
   classNames?: { incrementButton: string };
   min?: number;
   step?: number;
+  allowFloat?: boolean;
 }) {
+  const { inputStr, onChange, onBlur, inc, dec } = useNumericInput({
+    value,
+    setValue,
+    min,
+    step,
+    allowFloat,
+  });
+
   return (
     <>
       {labelNode ? labelNode : <p className="text-md font-light">{label}</p>}
@@ -94,41 +206,25 @@ export function InputWithIncrement({
         <IncrementButtons
           isSubtract
           className={clsx("h-full", classNames?.incrementButton)}
-          min={min}
           radius={size}
-          setValue={setValue}
-          step={step}
-          value={value}
+          onPress={dec}
         />
         <Input
           isRequired
           className={clsx("p-0 w-full h-full h-8", className)}
           classNames={{ inputWrapper: "h-full max-h-full min-h-fit" }}
-          inputMode="decimal"
+          inputMode={allowFloat ? "decimal" : "numeric"}
           placeholder={placeholder}
           size={size}
           type="text"
-          value={String(value)}
-          onValueChange={(str) => {
-            const normalized = str.replace(",", ".");
-            const num = Number(normalized);
-
-            if (Number.isNaN(num)) return;
-            if (typeof min === "number" && num < min) {
-              setValue(min);
-
-              return;
-            }
-            setValue(num);
-          }}
+          value={inputStr}
+          onBlur={onBlur}
+          onValueChange={onChange}
         />
         <IncrementButtons
           className={clsx("h-full", classNames?.incrementButton)}
-          min={min}
           radius={size}
-          setValue={setValue}
-          step={step}
-          value={value}
+          onPress={inc}
         />
       </div>
     </>
