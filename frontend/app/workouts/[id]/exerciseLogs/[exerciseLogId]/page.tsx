@@ -216,6 +216,7 @@ export default function RoutineDetailsPage({
   function SetLogCard({
     setLog,
     setNum,
+    unitLabel,
     enableDelete,
     isDisabled,
     onDelete,
@@ -223,6 +224,7 @@ export default function RoutineDetailsPage({
   }: {
     setLog: WorkoutSetLog | WorkoutExpectedSet;
     setNum: number;
+    unitLabel: string;
     enableDelete?: boolean;
     isDisabled?: boolean;
     onDelete?: () => Promise<void>;
@@ -520,6 +522,7 @@ export default function RoutineDetailsPage({
                       enableDelete
                       setLog={setLog}
                       setNum={index}
+                      unitLabel={unitLabel}
                       onDelete={() => onDeleteSet(setLog.id!)}
                       onPress={() => {
                         setExerciseLogForUpdate(setLog);
@@ -537,6 +540,7 @@ export default function RoutineDetailsPage({
                           isDisabled
                           setLog={set}
                           setNum={index + exerciseLogDetails.setLogs?.length!}
+                          unitLabel={unitLabel}
                         />
                       ))}
                 </>
@@ -672,6 +676,10 @@ export default function RoutineDetailsPage({
     }: {
       exerciseLog: WorkoutExerciseLogDetails;
     }) {
+      const historyUnitLabel = weightUnitLabel(
+        exerciseLog.exerciseLog?.weightUnit || WorkoutWeightUnit.WEIGHT_UNIT_KG,
+      );
+
       function formatDate(date: string) {
         const dateObj = new Date(date);
 
@@ -713,7 +721,12 @@ export default function RoutineDetailsPage({
             </div>
             <div className="flex flex-col gap-1">
               {exerciseLog.setLogs?.map((setLog, index) => (
-                <SetLogCard key={index} setLog={setLog} setNum={index} />
+                <SetLogCard
+                  key={index}
+                  setLog={setLog}
+                  setNum={index}
+                  unitLabel={historyUnitLabel}
+                />
               ))}
             </div>
             {exerciseLog.exerciseLog?.notes && (
