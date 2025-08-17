@@ -10,6 +10,29 @@ export const Navbar = () => {
   const [keyboardOpen, setKeyboardOpen] = useState(false);
 
   useEffect(() => {
+    // Helper to detect focusable editable elements
+    const isEditable = (el: Element | null | undefined) => {
+      if (!el) return false;
+      const tag = (el as HTMLElement).tagName?.toLowerCase();
+      const editable = (el as HTMLElement).getAttribute?.("contenteditable");
+
+      return (
+        tag === "input" ||
+        tag === "textarea" ||
+        tag === "select" ||
+        editable === "" ||
+        editable === "true"
+      );
+    };
+
+    // Track whether any editable element is currently focused
+    let hasEditableFocused = false;
+
+    const updateUI = (open: boolean) => {
+      setKeyboardOpen(open);
+      document.documentElement.classList.toggle("kb-open", open);
+    };
+
     const baseline =
       typeof window !== "undefined"
         ? window.visualViewport?.height || window.innerHeight
@@ -18,32 +41,41 @@ export const Navbar = () => {
     const onVVResize = () => {
       const current = window.visualViewport?.height || window.innerHeight;
       // Если высота заметно уменьшилась, считаем что открылась клавиатура
-      const isOpen = baseline - current > 150;
+      const keyboardLikelyOpen = baseline - current > 150;
 
-      setKeyboardOpen(isOpen);
-      document.documentElement.classList.toggle("kb-open", isOpen);
+      // Открыто, если либо клавиатура распознана по высоте, либо фокус на поле ввода
+      const shouldOpen = keyboardLikelyOpen || hasEditableFocused;
+
+      updateUI(shouldOpen);
     };
 
     const onFocusIn = (e: FocusEvent) => {
       const target = e.target as HTMLElement | null;
 
       if (!target) return;
-      if (/(input|textarea|select)/i.test(target.tagName)) {
-        setKeyboardOpen(true);
-        document.documentElement.classList.add("kb-open");
+      if (isEditable(target)) {
+        hasEditableFocused = true;
+        updateUI(true);
       }
     };
 
-    const onFocusOut = () => {
-      // Небольшая задержка, чтобы не мигало при переходе фокуса
+    const onFocusOut = (e: FocusEvent) => {
+      // Даем время новому элементу получить фокус, чтобы не мигало при переходе
+      const related = (e.relatedTarget as Element | null) ?? null;
+
       setTimeout(() => {
-        setKeyboardOpen(false);
-        document.documentElement.classList.remove("kb-open");
-      }, 100);
+        // Если фокус переместился на другой инпут/textarea/select — считаем, что клавиатура всё еще открыта
+        const nextActive =
+          related ?? (document.activeElement as Element | null);
+
+        hasEditableFocused = isEditable(nextActive);
+        updateUI(hasEditableFocused);
+      }, 50);
     };
 
     window.visualViewport?.addEventListener("resize", onVVResize);
     window.addEventListener("focusin", onFocusIn);
+    // useCapture=true поможет поймать событие раньше, но здесь достаточно по умолчанию
     window.addEventListener("focusout", onFocusOut);
 
     return () => {
