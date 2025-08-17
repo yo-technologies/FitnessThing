@@ -356,7 +356,6 @@ export default function RoutineDetailsPage({
                       min={0}
                       placeholder="10"
                       setValue={setWeight}
-                      type="number"
                       value={weight}
                     />
                   </div>
@@ -368,7 +367,6 @@ export default function RoutineDetailsPage({
                       min={0}
                       placeholder="10"
                       setValue={setReps}
-                      type="number"
                       value={reps}
                     />
                   </div>
@@ -478,7 +476,6 @@ export default function RoutineDetailsPage({
                       placeholder="10"
                       setValue={setWeight}
                       size="md"
-                      type="number"
                       value={weight}
                     />
                   </div>
@@ -490,7 +487,6 @@ export default function RoutineDetailsPage({
                       min={0}
                       placeholder="10"
                       setValue={setReps}
-                      type="number"
                       value={reps}
                     />
                   </div>

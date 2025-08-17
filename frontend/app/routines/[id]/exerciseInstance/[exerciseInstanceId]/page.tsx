@@ -208,7 +208,6 @@ export default function ExerciseInstancePage({
                           placeholder="10"
                           setValue={onChange}
                           size="sm"
-                          type="number"
                           value={value}
                         />
                       </div>
