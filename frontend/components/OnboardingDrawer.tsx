@@ -300,7 +300,7 @@ export function OnboardingDrawer({
       backdrop="blur"
       isDismissable={false}
       isOpen={isOpen}
-      placement="right"
+      placement="bottom"
       scrollBehavior="inside"
       size="lg"
       onOpenChange={onClose}
