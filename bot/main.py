@@ -57,8 +57,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "🤖 <b>Доступные команды:</b>\n\n"
         "/start - Главное меню и доступ к приложению\n"
         "/help - Показать это сообщение\n"
-        "/about - Информация о боте\n"
-        "/status - Статус бота\n\n"
+        "/about - Информация о боте\n\n"
         "💡 <b>Основные функции:</b>\n"
         "• Отправьте любое сообщение, и я повторю его\n"
         "• Используйте кнопку в /start для доступа к полному приложению\n"
@@ -80,19 +79,6 @@ async def about_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     await update.message.reply_text(about_text, parse_mode='HTML')
 
-async def status_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handle the /status command - show bot status."""
-    status_text = (
-        "🟢 <b>Статус бота:</b>\n\n"
-        "✅ Бот активен и работает\n"
-        "✅ Подключение к серверу установлено\n"
-        "✅ Веб-приложение доступно\n\n"
-        f"🌐 <b>URL приложения:</b> {url if url else 'Не настроен'}\n"
-        "🕐 <b>Время работы:</b> С момента последнего запуска\n\n"
-        "Если у вас возникли проблемы, попробуйте перезапустить бота командой /start"
-    )
-    await update.message.reply_text(status_text, parse_mode='HTML')
-
 async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Echo user message back - handle non-command messages."""
     if update.message and update.message.text:
@@ -108,7 +94,6 @@ async def main():
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("help", help_command))
     app.add_handler(CommandHandler("about", about_command))
-    app.add_handler(CommandHandler("status", status_command))
     
     # Register message handler for non-command messages (echo functionality)
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))
