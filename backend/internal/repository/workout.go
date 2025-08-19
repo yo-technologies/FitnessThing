@@ -14,16 +14,18 @@ import (
 )
 
 type workoutEntity struct {
-	ID            pgtype.UUID
-	UserID        pgtype.UUID
-	RoutineID     pgtype.UUID
-	Notes         string
-	Rating        int
-	FinishedAt    pgtype.Timestamptz
-	CreatedAt     pgtype.Timestamptz
-	UpdatedAt     pgtype.Timestamptz
-	IsAIGenerated pgtype.Bool `db:"is_ai_generated"`
-	Reasoning     pgtype.Text
+	ID              pgtype.UUID
+	UserID          pgtype.UUID
+	RoutineID       pgtype.UUID
+	Notes           string
+	Rating          int
+	FinishedAt      pgtype.Timestamptz
+	CreatedAt       pgtype.Timestamptz
+	UpdatedAt       pgtype.Timestamptz
+	IsAIGenerated   pgtype.Bool `db:"is_ai_generated"`
+	Reasoning       pgtype.Text
+	IsGenerating    pgtype.Bool `db:"is_generating"`
+	GenerationError pgtype.Text `db:"generation_error"`
 }
 
 func (w workoutEntity) toDomain() domain.Workout {
@@ -33,28 +35,32 @@ func (w workoutEntity) toDomain() domain.Workout {
 			CreatedAt: w.CreatedAt.Time,
 			UpdatedAt: w.UpdatedAt.Time,
 		},
-		UserID:        domain.ID(w.UserID.Bytes),
-		RoutineID:     utils.NewNullable(domain.ID(w.RoutineID.Bytes), w.RoutineID.Valid),
-		Notes:         w.Notes,
-		Rating:        w.Rating,
-		FinishedAt:    w.FinishedAt.Time,
-		IsAIGenerated: w.IsAIGenerated.Bool,
-		Reasoning:     w.Reasoning.String,
+		UserID:          domain.ID(w.UserID.Bytes),
+		RoutineID:       utils.NewNullable(domain.ID(w.RoutineID.Bytes), w.RoutineID.Valid),
+		Notes:           w.Notes,
+		Rating:          w.Rating,
+		FinishedAt:      w.FinishedAt.Time,
+		IsAIGenerated:   w.IsAIGenerated.Bool,
+		Reasoning:       w.Reasoning.String,
+		IsGenerating:    w.IsGenerating.Bool,
+		GenerationError: w.GenerationError.String,
 	}
 }
 
 func workoutFromDomain(workout domain.Workout) workoutEntity {
 	return workoutEntity{
-		ID:            uuidToPgtype(workout.ID),
-		UserID:        uuidToPgtype(workout.UserID),
-		RoutineID:     pgtype.UUID{Bytes: uuid.UUID(workout.RoutineID.V), Valid: workout.RoutineID.IsValid},
-		Notes:         workout.Notes,
-		Rating:        workout.Rating,
-		FinishedAt:    timeToPgtype(workout.FinishedAt),
-		CreatedAt:     timeToPgtype(workout.CreatedAt),
-		UpdatedAt:     timeToPgtype(workout.UpdatedAt),
-		IsAIGenerated: pgtype.Bool{Bool: workout.IsAIGenerated, Valid: true},
-		Reasoning:     pgtype.Text{String: workout.Reasoning, Valid: workout.Reasoning != ""},
+		ID:              uuidToPgtype(workout.ID),
+		UserID:          uuidToPgtype(workout.UserID),
+		RoutineID:       pgtype.UUID{Bytes: uuid.UUID(workout.RoutineID.V), Valid: workout.RoutineID.IsValid},
+		Notes:           workout.Notes,
+		Rating:          workout.Rating,
+		FinishedAt:      timeToPgtype(workout.FinishedAt),
+		CreatedAt:       timeToPgtype(workout.CreatedAt),
+		UpdatedAt:       timeToPgtype(workout.UpdatedAt),
+		IsAIGenerated:   pgtype.Bool{Bool: workout.IsAIGenerated, Valid: true},
+		Reasoning:       pgtype.Text{String: workout.Reasoning, Valid: workout.Reasoning != ""},
+		IsGenerating:    pgtype.Bool{Bool: workout.IsGenerating, Valid: true},
+		GenerationError: pgtype.Text{String: workout.GenerationError, Valid: workout.GenerationError != ""},
 	}
 }
 

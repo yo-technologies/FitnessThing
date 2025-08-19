@@ -424,6 +424,8 @@ export interface WorkoutWorkout {
   updatedAt?: string;
   isAiGenerated?: boolean;
   reasoning?: string;
+  isGenerating?: boolean;
+  generationError?: string;
 }
 
 /** Настройки генерации тренировок */

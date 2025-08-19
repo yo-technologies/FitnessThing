@@ -229,13 +229,15 @@ func NewSet(exerciseInstanceID ID, setType SetType, reps int, weight float32, ti
 type Workout struct {
 	Model
 
-	UserID        ID
-	RoutineID     utils.Nullable[ID]
-	Notes         string
-	Rating        int
-	FinishedAt    time.Time
-	IsAIGenerated bool
-	Reasoning     string
+	UserID          ID
+	RoutineID       utils.Nullable[ID]
+	Notes           string
+	Rating          int
+	FinishedAt      time.Time
+	IsAIGenerated   bool
+	Reasoning       string
+	IsGenerating    bool
+	GenerationError string
 }
 
 func NewWorkout(userID ID, routineID utils.Nullable[ID], isAIGenerated bool) Workout {
@@ -244,6 +246,7 @@ func NewWorkout(userID ID, routineID utils.Nullable[ID], isAIGenerated bool) Wor
 		UserID:        userID,
 		RoutineID:     routineID,
 		IsAIGenerated: isAIGenerated,
+		IsGenerating:  isAIGenerated, // Set to true initially if AI generation is requested
 	}
 }
 

@@ -854,6 +854,8 @@ type Workout struct {
 	UpdatedAt     *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
 	IsAiGenerated bool                   `protobuf:"varint,9,opt,name=is_ai_generated,json=isAiGenerated,proto3" json:"is_ai_generated,omitempty"`
 	Reasoning     string                 `protobuf:"bytes,10,opt,name=reasoning,proto3" json:"reasoning,omitempty"`
+	IsGenerating    bool                   `protobuf:"varint,11,opt,name=is_generating,json=isGenerating,proto3" json:"is_generating,omitempty"`
+	GenerationError string                 `protobuf:"bytes,12,opt,name=generation_error,json=generationError,proto3" json:"generation_error,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -954,6 +956,20 @@ func (x *Workout) GetIsAiGenerated() bool {
 func (x *Workout) GetReasoning() string {
 	if x != nil {
 		return x.Reasoning
+	}
+	return ""
+}
+
+func (x *Workout) GetIsGenerating() bool {
+	if x != nil {
+		return x.IsGenerating
+	}
+	return false
+}
+
+func (x *Workout) GetGenerationError() string {
+	if x != nil {
+		return x.GenerationError
 	}
 	return ""
 }

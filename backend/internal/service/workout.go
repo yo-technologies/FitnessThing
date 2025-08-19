@@ -46,16 +46,14 @@ func (s *Service) StartWorkout(ctx context.Context, userID domain.ID, opts domai
 		}
 	}
 
-	if opts.GenerateWorkout {
-		err = s.enrichWorkoutByGenerating(ctx, userID, workout.ID, opts.UserPrompt)
-		if err != nil {
-			return domain.Workout{}, err
-		}
-	}
-
 	err = s.unitOfWork.Commit(ctx)
 	if err != nil {
 		return domain.Workout{}, err
+	}
+
+	// Launch AI generation in a separate goroutine if requested
+	if opts.GenerateWorkout {
+		go s.generateWorkoutAsync(userID, workout.ID, opts.UserPrompt)
 	}
 
 	return workout, nil
@@ -805,4 +803,85 @@ func (s *Service) AddPowerRatingToExerciseLog(ctx context.Context, userID, worko
 	}
 
 	return nil
+}
+
+// generateWorkoutAsync handles AI workout generation in a background goroutine
+func (s *Service) generateWorkoutAsync(userID, workoutID domain.ID, userPrompt string) {
+	ctx := context.Background()
+	
+	// Start database transaction
+	ctx, err := s.unitOfWork.Begin(ctx)
+	if err != nil {
+		logger.Errorf("Failed to begin transaction for async workout generation: %v", err)
+		s.updateWorkoutGenerationError(workoutID, "Failed to start generation process")
+		return
+	}
+	defer s.unitOfWork.Rollback(ctx)
+
+	// Generate workout content
+	err = s.enrichWorkoutByGenerating(ctx, userID, workoutID, userPrompt)
+	if err != nil {
+		logger.Errorf("Failed to generate workout content: %v", err)
+		s.updateWorkoutGenerationError(workoutID, err.Error())
+		return
+	}
+
+	// Mark generation as complete
+	workout, err := s.repository.GetWorkoutByID(ctx, workoutID)
+	if err != nil {
+		logger.Errorf("Failed to get workout after generation: %v", err)
+		s.updateWorkoutGenerationError(workoutID, "Failed to finalize generation")
+		return
+	}
+
+	workout.IsGenerating = false
+	_, err = s.repository.UpdateWorkout(ctx, workoutID, workout)
+	if err != nil {
+		logger.Errorf("Failed to update workout after generation: %v", err)
+		s.updateWorkoutGenerationError(workoutID, "Failed to save generation results")
+		return
+	}
+
+	// Commit the transaction
+	err = s.unitOfWork.Commit(ctx)
+	if err != nil {
+		logger.Errorf("Failed to commit transaction for async workout generation: %v", err)
+		s.updateWorkoutGenerationError(workoutID, "Failed to save generation results")
+		return
+	}
+
+	logger.Infof("Successfully generated workout %s", workoutID.String())
+}
+
+// updateWorkoutGenerationError updates workout with generation error in a separate transaction
+func (s *Service) updateWorkoutGenerationError(workoutID domain.ID, errorMsg string) {
+	ctx := context.Background()
+	
+	ctx, err := s.unitOfWork.Begin(ctx)
+	if err != nil {
+		logger.Errorf("Failed to begin transaction for error update: %v", err)
+		return
+	}
+	defer s.unitOfWork.Rollback(ctx)
+
+	workout, err := s.repository.GetWorkoutByID(ctx, workoutID)
+	if err != nil {
+		logger.Errorf("Failed to get workout for error update: %v", err)
+		return
+	}
+
+	workout.IsGenerating = false
+	workout.GenerationError = errorMsg
+
+	_, err = s.repository.UpdateWorkout(ctx, workoutID, workout)
+	if err != nil {
+		logger.Errorf("Failed to update workout with error: %v", err)
+		return
+	}
+
+	err = s.unitOfWork.Commit(ctx)
+	if err != nil {
+		logger.Errorf("Failed to commit error update: %v", err)
+		return
+	}
 }

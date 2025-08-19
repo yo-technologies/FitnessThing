@@ -13,7 +13,7 @@ import {
 import { Accordion, AccordionItem } from "@nextui-org/accordion";
 import { DropdownItem } from "@nextui-org/dropdown";
 import { useRouter } from "next/navigation";
-import { use, useEffect, useState } from "react";
+import { use, useEffect, useState, useRef } from "react";
 import { toast } from "react-toastify";
 import ReactMarkdown from "react-markdown";
 
@@ -172,6 +172,7 @@ export default function WorkoutDetailsPage({
 }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isError, setIsError] = useState(false);
+  const [isPolling, setIsPolling] = useState(false);
 
   const [workoutDetails, setWorkoutDetails] =
     useState<WorkoutGetWorkoutResponse>({});
@@ -182,6 +183,9 @@ export default function WorkoutDetailsPage({
 
   const { isOpen, onOpen, onClose } = useDisclosure();
 
+  // Polling interval ref
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
   async function fetchWorkoutDetails() {
     await authApi.v1
       .workoutServiceGetWorkout(id)
@@ -189,6 +193,15 @@ export default function WorkoutDetailsPage({
         console.log("Workout details response:", response.data);
         console.log("Workout createdAt:", response.data?.workout?.createdAt);
         setWorkoutDetails(response.data!);
+
+        // Check if we need to start/stop polling
+        const workout = response.data?.workout;
+
+        if (workout?.isGenerating) {
+          startPolling();
+        } else {
+          stopPolling();
+        }
       })
       .catch((error) => {
         console.log(error);
@@ -208,6 +221,37 @@ export default function WorkoutDetailsPage({
       setIsLoading(false);
     }
   }
+
+  // Start polling for workout updates
+  function startPolling() {
+    if (pollingIntervalRef.current) return; // Already polling
+
+    setIsPolling(true);
+    pollingIntervalRef.current = setInterval(async () => {
+      try {
+        await fetchWorkoutDetails();
+      } catch (error) {
+        console.error("Polling error:", error);
+        // Don't stop polling on error, just log it
+      }
+    }, 1000); // Poll every second
+  }
+
+  // Stop polling
+  function stopPolling() {
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+      pollingIntervalRef.current = null;
+    }
+    setIsPolling(false);
+  }
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      stopPolling();
+    };
+  }, []);
 
   async function finishWorkout() {
     try {
@@ -359,23 +403,62 @@ export default function WorkoutDetailsPage({
           </DropdownItem>
         </PageHeader>
         <section className="flex flex-col gap-4 ">
-          {workoutDetails.workout?.isAiGenerated && (
-            <Accordion className="px-4" title="Сгенерировано ИИ">
-              <AccordionItem
-                className="flex flex-col p-0"
-                classNames={{
-                  trigger: "p-0",
-                  content: "p-0 mt-2",
-                  title: "text-xs font-semibold text-default-400",
-                }}
-                title="Записка от ИИ"
-              >
-                <ReactMarkdown className="text-xs/4 text-default-400">
-                  {workoutDetails.workout?.reasoning}
-                </ReactMarkdown>
-              </AccordionItem>
-            </Accordion>
-          )}
+          {workoutDetails.workout?.isAiGenerated &&
+            workoutDetails.workout?.isGenerating && (
+              <div className="px-4">
+                <Card className="p-4">
+                  <div className="flex flex-col items-center gap-4">
+                    <div className="flex flex-col items-center">
+                      <h2 className="text-xl font-bold">
+                        Генерация тренировки...
+                      </h2>
+                      <p className="text-xs font-light text-default-500">
+                        {isPolling
+                          ? "Обновление данных..."
+                          : "Это может занять некоторое время"}
+                      </p>
+                    </div>
+                    <div>
+                      <Loading showText={false} size="lg" />
+                    </div>
+                  </div>
+                </Card>
+              </div>
+            )}
+          {workoutDetails.workout?.isAiGenerated &&
+            workoutDetails.workout?.generationError && (
+              <div className="px-4">
+                <Card className="p-4 bg-danger-50 border-danger-200">
+                  <div className="flex flex-col gap-2">
+                    <h3 className="text-lg font-bold text-danger-600">
+                      Ошибка генерации
+                    </h3>
+                    <p className="text-sm text-danger-600">
+                      {workoutDetails.workout.generationError}
+                    </p>
+                  </div>
+                </Card>
+              </div>
+            )}
+          {workoutDetails.workout?.isAiGenerated &&
+            !workoutDetails.workout?.isGenerating &&
+            !workoutDetails.workout?.generationError && (
+              <Accordion className="px-4" title="Сгенерировано ИИ">
+                <AccordionItem
+                  className="flex flex-col p-0"
+                  classNames={{
+                    trigger: "p-0",
+                    content: "p-0 mt-2",
+                    title: "text-xs font-semibold text-default-400",
+                  }}
+                  title="Записка от ИИ"
+                >
+                  <ReactMarkdown className="text-xs/4 text-default-400">
+                    {workoutDetails.workout?.reasoning}
+                  </ReactMarkdown>
+                </AccordionItem>
+              </Accordion>
+            )}
           <div className="flex flex-col gap-4 px-4">
             {workoutDetails.exerciseLogs?.map((exerciseLogDetails, index) => (
               <ExerciseLogCard
@@ -384,26 +467,31 @@ export default function WorkoutDetailsPage({
                 workoutId={id}
               />
             ))}
-            <Card className="p-2">
-              <Button
-                className="w-full"
-                onPress={() => {
-                  onOpen();
-                }}
-              >
-                <PlusIcon className="w-4 h-4" />
-                <span>Добавить упражнение</span>
-              </Button>
-            </Card>
+            {!workoutDetails.workout?.isGenerating && (
+              <Card className="p-2">
+                <Button
+                  className="w-full"
+                  onPress={() => {
+                    onOpen();
+                  }}
+                >
+                  <PlusIcon className="w-4 h-4" />
+                  <span>Добавить упражнение</span>
+                </Button>
+              </Card>
+            )}
           </div>
         </section>
         <section className="w-full px-4">
           <Button
             className="w-full"
             color="primary"
+            disabled={workoutDetails.workout?.isGenerating}
             onPress={onFinishModalOpen}
           >
-            Завершить тренировку
+            {workoutDetails.workout?.isGenerating
+              ? "Генерация..."
+              : "Завершить тренировку"}
           </Button>
         </section>
       </div>
