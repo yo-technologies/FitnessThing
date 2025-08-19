@@ -2,12 +2,12 @@
 
 import React, { useState, useEffect } from "react";
 import {
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-} from "@nextui-org/modal";
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerBody,
+  DrawerFooter,
+} from "@nextui-org/drawer";
 import { Button } from "@nextui-org/button";
 import { Progress } from "@nextui-org/progress";
 import { Divider } from "@nextui-org/divider";
@@ -34,17 +34,17 @@ import { authApi } from "@/api/api";
 import { WorkoutMuscleGroup } from "@/api/api.generated";
 import { translateMuscleGroup } from "@/config/muscle-groups";
 
-interface OnboardingModalProps {
+interface OnboardingDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   onComplete: () => void;
 }
 
-export function OnboardingModal({
+export function OnboardingDrawer({
   isOpen,
   onClose,
   onComplete,
-}: OnboardingModalProps) {
+}: OnboardingDrawerProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] =
@@ -295,25 +295,20 @@ export function OnboardingModal({
   };
 
   return (
-    <Modal
+    <Drawer
       isKeyboardDismissDisabled
       backdrop="blur"
-      classNames={{
-        base: "max-h-[95vh] mb-0 h-full",
-        body: "max-h-[80vh] overflow-y-auto",
-        closeButton: "absolute top-3 right-2",
-      }}
       isDismissable={false}
       isOpen={isOpen}
-      placement="bottom"
+      placement="right"
       scrollBehavior="inside"
-      size="2xl"
+      size="lg"
       onOpenChange={onClose}
     >
-      <ModalContent>
+      <DrawerContent>
         {() => (
           <>
-            <ModalHeader className="flex flex-col gap-2 bg-background p-4">
+            <DrawerHeader className="flex flex-col gap-2 bg-background p-4">
               <h2 className="text-lg font-bold">
                 Настройка вашего фитнес-плана
               </h2>
@@ -328,11 +323,11 @@ export function OnboardingModal({
                   {currentStep + 1} из {ONBOARDING_STEPS.length}
                 </span>
               </div>
-            </ModalHeader>
+            </DrawerHeader>
 
             <Divider />
 
-            <ModalBody className="p-4 max-h-[75vh] overflow-y-auto bg-background">
+            <DrawerBody className="p-4 overflow-y-auto bg-background">
               <div ref={titleAnimateRef}>
                 {currentStep !== 0 && (
                   <div key={`title-${currentStep}`} className="flex flex-col">
@@ -348,11 +343,11 @@ export function OnboardingModal({
               <div ref={animateRef} className="min-h-[400px] flex flex-col">
                 {renderStepContent()}
               </div>
-            </ModalBody>
+            </DrawerBody>
 
             <Divider />
 
-            <ModalFooter className="p-4 pb-8">
+            <DrawerFooter className="p-4 pb-8">
               <div className="flex justify-between w-full">
                 {currentStep === 0 ? (
                   // Welcome страница - только кнопка "Начать"
@@ -389,10 +384,10 @@ export function OnboardingModal({
                   </>
                 )}
               </div>
-            </ModalFooter>
+            </DrawerFooter>
           </>
         )}
-      </ModalContent>
-    </Modal>
+      </DrawerContent>
+    </Drawer>
   );
 }
