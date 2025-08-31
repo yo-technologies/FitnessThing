@@ -1,6 +1,7 @@
 /* eslint-disable react/no-unknown-property */
 "use client";
 import { Button } from "@nextui-org/button";
+import { Spinner } from "@nextui-org/react";
 import { Card, CardFooter, CardHeader } from "@nextui-org/card";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -21,7 +22,13 @@ export default function Home() {
 
   const [isLoading, setIsLoading] = useState(true);
   const [isError, setIsError] = useState(false);
-  const [isWorkoutGenerating, setIsWorkoutGenerating] = useState(false);
+
+  type LoadingAction =
+    | { type: "ai" }
+    | { type: "empty" }
+    | { type: "routine"; id: string }
+    | null;
+  const [loadingAction, setLoadingAction] = useState<LoadingAction>(null);
 
   // Константы для localStorage
   const ONBOARDING_SKIPPED_KEY = "fitness-onboarding-skipped";
@@ -131,6 +138,7 @@ export default function Home() {
   async function startWorkout(
     routineId: string | undefined,
     generate: boolean = false,
+    ctx?: Exclude<LoadingAction, null>,
   ) {
     if (activeWorkouts.length > 0) {
       toast.error("Сначала завершите активную тренировку");
@@ -145,7 +153,9 @@ export default function Home() {
       return;
     }
 
-    setIsWorkoutGenerating(true);
+    if (ctx) {
+      setLoadingAction(ctx);
+    }
     await authApi.v1
       .workoutServiceStartWorkout({
         routineId: routineId,
@@ -157,7 +167,7 @@ export default function Home() {
       })
       .catch((error) => {
         console.log(error);
-        setIsWorkoutGenerating(false);
+        setLoadingAction(null);
 
         if (error.response?.status === 429) {
           toast.error("Превышен лимит генераций на сегодня");
@@ -167,6 +177,9 @@ export default function Home() {
 
         toast.error("Ошибка при начале тренировки");
         throw error;
+      })
+      .finally(() => {
+        setLoadingAction(null);
       });
   }
 
@@ -231,7 +244,7 @@ export default function Home() {
           className="flex flex-col h-full gap-1"
           href={`/routines/${routine.id}`}
         >
-          <h3 className="text-lg font-bold">{routine.name}</h3>
+          <h3 className="text-md font-semibold">{routine.name}</h3>
 
           <div className="flex flex-col h-full overflow-hidden">
             <p className="text-xs font-light line-clamp-[7]">
@@ -242,12 +255,31 @@ export default function Home() {
         <Button
           className="flex items-center p-2 w-full"
           color="primary"
+          isDisabled={
+            !!loadingAction &&
+            !(
+              loadingAction.type === "routine" &&
+              loadingAction.id === routine.id
+            )
+          }
           size="sm"
           onPress={async () => {
-            await startWorkout(routine.id);
+            await startWorkout(routine.id, false, {
+              type: "routine",
+              id: routine.id,
+            });
           }}
         >
-          <PlayIcon className="w-3 h-3" fill="currentColor" />
+          {loadingAction?.type === "routine" &&
+          loadingAction.id === routine.id ? (
+            <Spinner
+              classNames={{ wrapper: "w-3 h-3" }}
+              color="current"
+              size="sm"
+            />
+          ) : (
+            <PlayIcon className="w-3 h-3" fill="currentColor" />
+          )}
           <span className="text-sm font-bold">Начать</span>
         </Button>
       </Card>
@@ -291,20 +323,38 @@ export default function Home() {
           </h1>
           <Button
             disableRipple
-            className="flex items-center bg-transparent h-fit"
+            className="flex items-center bg-transparent h-8"
+            isDisabled={!!loadingAction && loadingAction.type !== "ai"}
             size="lg"
             onPress={async () => {
-              await startWorkout(undefined, true);
+              await startWorkout(undefined, true, { type: "ai" });
             }}
           >
-            <BoltIcon className="w-7 h-7" fill="currentColor" />
+            {loadingAction?.type === "ai" ? (
+              <Spinner
+                classNames={{ wrapper: "w-7 h-7" }}
+                color="current"
+                size="md"
+              />
+            ) : (
+              <BoltIcon className="w-7 h-7" fill="currentColor" />
+            )}
             <span className="text-2xl font-bold">Стать лучше</span>
           </Button>
           <Button
             className="flex items-center text-white-500 bg-transparent underline p-0"
+            isDisabled={!!loadingAction && loadingAction.type !== "empty"}
+            isLoading={loadingAction?.type === "empty"}
             size="sm"
+            spinner={
+              <Spinner
+                classNames={{ wrapper: "w-3 h-3" }}
+                color="current"
+                size="sm"
+              />
+            }
             onPress={async () => {
-              await startWorkout(undefined, false);
+              await startWorkout(undefined, false, { type: "empty" });
             }}
           >
             Пустая тренировка
@@ -318,7 +368,7 @@ export default function Home() {
             {activeWorkouts.map((workout) => (
               <Card key={workout.id} className="w-full p-3 gap-4">
                 <CardHeader className="p-0">
-                  <h3 className="text-lg font-bold">
+                  <h3 className="text-md font-semibold">
                     {"Тренировка "}
                     {new Date(workout.createdAt!).toLocaleString("ru-RU", {
                       weekday: "long",
@@ -362,22 +412,6 @@ export default function Home() {
           pointer-events: none;
         }
       `}</style>
-
-      {isWorkoutGenerating && (
-        <div className="h-full w-full fixed top-0 left-0 z-10 backdrop-blur-sm">
-          <div className="flex flex-col items-center justify-center gap-4 h-full bg-background bg-opacity-50">
-            <div className="flex flex-col items-center">
-              <h2 className="text-xl font-bold">Генерация тренировки...</h2>
-              <p className="text-xs font-light text-default-500">
-                Это может занять некоторое время
-              </p>
-            </div>
-            <div>
-              <Loading showText={false} size="lg" />
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Модальное окно онбординга */}
       <OnboardingModal
