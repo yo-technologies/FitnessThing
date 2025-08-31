@@ -26,6 +26,7 @@ import { AIGenerationLoader } from "@/components/ai-generation-loader";
 import {
   WorkoutExerciseLogDetails,
   WorkoutGetWorkoutResponse,
+  WorkoutGenerationStatus,
 } from "@/api/api.generated";
 import { authApi } from "@/api/api";
 import { weightUnitLabel } from "@/utils/units";
@@ -195,8 +196,9 @@ export default function WorkoutDetailsPage({
 }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isError, setIsError] = useState(false);
-  const [generationError, setGenerationError] = useState<string | null>(null);
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [generationStatus, setGenerationStatus] = useState<
+    WorkoutGenerationStatus | undefined
+  >(undefined);
 
   const [workoutDetails, setWorkoutDetails] =
     useState<WorkoutGetWorkoutResponse>({});
@@ -212,8 +214,7 @@ export default function WorkoutDetailsPage({
       const response = await authApi.v1.workoutServiceGetWorkout(id);
 
       setWorkoutDetails(response.data!);
-      setGenerationError(response.data?.workout?.generationError || null);
-      setIsGenerating(response.data?.workout?.isGenerating || false);
+      setGenerationStatus(response.data.workout?.generationStatus);
     } catch (error) {
       console.log(error);
       throw error;
@@ -224,20 +225,20 @@ export default function WorkoutDetailsPage({
   async function pollGenerationStatus() {
     try {
       const response = await authApi.v1.workoutServiceGetWorkout(id);
-      const generating = response.data?.workout?.isGenerating || false;
-      const genError = response.data?.workout?.generationError || null;
+      const status = response.data.workout?.generationStatus;
 
-      // Обновляем сообщение об ошибке если появилось
-      if (genError !== generationError) setGenerationError(genError);
-
-      if (!generating) {
-        // Генерация завершилась (успешно или с ошибкой) — теперь обновляем полные данные
+      if (status !== generationStatus) {
+        setGenerationStatus(status);
+      }
+      if (
+        status !== WorkoutGenerationStatus.GENERATION_STATUS_RUNNING &&
+        status !== WorkoutGenerationStatus.GENERATION_STATUS_UNSPECIFIED
+      ) {
+        // completed or failed – refresh full details
         setWorkoutDetails(response.data!);
-        setIsGenerating(false);
       }
     } catch (error) {
       console.log("Polling error", error);
-      // Не падаем: оставляем текущие данные, можно добавить счетчик ошибок
     }
   }
 
@@ -299,6 +300,17 @@ export default function WorkoutDetailsPage({
     }
   }
 
+  async function generateWorkout() {
+    try {
+      await authApi.v1.workoutServiceGenerateWorkout(id, {});
+      // Refresh status
+      await fetchWorkoutDetails();
+    } catch (error) {
+      console.log(error);
+      toast.error("Ошибка при генерации тренировки");
+    }
+  }
+
   async function onDelete() {
     try {
       await authApi.v1
@@ -328,13 +340,16 @@ export default function WorkoutDetailsPage({
   }, []);
 
   useEffect(() => {
-    if (!isGenerating) return;
-    const interval = setInterval(() => {
-      pollGenerationStatus();
-    }, 2000);
+    if (
+      generationStatus === WorkoutGenerationStatus.GENERATION_STATUS_RUNNING
+    ) {
+      const interval = setInterval(() => {
+        pollGenerationStatus();
+      }, 2000);
 
-    return () => clearInterval(interval);
-  }, [isGenerating, generationError]);
+      return () => clearInterval(interval);
+    }
+  }, [generationStatus]);
 
   if (isLoading) {
     return <Loading />;
@@ -406,7 +421,7 @@ export default function WorkoutDetailsPage({
 
     return (
       <>
-        <section className="flex flex-col gap-4 ">
+        <section className="flex flex-col gap-4 flex-grow">
           {workoutDetails.workout?.isAiGenerated && (
             <Accordion className="px-4" title="Сгенерировано ИИ">
               <AccordionItem
@@ -424,7 +439,28 @@ export default function WorkoutDetailsPage({
               </AccordionItem>
             </Accordion>
           )}
-          <div ref={exerciseListParent} className="flex flex-col gap-4 px-4">
+          <div
+            ref={exerciseListParent}
+            className="flex flex-col gap-4 px-4 flex-grow"
+          >
+            {workoutDetails.exerciseLogs?.length === 0 && (
+              <div className="p-4 flex flex-col flex-grow justify-center">
+                <div className="flex flex-col gap-4">
+                  <div className="gap-2">
+                    <p className="text-center text-default-600 text-lg">
+                      Тренировка пуста.
+                    </p>
+                    <p className="text-center text-default-400 text-xs">
+                      Добавьте упражнения вручную или сгенерируйте с помощью ИИ.
+                    </p>
+                  </div>
+                  <Button color="secondary" size="sm" onPress={generateWorkout}>
+                    <BoltIcon className="w-4 h-4" />
+                    <span>Сгенерировать</span>
+                  </Button>
+                </div>
+              </div>
+            )}
             {workoutDetails.exerciseLogs?.map((exerciseLogDetails, index) => (
               <ExerciseLogCard
                 key={index}
@@ -434,7 +470,7 @@ export default function WorkoutDetailsPage({
             ))}
             <Card className="p-2">
               <Button
-                className="w-full"
+                fullWidth
                 onPress={() => {
                   onOpen();
                 }}
@@ -445,11 +481,7 @@ export default function WorkoutDetailsPage({
             </Card>
           </div>
           <div className="px-4">
-            <Button
-              className="w-full"
-              color="primary"
-              onPress={onFinishModalOpen}
-            >
+            <Button fullWidth color="primary" onPress={onFinishModalOpen}>
               Завершить тренировку
             </Button>
           </div>
@@ -489,14 +521,22 @@ export default function WorkoutDetailsPage({
             ref={switchParent}
             className="min-h-[160px] flex flex-col flex-grow"
           >
-            {isGenerating && <AIGenerationLoader />}
-            {generationError && !isGenerating && (
+            {generationStatus ===
+              WorkoutGenerationStatus.GENERATION_STATUS_RUNNING && (
+              <AIGenerationLoader />
+            )}
+            {generationStatus ===
+              WorkoutGenerationStatus.GENERATION_STATUS_FAILED && (
               <GenerationError
-                generationError={generationError}
-                onRetry={() => fetchData()}
+                generationError={"Ошибка генерации тренировки"}
+                onRetry={generateWorkout}
               />
             )}
-            {!isGenerating && !generationError && (
+            {(generationStatus === undefined ||
+              generationStatus ===
+                WorkoutGenerationStatus.GENERATION_STATUS_UNSPECIFIED ||
+              generationStatus ===
+                WorkoutGenerationStatus.GENERATION_STATUS_COMPLETED) && (
               <WorkoutSections
                 id={id}
                 workoutDetails={workoutDetails}

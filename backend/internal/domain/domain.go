@@ -3,8 +3,8 @@ package domain
 import (
 	"fitness-trainer/internal/utils"
 	"fmt"
-	"time"
 	"math"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -44,14 +44,14 @@ func NewModel() Model {
 type User struct {
 	Model
 
-	TelegramID            int64
-	TelegramUsername      utils.Nullable[string]
-	FirstName             utils.Nullable[string]
-	LastName              utils.Nullable[string]
-	DateOfBirth           time.Time
-	Height                utils.Nullable[float32]
-	Weight                utils.Nullable[float32]
-	ProfilePicURL         utils.Nullable[string]
+	TelegramID             int64
+	TelegramUsername       utils.Nullable[string]
+	FirstName              utils.Nullable[string]
+	LastName               utils.Nullable[string]
+	DateOfBirth            time.Time
+	Height                 utils.Nullable[float32]
+	Weight                 utils.Nullable[float32]
+	ProfilePicURL          utils.Nullable[string]
 	HasCompletedOnboarding bool
 }
 
@@ -229,15 +229,50 @@ func NewSet(exerciseInstanceID ID, setType SetType, reps int, weight float32, ti
 type Workout struct {
 	Model
 
-	UserID        ID
-	RoutineID     utils.Nullable[ID]
-	Notes         string
-	Rating        int
-	FinishedAt    time.Time
-	IsAIGenerated bool
-	Reasoning     string
-	IsGenerating  bool
-	GenerationError utils.Nullable[string]
+	UserID           ID
+	RoutineID        utils.Nullable[ID]
+	Notes            string
+	Rating           int
+	FinishedAt       time.Time
+	IsAIGenerated    bool
+	Reasoning        string
+	GenerationStatus WorkoutGenerationStatus
+	GenerationError  utils.Nullable[string]
+}
+
+type WorkoutGenerationStatus string
+
+const (
+	WorkoutGenerationStatusUnspecified = ""
+	WorkoutGenerationStatusRunning     = "running"
+	WorkoutGenerationStatusFailed      = "failed"
+	WorkoutGenerationStatusCompleted   = "completed"
+)
+
+// Generation status helpers (encapsulate status transitions and checks)
+func (w Workout) IsGenerationRunning() bool {
+	return w.GenerationStatus == WorkoutGenerationStatusRunning
+}
+
+func (w Workout) IsGenerationFailed() bool {
+	return w.GenerationStatus == WorkoutGenerationStatusFailed
+}
+
+func (w Workout) IsGenerationCompleted() bool {
+	return w.GenerationStatus == WorkoutGenerationStatusCompleted
+}
+
+func (w *Workout) SetGenerationRunning() {
+	w.GenerationStatus = WorkoutGenerationStatusRunning
+	w.GenerationError = utils.Nullable[string]{}
+}
+
+func (w *Workout) SetGenerationFailed() {
+	w.GenerationStatus = WorkoutGenerationStatusFailed
+}
+
+func (w *Workout) SetGenerationCompleted() {
+	w.GenerationStatus = WorkoutGenerationStatusCompleted
 }
 
 func NewWorkout(userID ID, routineID utils.Nullable[ID], isAIGenerated bool) Workout {
@@ -246,7 +281,6 @@ func NewWorkout(userID ID, routineID utils.Nullable[ID], isAIGenerated bool) Wor
 		UserID:        userID,
 		RoutineID:     routineID,
 		IsAIGenerated: isAIGenerated,
-		IsGenerating:  isAIGenerated,
 	}
 }
 

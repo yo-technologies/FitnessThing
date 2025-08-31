@@ -70,6 +70,11 @@ export interface WorkoutServiceAddPowerRatingToExerciseLogBody {
 
 export type WorkoutServiceCompleteWorkoutBody = object;
 
+export interface WorkoutServiceGenerateWorkoutBody {
+  /** пользовательский промпт при перезапуске */
+  userPrompt?: string;
+}
+
 export interface WorkoutServiceLogExerciseBody {
   exerciseId: string;
 }
@@ -211,6 +216,21 @@ export enum WorkoutExperienceLevel {
   EXPERIENCE_LEVEL_ADVANCED = "EXPERIENCE_LEVEL_ADVANCED",
 }
 
+/**
+ * Статусы генерации тренировки
+ * - GENERATION_STATUS_UNSPECIFIED: не запускалась
+ *  - GENERATION_STATUS_RUNNING: в процессе
+ *  - GENERATION_STATUS_FAILED: завершилась с ошибкой
+ *  - GENERATION_STATUS_COMPLETED: успешно завершена
+ * @default "GENERATION_STATUS_UNSPECIFIED"
+ */
+export enum WorkoutGenerationStatus {
+  GENERATION_STATUS_UNSPECIFIED = "GENERATION_STATUS_UNSPECIFIED",
+  GENERATION_STATUS_RUNNING = "GENERATION_STATUS_RUNNING",
+  GENERATION_STATUS_FAILED = "GENERATION_STATUS_FAILED",
+  GENERATION_STATUS_COMPLETED = "GENERATION_STATUS_COMPLETED",
+}
+
 export interface WorkoutGetExerciseAlternativesResponse {
   alternatives?: WorkoutExercise[];
 }
@@ -344,6 +364,7 @@ export enum WorkoutSetType {
 
 export interface WorkoutStartWorkoutRequest {
   routineId?: string;
+  /** deprecated: используйте отдельный эндпоинт GenerateWorkout */
   generateWorkout?: boolean;
   userPrompt?: string;
 }
@@ -424,8 +445,8 @@ export interface WorkoutWorkout {
   updatedAt?: string;
   isAiGenerated?: boolean;
   reasoning?: string;
-  isGenerating?: boolean;
-  generationError?: string;
+  /** Текущий статус генерации тренировки. */
+  generationStatus?: WorkoutGenerationStatus;
 }
 
 /** Настройки генерации тренировок */
@@ -1261,6 +1282,30 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
     ) =>
       this.request<WorkoutServiceCompleteWorkoutBody, RpcStatus>({
         path: `/v1/workouts/${workoutId}/complete`,
+        method: "POST",
+        body: body,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags WorkoutService
+     * @name WorkoutServiceGenerateWorkout
+     * @summary Запустить (или перезапустить после ошибки) генерацию тренировки
+     * @request POST:/v1/workouts/{workoutId}/generate
+     * @secure
+     */
+    workoutServiceGenerateWorkout: (
+      workoutId: string,
+      body: WorkoutServiceGenerateWorkoutBody,
+      params: RequestParams = {},
+    ) =>
+      this.request<WorkoutWorkoutResponse, RpcStatus>({
+        path: `/v1/workouts/${workoutId}/generate`,
         method: "POST",
         body: body,
         secure: true,

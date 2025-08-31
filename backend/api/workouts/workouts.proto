@@ -119,8 +119,9 @@ message Workout {
   google.protobuf.Timestamp updated_at = 8;
   bool is_ai_generated = 9;
   string reasoning = 10;
-  bool is_generating = 11;
-  optional string generation_error = 12;
+  // reserved old fields (was: is_generating = 11, generation_error = 12)
+  reserved 11, 12;
+  GenerationStatus generation_status = 13;
 }
 
 // Лог выполнения упражнения
@@ -170,6 +171,14 @@ enum WeightUnit {
   WEIGHT_UNIT_UNSPECIFIED = 0;
   WEIGHT_UNIT_KG = 1;
   WEIGHT_UNIT_LB = 2;
+}
+
+// Статусы генерации тренировки
+enum GenerationStatus {
+  GENERATION_STATUS_UNSPECIFIED = 0;
+  GENERATION_STATUS_RUNNING = 1;     // в процессе
+  GENERATION_STATUS_FAILED = 2;      // завершилась с ошибкой
+  GENERATION_STATUS_COMPLETED = 3;   // успешно завершена
 }
 
 service ExerciseService {
@@ -541,6 +550,14 @@ service WorkoutService {
     };
   }
 
+  // Запустить (или перезапустить после ошибки) генерацию тренировки
+  rpc GenerateWorkout(GenerateWorkoutRequest) returns (GenerateWorkoutResponse) {
+    option (google.api.http) = {
+      post: "/v1/workouts/{workout_id}/generate"
+      body: "*"
+    };
+  }
+
   // Метод для получения состояния тренировки
   rpc GetWorkout(GetWorkoutRequest) returns (GetWorkoutResponse) {
     option (google.api.http) = {
@@ -672,9 +689,17 @@ service WorkoutService {
 
 message StartWorkoutRequest {
   optional string routine_id = 2;
+  // deprecated: используйте отдельный эндпоинт GenerateWorkout
   optional bool generate_workout = 3;
   optional string user_prompt = 4;
 }
+
+message GenerateWorkoutRequest {
+  string workout_id = 1 [(google.api.field_behavior) = REQUIRED];
+  optional string user_prompt = 2; // пользовательский промпт при перезапуске
+}
+
+message GenerateWorkoutResponse {}
 
 message GetWorkoutRequest {
   string workout_id = 1 [

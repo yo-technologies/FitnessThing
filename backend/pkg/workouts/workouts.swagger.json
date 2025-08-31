@@ -1089,6 +1089,45 @@
         ]
       }
     },
+    "/v1/workouts/{workoutId}/generate": {
+      "post": {
+        "summary": "Запустить (или перезапустить после ошибки) генерацию тренировки",
+        "operationId": "WorkoutService_GenerateWorkout",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/workoutGenerateWorkoutResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "workoutId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/WorkoutServiceGenerateWorkoutBody"
+            }
+          }
+        ],
+        "tags": [
+          "WorkoutService"
+        ]
+      }
+    },
     "/v1/workouts/{workoutId}/log/exercise": {
       "post": {
         "summary": "Метод для создания записи о выполнении упражнения",
@@ -1688,6 +1727,15 @@
     "WorkoutServiceCompleteWorkoutBody": {
       "type": "object"
     },
+    "WorkoutServiceGenerateWorkoutBody": {
+      "type": "object",
+      "properties": {
+        "userPrompt": {
+          "type": "string",
+          "title": "пользовательский промпт при перезапуске"
+        }
+      }
+    },
     "WorkoutServiceLogExerciseBody": {
       "type": "object",
       "properties": {
@@ -2021,6 +2069,21 @@
       ],
       "default": "EXPERIENCE_LEVEL_UNSPECIFIED"
     },
+    "workoutGenerateWorkoutResponse": {
+      "type": "object"
+    },
+    "workoutGenerationStatus": {
+      "type": "string",
+      "enum": [
+        "GENERATION_STATUS_UNSPECIFIED",
+        "GENERATION_STATUS_RUNNING",
+        "GENERATION_STATUS_FAILED",
+        "GENERATION_STATUS_COMPLETED"
+      ],
+      "default": "GENERATION_STATUS_UNSPECIFIED",
+      "description": "- GENERATION_STATUS_RUNNING: в процессе\n - GENERATION_STATUS_FAILED: завершилась с ошибкой\n - GENERATION_STATUS_COMPLETED: успешно завершена",
+      "title": "Статусы генерации тренировки"
+    },
     "workoutGetExerciseAlternativesResponse": {
       "type": "object",
       "properties": {
@@ -2313,7 +2376,8 @@
           "type": "string"
         },
         "generateWorkout": {
-          "type": "boolean"
+          "type": "boolean",
+          "title": "deprecated: используйте отдельный эндпоинт GenerateWorkout"
         },
         "userPrompt": {
           "type": "string"
@@ -2483,11 +2547,8 @@
         "reasoning": {
           "type": "string"
         },
-        "isGenerating": {
-          "type": "boolean"
-        },
-        "generationError": {
-          "type": "string"
+        "generationStatus": {
+          "$ref": "#/definitions/workoutGenerationStatus"
         }
       },
       "title": "Структура тренировки"

@@ -26,33 +26,43 @@ func WorkoutToProto(workout domain.Workout) *desc.Workout {
 		routineIDValue := workout.RoutineID.V.String()
 		routineID = &routineIDValue
 	}
-	var generationError *string
-	if workout.GenerationError.IsValid {
-		generationError = &workout.GenerationError.V
-	}
 	return &desc.Workout{
-		Id:              workout.ID.String(),
-		RoutineId:       routineID,
-		UserId:          workout.UserID.String(),
-		CreatedAt:       timestamppb.New(workout.CreatedAt),
-		Notes:           workout.Notes,
-		Rating:          int32(workout.Rating),
-		FinishedAt:      timestamppb.New(workout.FinishedAt),
-		UpdatedAt:       timestamppb.New(workout.UpdatedAt),
-		Reasoning:       workout.Reasoning,
-		IsAiGenerated:   workout.IsAIGenerated,
-		IsGenerating:    workout.IsGenerating,
-		GenerationError: generationError,
+		Id:               workout.ID.String(),
+		RoutineId:        routineID,
+		UserId:           workout.UserID.String(),
+		CreatedAt:        timestamppb.New(workout.CreatedAt),
+		Notes:            workout.Notes,
+		Rating:           int32(workout.Rating),
+		FinishedAt:       timestamppb.New(workout.FinishedAt),
+		UpdatedAt:        timestamppb.New(workout.UpdatedAt),
+		Reasoning:        workout.Reasoning,
+		IsAiGenerated:    workout.IsAIGenerated,
+		GenerationStatus: generationStatusToProto(workout.GenerationStatus),
+	}
+}
+
+func generationStatusToProto(s domain.WorkoutGenerationStatus) desc.GenerationStatus {
+	switch s {
+	case domain.WorkoutGenerationStatusRunning:
+		return desc.GenerationStatus_GENERATION_STATUS_RUNNING
+	case domain.WorkoutGenerationStatusFailed:
+		return desc.GenerationStatus_GENERATION_STATUS_FAILED
+	case domain.WorkoutGenerationStatusCompleted:
+		return desc.GenerationStatus_GENERATION_STATUS_COMPLETED
+	case domain.WorkoutGenerationStatusUnspecified:
+		return desc.GenerationStatus_GENERATION_STATUS_UNSPECIFIED
+	default:
+		return desc.GenerationStatus_GENERATION_STATUS_UNSPECIFIED
 	}
 }
 
 func SetLogToProto(setLog domain.ExerciseSetLog) *desc.SetLog {
 	return &desc.SetLog{
-		Id:         setLog.ID.String(),
-		Reps:       int32(setLog.Reps),
-		Weight:     setLog.Weight,
-		CreatedAt:  timestamppb.New(setLog.CreatedAt),
-		UpdatedAt:  timestamppb.New(setLog.UpdatedAt),
+		Id:        setLog.ID.String(),
+		Reps:      int32(setLog.Reps),
+		Weight:    setLog.Weight,
+		CreatedAt: timestamppb.New(setLog.CreatedAt),
+		UpdatedAt: timestamppb.New(setLog.UpdatedAt),
 	}
 }
 

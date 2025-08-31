@@ -1169,14 +1169,10 @@ func (m *Workout) validate(all bool) error {
 
 	// no validation rules for Reasoning
 
-	// no validation rules for IsGenerating
+	// no validation rules for GenerationStatus
 
 	if m.RoutineId != nil {
 		// no validation rules for RoutineId
-	}
-
-	if m.GenerationError != nil {
-		// no validation rules for GenerationError
 	}
 
 	if len(errors) > 0 {
@@ -5750,6 +5746,216 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = StartWorkoutRequestValidationError{}
+
+// Validate checks the field values on GenerateWorkoutRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GenerateWorkoutRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GenerateWorkoutRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GenerateWorkoutRequestMultiError, or nil if none found.
+func (m *GenerateWorkoutRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GenerateWorkoutRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for WorkoutId
+
+	if m.UserPrompt != nil {
+		// no validation rules for UserPrompt
+	}
+
+	if len(errors) > 0 {
+		return GenerateWorkoutRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// GenerateWorkoutRequestMultiError is an error wrapping multiple validation
+// errors returned by GenerateWorkoutRequest.ValidateAll() if the designated
+// constraints aren't met.
+type GenerateWorkoutRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GenerateWorkoutRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GenerateWorkoutRequestMultiError) AllErrors() []error { return m }
+
+// GenerateWorkoutRequestValidationError is the validation error returned by
+// GenerateWorkoutRequest.Validate if the designated constraints aren't met.
+type GenerateWorkoutRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GenerateWorkoutRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GenerateWorkoutRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GenerateWorkoutRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GenerateWorkoutRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GenerateWorkoutRequestValidationError) ErrorName() string {
+	return "GenerateWorkoutRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GenerateWorkoutRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGenerateWorkoutRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GenerateWorkoutRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GenerateWorkoutRequestValidationError{}
+
+// Validate checks the field values on GenerateWorkoutResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GenerateWorkoutResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GenerateWorkoutResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GenerateWorkoutResponseMultiError, or nil if none found.
+func (m *GenerateWorkoutResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GenerateWorkoutResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return GenerateWorkoutResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// GenerateWorkoutResponseMultiError is an error wrapping multiple validation
+// errors returned by GenerateWorkoutResponse.ValidateAll() if the designated
+// constraints aren't met.
+type GenerateWorkoutResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GenerateWorkoutResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GenerateWorkoutResponseMultiError) AllErrors() []error { return m }
+
+// GenerateWorkoutResponseValidationError is the validation error returned by
+// GenerateWorkoutResponse.Validate if the designated constraints aren't met.
+type GenerateWorkoutResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GenerateWorkoutResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GenerateWorkoutResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GenerateWorkoutResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GenerateWorkoutResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GenerateWorkoutResponseValidationError) ErrorName() string {
+	return "GenerateWorkoutResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GenerateWorkoutResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGenerateWorkoutResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GenerateWorkoutResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GenerateWorkoutResponseValidationError{}
 
 // Validate checks the field values on GetWorkoutRequest with the rules defined
 // in the proto definition for this message. If any rules are violated, the

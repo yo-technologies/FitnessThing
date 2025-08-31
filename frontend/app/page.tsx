@@ -8,7 +8,11 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 
-import { WorkoutWorkout } from "@/api/api.generated";
+import {
+  WorkoutRoutine,
+  WorkoutUser,
+  WorkoutWorkout,
+} from "@/api/api.generated";
 import { AnimationProcessor } from "@/components/animated-background";
 import { BoltIcon, ChevronRightIcon, PlayIcon } from "@/config/icons";
 import { Loading } from "@/components/loading";
@@ -16,8 +20,8 @@ import { OnboardingModal } from "@/components/OnboardingModal";
 import { authApi } from "@/api/api";
 
 export default function Home() {
-  const [user, setUser] = useState<any>({});
-  const [routines, setRoutines] = useState<any[]>([]);
+  const [user, setUser] = useState<WorkoutUser>({});
+  const [routines, setRoutines] = useState<WorkoutRoutine[]>([]);
   const [activeWorkouts, setActiveWorkouts] = useState<WorkoutWorkout[]>([]);
 
   const [isLoading, setIsLoading] = useState(true);
@@ -159,11 +163,19 @@ export default function Home() {
     await authApi.v1
       .workoutServiceStartWorkout({
         routineId: routineId,
-        generateWorkout: generate,
       })
-      .then((response) => {
+      .then(async (response) => {
         console.log(response.data);
-        router.push(`/workouts/${response.data.workout?.id}`);
+        const workoutId = response.data.workout?.id;
+
+        if (generate && workoutId) {
+          try {
+            await authApi.v1.workoutServiceGenerateWorkout(workoutId, {});
+          } catch (genError) {
+            console.log("Generation failed:", genError);
+          }
+        }
+        router.push(`/workouts/${workoutId}`);
       })
       .catch((error) => {
         console.log(error);
