@@ -14,6 +14,7 @@ import { Accordion, AccordionItem } from "@nextui-org/accordion";
 import { DropdownItem } from "@nextui-org/dropdown";
 import { useRouter } from "next/navigation";
 import { use, useEffect, useState } from "react";
+import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { toast } from "react-toastify";
 import ReactMarkdown from "react-markdown";
 
@@ -21,6 +22,7 @@ import { BoltIcon, ChevronRightIcon, PlusIcon } from "@/config/icons";
 import { ModalSelectExercise } from "@/components/pick-exercises-modal";
 import { PageHeader } from "@/components/page-header";
 import { Loading } from "@/components/loading";
+import { AIGenerationLoader } from "@/components/ai-generation-loader";
 import {
   WorkoutExerciseLogDetails,
   WorkoutGetWorkoutResponse,
@@ -165,6 +167,27 @@ function ExerciseLogCard({
   );
 }
 
+function GenerationError({
+  generationError,
+  onRetry,
+}: {
+  generationError: string;
+  onRetry: () => void;
+}) {
+  return (
+    <div className="p-4">
+      <h2 className="text-lg text-red-500">Ошибка генерации тренировки</h2>
+      <p>{generationError}</p>
+      <button
+        className="mt-4 px-4 py-2 bg-blue-500 text-white rounded"
+        onClick={onRetry}
+      >
+        Повторить
+      </button>
+    </div>
+  );
+}
+
 export default function WorkoutDetailsPage({
   params,
 }: {
@@ -172,6 +195,8 @@ export default function WorkoutDetailsPage({
 }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isError, setIsError] = useState(false);
+  const [generationError, setGenerationError] = useState<string | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const [workoutDetails, setWorkoutDetails] =
     useState<WorkoutGetWorkoutResponse>({});
@@ -183,17 +208,37 @@ export default function WorkoutDetailsPage({
   const { isOpen, onOpen, onClose } = useDisclosure();
 
   async function fetchWorkoutDetails() {
-    await authApi.v1
-      .workoutServiceGetWorkout(id)
-      .then((response) => {
-        console.log("Workout details response:", response.data);
-        console.log("Workout createdAt:", response.data?.workout?.createdAt);
+    try {
+      const response = await authApi.v1.workoutServiceGetWorkout(id);
+
+      setWorkoutDetails(response.data!);
+      setGenerationError(response.data?.workout?.generationError || null);
+      setIsGenerating(response.data?.workout?.isGenerating || false);
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
+  }
+
+  // Поллинг только статуса: не трогаем workoutDetails пока генерация не завершена
+  async function pollGenerationStatus() {
+    try {
+      const response = await authApi.v1.workoutServiceGetWorkout(id);
+      const generating = response.data?.workout?.isGenerating || false;
+      const genError = response.data?.workout?.generationError || null;
+
+      // Обновляем сообщение об ошибке если появилось
+      if (genError !== generationError) setGenerationError(genError);
+
+      if (!generating) {
+        // Генерация завершилась (успешно или с ошибкой) — теперь обновляем полные данные
         setWorkoutDetails(response.data!);
-      })
-      .catch((error) => {
-        console.log(error);
-        throw error;
-      });
+        setIsGenerating(false);
+      }
+    } catch (error) {
+      console.log("Polling error", error);
+      // Не падаем: оставляем текущие данные, можно добавить счетчик ошибок
+    }
   }
 
   async function fetchData() {
@@ -278,6 +323,32 @@ export default function WorkoutDetailsPage({
     onClose: onFinishModalClose,
   } = useDisclosure();
 
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  useEffect(() => {
+    if (!isGenerating) return;
+    const interval = setInterval(() => {
+      pollGenerationStatus();
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [isGenerating, generationError]);
+
+  if (isLoading) {
+    return <Loading />;
+  }
+
+  if (isError) {
+    return (
+      <div className="p-4">
+        <h2 className="text-lg text-red-500">Ошибка при загрузке данных</h2>
+        <p>Проверьте соединение с сервером или обновите страницу.</p>
+      </div>
+    );
+  }
+
   function FinishWorkoutModal() {
     const [loading, setLoading] = useState(false);
 
@@ -320,44 +391,21 @@ export default function WorkoutDetailsPage({
     );
   }
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  function WorkoutSections({
+    workoutDetails,
+    id,
+    onOpen,
+    onFinishModalOpen,
+  }: {
+    workoutDetails: WorkoutGetWorkoutResponse;
+    id: string;
+    onOpen: () => void;
+    onFinishModalOpen: () => void;
+  }) {
+    const [exerciseListParent] = useAutoAnimate({ duration: 250 });
 
-  if (isLoading) {
-    return <Loading />;
-  }
-
-  if (isError) {
     return (
-      <div className="p-4">
-        <h2 className="text-lg text-red-500">Ошибка при загрузке данных</h2>
-        <p>Проверьте соединение с сервером или обновите страницу.</p>
-      </div>
-    );
-  }
-
-  return (
-    <>
-      <div className="py-4 flex flex-col h-full flex-grow max-w-full basis-full gap-4">
-        <PageHeader
-          enableBackButton={true}
-          inner={
-            <div className="flex flex-row items-end justify-start w-full h-full">
-              <WorkoutTimer startTime={workoutDetails.workout!.createdAt} />
-            </div>
-          }
-          title={"Тренировка"}
-        >
-          <DropdownItem
-            key="delete"
-            className="text-danger"
-            color="danger"
-            onPress={onDelete}
-          >
-            Удалить
-          </DropdownItem>
-        </PageHeader>
+      <>
         <section className="flex flex-col gap-4 ">
           {workoutDetails.workout?.isAiGenerated && (
             <Accordion className="px-4" title="Сгенерировано ИИ">
@@ -376,7 +424,7 @@ export default function WorkoutDetailsPage({
               </AccordionItem>
             </Accordion>
           )}
-          <div className="flex flex-col gap-4 px-4">
+          <div ref={exerciseListParent} className="flex flex-col gap-4 px-4">
             {workoutDetails.exerciseLogs?.map((exerciseLogDetails, index) => (
               <ExerciseLogCard
                 key={index}
@@ -396,26 +444,80 @@ export default function WorkoutDetailsPage({
               </Button>
             </Card>
           </div>
+          <div className="px-4">
+            <Button
+              className="w-full"
+              color="primary"
+              onPress={onFinishModalOpen}
+            >
+              Завершить тренировку
+            </Button>
+          </div>
         </section>
-        <section className="w-full px-4">
-          <Button
-            className="w-full"
-            color="primary"
-            onPress={onFinishModalOpen}
+      </>
+    );
+  }
+
+  function MainContent() {
+    const [switchParent] = useAutoAnimate({
+      duration: 220,
+      easing: "ease-in-out",
+    });
+
+    return (
+      <>
+        <div className="py-4 flex flex-col h-full flex-grow max-w-full basis-full gap-4">
+          <PageHeader
+            enableBackButton={true}
+            inner={
+              <div className="flex flex-row items-end justify-start w-full h-full">
+                <WorkoutTimer startTime={workoutDetails.workout!.createdAt} />
+              </div>
+            }
+            title={"Тренировка"}
           >
-            Завершить тренировку
-          </Button>
-        </section>
-      </div>
-      <ModalSelectExercise
-        excludeExerciseIds={workoutDetails.exerciseLogs!.map(
-          (exerciseLog) => exerciseLog.exerciseLog!.exerciseId!,
-        )}
-        isOpen={isOpen}
-        onClose={onClose}
-        onSubmit={addExercisesToWorkout}
-      />
-      <FinishWorkoutModal />
-    </>
-  );
+            <DropdownItem
+              key="delete"
+              className="text-danger"
+              color="danger"
+              onPress={onDelete}
+            >
+              Удалить
+            </DropdownItem>
+          </PageHeader>
+          <div
+            ref={switchParent}
+            className="min-h-[160px] flex flex-col flex-grow"
+          >
+            {isGenerating && <AIGenerationLoader />}
+            {generationError && !isGenerating && (
+              <GenerationError
+                generationError={generationError}
+                onRetry={() => fetchData()}
+              />
+            )}
+            {!isGenerating && !generationError && (
+              <WorkoutSections
+                id={id}
+                workoutDetails={workoutDetails}
+                onFinishModalOpen={onFinishModalOpen}
+                onOpen={onOpen}
+              />
+            )}
+          </div>
+        </div>
+        <ModalSelectExercise
+          excludeExerciseIds={workoutDetails.exerciseLogs!.map(
+            (exerciseLog) => exerciseLog.exerciseLog!.exerciseId!,
+          )}
+          isOpen={isOpen}
+          onClose={onClose}
+          onSubmit={addExercisesToWorkout}
+        />
+        <FinishWorkoutModal />
+      </>
+    );
+  }
+
+  return <MainContent />;
 }

@@ -1169,8 +1169,14 @@ func (m *Workout) validate(all bool) error {
 
 	// no validation rules for Reasoning
 
+	// no validation rules for IsGenerating
+
 	if m.RoutineId != nil {
 		// no validation rules for RoutineId
+	}
+
+	if m.GenerationError != nil {
+		// no validation rules for GenerationError
 	}
 
 	if len(errors) > 0 {

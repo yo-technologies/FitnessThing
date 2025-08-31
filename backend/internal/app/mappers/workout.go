@@ -26,17 +26,23 @@ func WorkoutToProto(workout domain.Workout) *desc.Workout {
 		routineIDValue := workout.RoutineID.V.String()
 		routineID = &routineIDValue
 	}
+	var generationError *string
+	if workout.GenerationError.IsValid {
+		generationError = &workout.GenerationError.V
+	}
 	return &desc.Workout{
-		Id:            workout.ID.String(),
-		RoutineId:     routineID,
-		UserId:        workout.UserID.String(),
-		CreatedAt:     timestamppb.New(workout.CreatedAt),
-		Notes:         workout.Notes,
-		Rating:        int32(workout.Rating),
-		FinishedAt:    timestamppb.New(workout.FinishedAt),
-		UpdatedAt:     timestamppb.New(workout.UpdatedAt),
-		Reasoning:     workout.Reasoning,
-		IsAiGenerated: workout.IsAIGenerated,
+		Id:              workout.ID.String(),
+		RoutineId:       routineID,
+		UserId:          workout.UserID.String(),
+		CreatedAt:       timestamppb.New(workout.CreatedAt),
+		Notes:           workout.Notes,
+		Rating:          int32(workout.Rating),
+		FinishedAt:      timestamppb.New(workout.FinishedAt),
+		UpdatedAt:       timestamppb.New(workout.UpdatedAt),
+		Reasoning:       workout.Reasoning,
+		IsAiGenerated:   workout.IsAIGenerated,
+		IsGenerating:    workout.IsGenerating,
+		GenerationError: generationError,
 	}
 }
 

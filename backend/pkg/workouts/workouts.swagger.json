@@ -2482,6 +2482,12 @@
         },
         "reasoning": {
           "type": "string"
+        },
+        "isGenerating": {
+          "type": "boolean"
+        },
+        "generationError": {
+          "type": "string"
         }
       },
       "title": "Структура тренировки"

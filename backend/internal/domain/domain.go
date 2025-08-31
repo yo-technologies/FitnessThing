@@ -236,6 +236,8 @@ type Workout struct {
 	FinishedAt    time.Time
 	IsAIGenerated bool
 	Reasoning     string
+	IsGenerating  bool
+	GenerationError utils.Nullable[string]
 }
 
 func NewWorkout(userID ID, routineID utils.Nullable[ID], isAIGenerated bool) Workout {
@@ -244,6 +246,7 @@ func NewWorkout(userID ID, routineID utils.Nullable[ID], isAIGenerated bool) Wor
 		UserID:        userID,
 		RoutineID:     routineID,
 		IsAIGenerated: isAIGenerated,
+		IsGenerating:  isAIGenerated,
 	}
 }
 
