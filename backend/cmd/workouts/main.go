@@ -141,6 +141,37 @@ func Run() error {
 		repo,
 	)
 
+	// VERTICAL SLICES ARCHITECTURE DEMONSTRATION
+	// The following code demonstrates how the new vertical slices architecture
+	// would be integrated alongside the existing layered architecture.
+	// 
+	// In vertical slices, each feature (user, workout, exercise, etc.) contains
+	// all the components it needs (handlers, business logic, data access) in
+	// a single, cohesive unit. This improves maintainability and feature isolation.
+	//
+	// Example of how features would be organized:
+	// - internal/features/user/     - Complete user management functionality
+	// - internal/features/workout/  - Complete workout functionality  
+	// - internal/features/exercise/ - Complete exercise functionality
+	// - internal/shared/            - Common components shared across features
+	//
+	// Uncomment the following lines to see the vertical slices approach:
+	//
+	// slicesManager := slices.NewVerticalSlicesManager(
+	//     contextManager,
+	//     s3ClientWrapper,
+	//     workoutGenerator,
+	//     workoutGenerationRateLimiterWrapper,
+	//     repo,
+	// )
+	// 
+	// // Get the combined service for backward compatibility
+	// service = slicesManager.GetCombinedService()
+	//
+	// // Or use individual feature slices:
+	// userSlice := slicesManager.GetUserSlice()
+	// _ = userSlice // Use the user slice for user-specific operations
+
 	telegramTokenParser := newTelegramTokenParser()
 
 	promptGenerationDebounce := time.Second * 60
