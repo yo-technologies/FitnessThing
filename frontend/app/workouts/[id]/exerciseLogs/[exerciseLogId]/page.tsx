@@ -361,12 +361,14 @@ export default function RoutineDetailsPage({
                   </div>
                   <div className="flex flex-col gap-1 w-1/2">
                     <InputWithIncrement
+                      allowFloat={false}
                       className="h-10"
                       classNames={{ incrementButton: "w-12" }}
                       label="Повторы"
                       min={0}
                       placeholder="10"
                       setValue={setReps}
+                      step={1}
                       value={reps}
                     />
                   </div>
@@ -481,12 +483,14 @@ export default function RoutineDetailsPage({
                   </div>
                   <div className="flex flex-col gap-1 w-1/2">
                     <InputWithIncrement
+                      allowFloat={false}
                       className="h-10"
                       classNames={{ incrementButton: "w-12" }}
                       label="Повторы"
                       min={0}
                       placeholder="10"
                       setValue={setReps}
+                      step={1}
                       value={reps}
                     />
                   </div>
