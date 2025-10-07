@@ -167,13 +167,7 @@ func (s *Service) SendChatMessageStream(ctx context.Context, userID domain.ID, r
 func (s *Service) startChatSession(ctx context.Context, userID domain.ID, req dto.SendChatMessageRequest) (chatSession, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "service.startChatSession")
 	defer span.Finish()
-	span.SetTag("user_id", userID.String())
-	if req.ChatID.IsValid {
-		span.SetTag("chat_id.requested", req.ChatID.V.String())
-	}
-	if req.WorkoutID.IsValid {
-		span.SetTag("workout_id.requested", req.WorkoutID.V.String())
-	}
+
 	content := strings.TrimSpace(req.Content)
 	if content == "" {
 		return chatSession{}, fmt.Errorf("message content cannot be empty: %w", domain.ErrInvalidArgument)
@@ -182,10 +176,6 @@ func (s *Service) startChatSession(ctx context.Context, userID domain.ID, req dt
 	chat, err := s.ensureChatForRequest(ctx, userID, req)
 	if err != nil {
 		return chatSession{}, err
-	}
-	span.SetTag("chat_id", chat.ID.String())
-	if chat.WorkoutID.IsValid {
-		span.SetTag("workout_id", chat.WorkoutID.V.String())
 	}
 
 	userMessage := domain.NewChatMessage(
@@ -340,13 +330,7 @@ func (s *Service) runStreamingChatCompletion(
 func (s *Service) ensureChatForRequest(ctx context.Context, userID domain.ID, req dto.SendChatMessageRequest) (domain.Chat, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "service.ensureChatForRequest")
 	defer span.Finish()
-	span.SetTag("user_id", userID.String())
-	if req.ChatID.IsValid {
-		span.SetTag("chat_id.requested", req.ChatID.V.String())
-	}
-	if req.WorkoutID.IsValid {
-		span.SetTag("workout_id.requested", req.WorkoutID.V.String())
-	}
+
 	if req.ChatID.IsValid {
 		chat, err := s.repository.GetChatByID(ctx, req.ChatID.V)
 		if err != nil {
@@ -358,10 +342,7 @@ func (s *Service) ensureChatForRequest(ctx context.Context, userID domain.ID, re
 		if req.WorkoutID.IsValid && (!chat.WorkoutID.IsValid || chat.WorkoutID.V != req.WorkoutID.V) {
 			return domain.Chat{}, domain.ErrInvalidArgument
 		}
-		span.SetTag("chat_id", chat.ID.String())
-		if chat.WorkoutID.IsValid {
-			span.SetTag("workout_id", chat.WorkoutID.V.String())
-		}
+
 		return chat, nil
 	}
 
@@ -376,53 +357,47 @@ func (s *Service) ensureChatForRequest(ctx context.Context, userID domain.ID, re
 
 		chat, err := s.repository.GetChatByWorkoutID(ctx, req.WorkoutID.V)
 		if err == nil {
-			span.SetTag("chat_id", chat.ID.String())
-			if chat.WorkoutID.IsValid {
-				span.SetTag("workout_id", chat.WorkoutID.V.String())
-			}
 			return chat, nil
 		}
 		if !errors.Is(err, domain.ErrNotFound) {
-			return domain.Chat{}, err
+			return domain.Chat{}, fmt.Errorf("failed to get chat by workout ID: %w", err)
 		}
 
 		title := fmt.Sprintf("Тренировка %s", workout.CreatedAt.Format("02.01.2006"))
 		newChat := domain.NewChat(userID, utils.NewNullable(req.WorkoutID.V, true), title)
+
 		createdChat, err := s.repository.CreateChat(ctx, newChat)
-		if err == nil {
-			span.SetTag("chat_id", createdChat.ID.String())
-			if createdChat.WorkoutID.IsValid {
-				span.SetTag("workout_id", createdChat.WorkoutID.V.String())
-			}
+		if err != nil {
+			return domain.Chat{}, fmt.Errorf("failed to create chat for workout: %w", err)
 		}
-		return createdChat, err
+
+		return createdChat, nil
 	}
 
 	title := fmt.Sprintf("Чат %s", time.Now().Format("02.01.2006 15:04"))
 	newChat := domain.NewChat(userID, utils.Nullable[domain.ID]{}, title)
+
 	createdChat, err := s.repository.CreateChat(ctx, newChat)
-	if err == nil {
-		span.SetTag("chat_id", createdChat.ID.String())
+	if err != nil {
+		return domain.Chat{}, fmt.Errorf("failed to create chat: %w", err)
 	}
-	return createdChat, err
+
+	return createdChat, nil
 }
 
 func (s *Service) buildChatSystemMessages(ctx context.Context, userID domain.ID, chat domain.Chat) ([]openai.ChatCompletionMessageParamUnion, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "service.buildChatSystemMessages")
 	defer span.Finish()
-	span.SetTag("user_id", userID.String())
-	span.SetTag("chat_id", chat.ID.String())
-	if chat.WorkoutID.IsValid {
-		span.SetTag("workout_id", chat.WorkoutID.V.String())
-	}
+
 	builder := strings.Builder{}
 	builder.WriteString(defaultChatSystemPrompt)
 
 	prompt, err := s.repository.GetLastPromptByUserID(ctx, userID)
-	if err == nil && prompt.PromptText != "" {
+	if err == nil {
 		builder.WriteString("\n\nЛичные пожелания пользователя: ")
 		builder.WriteString(prompt.PromptText)
-	} else if err != nil && !errors.Is(err, domain.ErrNotFound) {
+	}
+	if err != nil && !errors.Is(err, domain.ErrNotFound) {
 		return nil, fmt.Errorf("failed to load generation settings: %w", err)
 	}
 
@@ -485,8 +460,6 @@ func (s *Service) handleAssistantToolCalls(
 ) error {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "service.handleAssistantToolCalls")
 	defer span.Finish()
-	span.SetTag("chat_id", chatID.String())
-	span.SetTag("tool_call_count", len(assistantMessage.ToolCalls))
 
 	var statusFn func(string) error
 	if callbacks != nil {
@@ -500,14 +473,11 @@ func (s *Service) handleAssistantToolCalls(
 	for idx, toolCall := range assistantMessage.ToolCalls {
 		toolName := toolCall.Function.Name
 		toolArgsJSON := toolCall.Function.Arguments
-		span.LogKV("event", "tool_call_start", "tool", toolName, "index", idx)
 
 		var toolArgs map[string]any
 		trimmedArgs := strings.TrimSpace(toolArgsJSON)
 		if trimmedArgs != "" {
 			if err := json.Unmarshal([]byte(trimmedArgs), &toolArgs); err != nil {
-				span.SetTag("error", true)
-				span.LogKV("event", "json_parse_error", "tool", toolName, "raw_args", trimmedArgs, "error", err.Error())
 				return fmt.Errorf("failed to parse tool arguments for %s: %w (raw: %q)", toolName, err, trimmedArgs)
 			}
 		}
@@ -552,8 +522,6 @@ func (s *Service) handleAssistantToolCalls(
 
 		result, err := s.executeTool(ctx, toolCtx, toolName, toolArgsJSON)
 		if err != nil {
-			span.SetTag("error", true)
-			span.LogKV("event", "tool_call_error", "tool", toolName, "index", idx, "error.object", err)
 			_, failureErr := s.handleAssistantFailure(ctx, chatID, fmt.Errorf("tool %s error: %w", toolName, err))
 			if failureErr != nil {
 				return failureErr
@@ -593,8 +561,6 @@ func (s *Service) handleAssistantToolCalls(
 				return err
 			}
 		}
-
-		span.LogKV("event", "tool_call_success", "tool", toolName, "index", idx)
 	}
 
 	return nil
@@ -603,11 +569,6 @@ func (s *Service) handleAssistantToolCalls(
 func (s *Service) handleAssistantFailure(ctx context.Context, chatID domain.ID, originalErr error) (dto.ChatCompletionDTO, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "service.handleAssistantFailure")
 	defer span.Finish()
-	span.SetTag("chat_id", chatID.String())
-	if originalErr != nil {
-		span.SetTag("error", true)
-		span.LogKV("event", "assistant_failure", "error.object", originalErr)
-	}
 	errMsg := domain.NewChatMessage(
 		chatID,
 		domain.ChatMessageRoleAssistant,
