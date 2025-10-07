@@ -620,6 +620,59 @@ func (s *Service) DeleteExerciseLog(ctx context.Context, userID, workoutID, exer
 	return nil
 }
 
+func (s *Service) ReplaceExpectedSets(
+	ctx context.Context,
+	userID, workoutID, exerciseLogID domain.ID,
+	sets []dto.ExpectedSetInput,
+) error {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "service.ReplaceExpectedSets")
+	defer span.Finish()
+
+	workout, err := s.repository.GetWorkoutByID(ctx, workoutID)
+	if err != nil {
+		return err
+	}
+
+	if workout.UserID != userID {
+		return domain.ErrNotFound
+	}
+
+	if !workout.FinishedAt.IsZero() {
+		return fmt.Errorf("%w: workout %s is already finished", domain.ErrInvalidArgument, workoutID)
+	}
+
+	exerciseLog, err := s.repository.GetExerciseLogByID(ctx, exerciseLogID)
+	if err != nil {
+		return err
+	}
+
+	if exerciseLog.WorkoutID != workoutID {
+		return domain.ErrNotFound
+	}
+
+	return s.unitOfWork.InTransaction(ctx, func(txCtx context.Context) error {
+		if err := s.repository.DeleteExpectedSetsByExerciseLogID(txCtx, exerciseLogID); err != nil {
+			return err
+		}
+
+		for _, set := range sets {
+			domainSet := domain.NewExpectedSet(
+				exerciseLogID,
+				set.SetType,
+				set.Reps,
+				set.Weight,
+				set.Time,
+			)
+
+			if _, err := s.repository.CreateExpectedSet(txCtx, domainSet); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+}
+
 func (s *Service) DeleteSetLog(ctx context.Context, userID, workoutID, exerciseLogID domain.ID, setLogID domain.ID) error {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "service.DeleteSetLog")
 	defer span.Finish()

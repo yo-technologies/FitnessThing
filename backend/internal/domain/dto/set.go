@@ -19,3 +19,10 @@ type UpdateSetDTO struct {
 	Weight utils.Nullable[float32]
 	Time   utils.Nullable[time.Duration]
 }
+
+type ExpectedSetInput struct {
+	SetType domain.SetType
+	Reps    int
+	Weight  float32
+	Time    time.Duration
+}

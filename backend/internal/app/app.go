@@ -11,6 +11,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"fitness-trainer/internal/app/fitness-trainer/api/chat"
 	"fitness-trainer/internal/app/fitness-trainer/api/exercise"
 	"fitness-trainer/internal/app/fitness-trainer/api/file"
 	"fitness-trainer/internal/app/fitness-trainer/api/routine"
@@ -21,7 +22,6 @@ import (
 	desc "fitness-trainer/pkg/workouts"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/recovery"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/cors"
@@ -113,6 +113,7 @@ type service interface {
 	exercise.Service
 	routine.Service
 	file.Service
+	chat.Service
 	interceptors.UserService
 }
 
@@ -151,7 +152,10 @@ func (a *App) Run(ctx context.Context) error {
 			interceptors.TelegramAuthInterceptor(a.service, a.telegramTokenParser),
 		),
 		grpc.ChainStreamInterceptor(
-			recovery.StreamServerInterceptor(),
+			interceptors.TracingStreamInterceptor,
+			interceptors.RecoveryStreamInterceptor,
+			interceptors.ErrCodesStreamInterceptor,
+			interceptors.TelegramAuthStreamInterceptor(a.service, a.telegramTokenParser),
 		),
 	)
 
@@ -160,6 +164,7 @@ func (a *App) Run(ctx context.Context) error {
 	routineService := routine.New(a.service)
 	userServiceServer := user.New(a.service)
 	fileServiceServer := file.New(a.service)
+	chatService := chat.New(a.service)
 
 	// Register the service
 	desc.RegisterWorkoutServiceServer(srv, workoutService)
@@ -167,6 +172,7 @@ func (a *App) Run(ctx context.Context) error {
 	desc.RegisterRoutineServiceServer(srv, routineService)
 	desc.RegisterUserServiceServer(srv, userServiceServer)
 	desc.RegisterFileServiceServer(srv, fileServiceServer)
+	desc.RegisterChatServiceServer(srv, chatService)
 
 	// Reflect the service
 	if a.options.enableReflection {
@@ -291,6 +297,11 @@ func registerGateway(ctx context.Context, mux *runtime.ServeMux, grpcEndpoint st
 	}
 
 	err = desc.RegisterFileServiceHandlerFromEndpoint(ctx, mux, grpcEndpoint, opts)
+	if err != nil {
+		return err
+	}
+
+	err = desc.RegisterChatServiceHandlerFromEndpoint(ctx, mux, grpcEndpoint, opts)
 	if err != nil {
 		return err
 	}

@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"encoding/json"
 	"fitness-trainer/internal/utils"
 	"fmt"
 	"math"
@@ -17,6 +18,48 @@ func NewID() ID {
 
 func (i ID) String() string {
 	return uuid.UUID(i).String()
+}
+
+func (i ID) MarshalText() ([]byte, error) {
+	return []byte(uuid.UUID(i).String()), nil
+}
+
+func (i *ID) UnmarshalText(text []byte) error {
+	if len(text) == 0 {
+		*i = ID{}
+		return nil
+	}
+
+	parsed, err := uuid.ParseBytes(text)
+	if err != nil {
+		return err
+	}
+
+	*i = ID(parsed)
+	return nil
+}
+
+func (i ID) MarshalJSON() ([]byte, error) {
+	text, err := i.MarshalText()
+	if err != nil {
+		return nil, err
+	}
+
+	return json.Marshal(string(text))
+}
+
+func (i *ID) UnmarshalJSON(data []byte) error {
+	if string(data) == "null" {
+		*i = ID{}
+		return nil
+	}
+
+	var s string
+	if err := json.Unmarshal(data, &s); err != nil {
+		return err
+	}
+
+	return i.UnmarshalText([]byte(s))
 }
 
 func ParseID(s string) (ID, error) {
@@ -350,6 +393,68 @@ func NewExerciseSetLog(exerciseLogID ID, reps int, weight float32, time time.Dur
 func (s *ExerciseSetLog) UpdateWeight(weight float32) {
 	s.Weight = weight
 	s.UpdatedAt = time.Now()
+}
+
+type Chat struct {
+	Model
+
+	UserID    ID
+	WorkoutID utils.Nullable[ID]
+	Title     string
+}
+
+func NewChat(userID ID, workoutID utils.Nullable[ID], title string) Chat {
+	return Chat{
+		Model:     NewModel(),
+		UserID:    userID,
+		WorkoutID: workoutID,
+		Title:     title,
+	}
+}
+
+type ChatMessageRole string
+
+const (
+	ChatMessageRoleUser      ChatMessageRole = "user"
+	ChatMessageRoleAssistant ChatMessageRole = "assistant"
+	ChatMessageRoleTool      ChatMessageRole = "tool"
+	ChatMessageRoleSystem    ChatMessageRole = "system"
+)
+
+func (r ChatMessageRole) String() string {
+	return string(r)
+}
+
+type ChatMessage struct {
+	Model
+
+	ChatID        ID
+	Role          ChatMessageRole
+	Content       string
+	ToolName      utils.Nullable[string]
+	ToolCallID    utils.Nullable[string]
+	ToolArguments map[string]any
+	TokenUsage    utils.Nullable[int]
+	Error         utils.Nullable[string]
+}
+
+func NewChatMessage(
+	chatID ID,
+	role ChatMessageRole,
+	content string,
+	toolName utils.Nullable[string],
+	toolCallID utils.Nullable[string],
+	toolArguments map[string]any,
+) ChatMessage {
+	return ChatMessage{
+		Model:         NewModel(),
+		ChatID:        chatID,
+		Role:          role,
+		Content:       content,
+		ToolName:      toolName,
+		ToolCallID:    toolCallID,
+		ToolArguments: toolArguments,
+	}
 }
 
 // WeightUnit определяет единицы измерения веса

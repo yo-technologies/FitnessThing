@@ -6,6 +6,7 @@ option go_package = "fitness-trainer/internal/pb/fitness-trainer/api/workout;wor
 
 import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
+import "google/protobuf/struct.proto";
 import "google/protobuf/duration.proto";
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
@@ -1049,4 +1050,87 @@ message PresignUploadRequest {
 message PresignUploadResponse {
   string upload_url = 1;
   string get_url = 2;
+}
+
+message Chat {
+  string id = 1;
+  string user_id = 2;
+  optional string workout_id = 3;
+  string title = 4;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp updated_at = 6;
+}
+
+enum ChatMessageRole {
+  CHAT_MESSAGE_ROLE_UNSPECIFIED = 0;
+  CHAT_MESSAGE_ROLE_USER = 1;
+  CHAT_MESSAGE_ROLE_ASSISTANT = 2;
+  CHAT_MESSAGE_ROLE_TOOL = 3;
+  CHAT_MESSAGE_ROLE_SYSTEM = 4;
+}
+
+message ChatMessage {
+  string id = 1;
+  string chat_id = 2;
+  ChatMessageRole role = 3;
+  string content = 4;
+  optional string tool_name = 5;
+  optional string tool_call_id = 6;
+  google.protobuf.Struct tool_arguments = 7;
+  optional int32 token_usage = 8;
+  optional string error = 9;
+  google.protobuf.Timestamp created_at = 10;
+  google.protobuf.Timestamp updated_at = 11;
+}
+
+message ChatUsage {
+  int32 prompt_tokens = 1;
+  int32 completion_tokens = 2;
+  int32 total_tokens = 3;
+}
+
+message SendChatMessageRequest {
+  optional string chat_id = 1;
+  optional string workout_id = 2;
+  string content = 3 [
+    (google.api.field_behavior) = REQUIRED,
+    (validate.rules).string = { min_len: 1 }
+  ];
+  bool stream = 4;
+}
+
+message SendChatMessageResponse {
+  Chat chat = 1;
+  repeated ChatMessage messages = 2;
+  optional ChatUsage usage = 3;
+}
+
+message ChatMessageDelta {
+  string content = 1;
+}
+
+message SendChatMessageStreamResponse {
+  oneof payload {
+    ChatMessageDelta message_delta = 1;
+    ChatUsage usage = 2;
+    string status = 3;
+    SendChatMessageResponse final = 4;
+  }
+}
+
+service ChatService {
+  // Отправить сообщение в чат с виртуальным тренером
+  rpc SendChatMessage(SendChatMessageRequest) returns (SendChatMessageResponse) {
+    option (google.api.http) = {
+      post: "/v1/chats/messages:send"
+      body: "*"
+    };
+  }
+  // Отправить сообщение в чат и получить поток ответов
+  rpc SendChatMessageStream(SendChatMessageRequest) returns (stream SendChatMessageStreamResponse) {
+    option (google.api.http) = {
+      post: "/v1/chats/messages:stream"
+      body: "*"
+    };
+  }
 }

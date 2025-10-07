@@ -99,3 +99,18 @@ func (r *PGXRepository) CreateExpectedSet(ctx context.Context, expectedSet domai
 
 	return expectedSetEntity.toDomain(), nil
 }
+
+func (r *PGXRepository) DeleteExpectedSetsByExerciseLogID(ctx context.Context, exerciseLogID domain.ID) error {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "repository.DeleteExpectedSetsByExerciseLogID")
+	defer span.Finish()
+
+	query := `
+		DELETE FROM expected_sets
+		WHERE exercise_log_id = $1
+	`
+
+	engine := r.contextManager.GetEngineFromContext(ctx)
+
+	_, err := engine.Exec(ctx, query, uuidToPgtype(exerciseLogID))
+	return err
+}

@@ -21,6 +21,14 @@ func uuidToPgtype(id domain.ID) pgtype.UUID {
 	return pgtype.UUID{Bytes: uuid.UUID(id), Valid: id != domain.ID{}}
 }
 
+func nullableIDToPgtype(id utils.Nullable[domain.ID]) pgtype.UUID {
+	if !id.IsValid {
+		return pgtype.UUID{Valid: false}
+	}
+
+	return pgtype.UUID{Bytes: uuid.UUID(id.V), Valid: true}
+}
+
 func durationFromPgtype(d pgtype.Interval) time.Duration {
 	return time.Duration(d.Microseconds) * time.Microsecond
 }

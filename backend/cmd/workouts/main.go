@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"fitness-trainer/internal/app"
+	openai_client "fitness-trainer/internal/clients/openai"
 	"fitness-trainer/internal/clients/ratelimiter"
 	"fitness-trainer/internal/db"
 	"fitness-trainer/internal/logger"
@@ -107,9 +108,12 @@ func Run() error {
 		genai_client.WorkoutResponseSchema,
 	)
 
-	// openaiClient := newOpenAIClient()
-
-	// clientWrapper := openai_client.New(openaiClient, os.Getenv("OPENAI_ASS_ID"))
+	openAIRawClient := newOpenAIClient()
+	openAIClient := openai_client.New(openAIRawClient)
+	openAIModel := os.Getenv("OPENAI_MODEL")
+	if openAIModel == "" {
+		return fmt.Errorf("OPENAI_MODEL environment variable is not set")
+	}
 
 	workoutGenerator := workout_generator_service.New(clientWrapper)
 
@@ -139,6 +143,8 @@ func Run() error {
 		workoutGenerator,
 		workoutGenerationRateLimiterWrapper,
 		repo,
+		openAIClient,
+		openAIModel,
 	)
 
 	telegramTokenParser := newTelegramTokenParser()
@@ -322,15 +328,26 @@ func newGeminiClient(ctx context.Context) (*genai.Client, error) {
 
 func newOpenAIClient() *openai.Client {
 	proxyURL := loadProxyData()
+	apiKey := os.Getenv("OPENAI_API_KEY")
+	if apiKey == "" {
+		logger.Fatal("OPENAI_API_KEY environment variable is not set")
+	}
 
-	return openai.NewClient(
-		option.WithAPIKey(os.Getenv("OPENAI_API_KEY")),
-		option.WithHeader("OpenAI-Beta", "assistants=v2"),
+	baseURL := os.Getenv("OPENAI_BASE_URL")
+
+	options := []option.RequestOption{
+		option.WithAPIKey(apiKey),
 		option.WithHTTPClient(&http.Client{
 			Transport: &ProxyRoundTripper{
 				proxy: proxyURL,
 			},
 			Timeout: 30 * time.Second,
 		}),
-	)
+	}
+
+	if baseURL != "" {
+		options = append(options, option.WithBaseURL(baseURL))
+	}
+
+	return openai.NewClient(options...)
 }

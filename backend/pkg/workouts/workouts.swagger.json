@@ -20,6 +20,9 @@
     },
     {
       "name": "FileService"
+    },
+    {
+      "name": "ChatService"
     }
   ],
   "basePath": "/api",
@@ -34,6 +37,81 @@
     "application/json"
   ],
   "paths": {
+    "/v1/chats/messages:send": {
+      "post": {
+        "summary": "Отправить сообщение в чат с виртуальным тренером",
+        "operationId": "ChatService_SendChatMessage",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/workoutSendChatMessageResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/workoutSendChatMessageRequest"
+            }
+          }
+        ],
+        "tags": [
+          "ChatService"
+        ]
+      }
+    },
+    "/v1/chats/messages:stream": {
+      "post": {
+        "summary": "Отправить сообщение в чат и получить поток ответов",
+        "operationId": "ChatService_SendChatMessageStream",
+        "responses": {
+          "200": {
+            "description": "A successful response.(streaming responses)",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "result": {
+                  "$ref": "#/definitions/workoutSendChatMessageStreamResponse"
+                },
+                "error": {
+                  "$ref": "#/definitions/rpcStatus"
+                }
+              },
+              "title": "Stream result of workoutSendChatMessageStreamResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/workoutSendChatMessageRequest"
+            }
+          }
+        ],
+        "tags": [
+          "ChatService"
+        ]
+      }
+    },
     "/v1/exercises": {
       "get": {
         "summary": "Метод для получения списка всех упражнений",
@@ -1811,6 +1889,14 @@
       },
       "additionalProperties": {}
     },
+    "protobufNullValue": {
+      "type": "string",
+      "enum": [
+        "NULL_VALUE"
+      ],
+      "default": "NULL_VALUE",
+      "description": "`NullValue` is a singleton enumeration to represent the null value for the\n`Value` type union.\n\nThe JSON representation for `NullValue` is JSON `null`.\n\n - NULL_VALUE: Null value."
+    },
     "rpcStatus": {
       "type": "object",
       "properties": {
@@ -1827,6 +1913,108 @@
             "type": "object",
             "$ref": "#/definitions/protobufAny"
           }
+        }
+      }
+    },
+    "workoutChat": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "userId": {
+          "type": "string"
+        },
+        "workoutId": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "workoutChatMessage": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "chatId": {
+          "type": "string"
+        },
+        "role": {
+          "$ref": "#/definitions/workoutChatMessageRole"
+        },
+        "content": {
+          "type": "string"
+        },
+        "toolName": {
+          "type": "string"
+        },
+        "toolCallId": {
+          "type": "string"
+        },
+        "toolArguments": {
+          "type": "object"
+        },
+        "tokenUsage": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "error": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "workoutChatMessageDelta": {
+      "type": "object",
+      "properties": {
+        "content": {
+          "type": "string"
+        }
+      }
+    },
+    "workoutChatMessageRole": {
+      "type": "string",
+      "enum": [
+        "CHAT_MESSAGE_ROLE_UNSPECIFIED",
+        "CHAT_MESSAGE_ROLE_USER",
+        "CHAT_MESSAGE_ROLE_ASSISTANT",
+        "CHAT_MESSAGE_ROLE_TOOL",
+        "CHAT_MESSAGE_ROLE_SYSTEM"
+      ],
+      "default": "CHAT_MESSAGE_ROLE_UNSPECIFIED"
+    },
+    "workoutChatUsage": {
+      "type": "object",
+      "properties": {
+        "promptTokens": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "completionTokens": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "totalTokens": {
+          "type": "integer",
+          "format": "int32"
         }
       }
     },
@@ -2274,6 +2462,61 @@
       "properties": {
         "routine": {
           "$ref": "#/definitions/workoutRoutine"
+        }
+      }
+    },
+    "workoutSendChatMessageRequest": {
+      "type": "object",
+      "properties": {
+        "chatId": {
+          "type": "string"
+        },
+        "workoutId": {
+          "type": "string"
+        },
+        "content": {
+          "type": "string"
+        },
+        "stream": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "content"
+      ]
+    },
+    "workoutSendChatMessageResponse": {
+      "type": "object",
+      "properties": {
+        "chat": {
+          "$ref": "#/definitions/workoutChat"
+        },
+        "messages": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/workoutChatMessage"
+          }
+        },
+        "usage": {
+          "$ref": "#/definitions/workoutChatUsage"
+        }
+      }
+    },
+    "workoutSendChatMessageStreamResponse": {
+      "type": "object",
+      "properties": {
+        "messageDelta": {
+          "$ref": "#/definitions/workoutChatMessageDelta"
+        },
+        "usage": {
+          "$ref": "#/definitions/workoutChatUsage"
+        },
+        "status": {
+          "type": "string"
+        },
+        "final": {
+          "$ref": "#/definitions/workoutSendChatMessageResponse"
         }
       }
     },

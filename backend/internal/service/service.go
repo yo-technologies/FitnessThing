@@ -2,7 +2,9 @@ package service
 
 import (
 	"context"
+	"sync"
 
+	openai_client "fitness-trainer/internal/clients/openai"
 	"fitness-trainer/internal/domain"
 	"fitness-trainer/internal/domain/dto"
 )
@@ -81,6 +83,7 @@ type setRepository interface {
 type expectedSetRepository interface {
 	GetExpectedSetsByExerciseLogID(ctx context.Context, exerciseLogID domain.ID) ([]domain.ExpectedSet, error)
 	CreateExpectedSet(ctx context.Context, set domain.ExpectedSet) (domain.ExpectedSet, error)
+	DeleteExpectedSetsByExerciseLogID(ctx context.Context, exerciseLogID domain.ID) error
 }
 
 type generationSettingsRepository interface {
@@ -90,6 +93,14 @@ type generationSettingsRepository interface {
 
 type promptRepository interface {
 	GetLastPromptByUserID(ctx context.Context, userID domain.ID) (domain.Prompt, error)
+}
+
+type chatRepository interface {
+	CreateChat(ctx context.Context, chat domain.Chat) (domain.Chat, error)
+	GetChatByWorkoutID(ctx context.Context, workoutID domain.ID) (domain.Chat, error)
+	GetChatByID(ctx context.Context, chatID domain.ID) (domain.Chat, error)
+	CreateChatMessage(ctx context.Context, message domain.ChatMessage) (domain.ChatMessage, error)
+	ListChatMessages(ctx context.Context, chatID domain.ID, limit, offset int) ([]domain.ChatMessage, error)
 }
 
 type repository interface {
@@ -105,6 +116,7 @@ type repository interface {
 	expectedSetRepository
 	generationSettingsRepository
 	promptRepository
+	chatRepository
 }
 
 type unitOfWork interface {
@@ -128,6 +140,10 @@ type Service struct {
 	generateWorkoutLimiter generateWorkoutLimiter
 	unitOfWork             unitOfWork
 	repository             repository
+	openAIClient           openai_client.ChatClient
+	openAIModel            string
+	chatTools              map[string]agentTool
+	chatToolsOnce          sync.Once
 }
 
 func New(
@@ -136,6 +152,8 @@ func New(
 	workoutGenerator workoutGenerator,
 	generateWorkoutLimiter generateWorkoutLimiter,
 	repository repository,
+	openAIClient openai_client.ChatClient,
+	openAIModel string,
 ) *Service {
 	return &Service{
 		unitOfWork:             unitOfWork,
@@ -143,5 +161,7 @@ func New(
 		s3Client:               s3Client,
 		generateWorkoutLimiter: generateWorkoutLimiter,
 		repository:             repository,
+		openAIClient:           openAIClient,
+		openAIModel:            openAIModel,
 	}
 }
