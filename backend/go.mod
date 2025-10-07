@@ -11,6 +11,7 @@ require (
 	github.com/go-co-op/gocron/v2 v2.16.3
 	github.com/google/generative-ai-go v0.19.0
 	github.com/google/uuid v1.6.0
+	github.com/gorilla/websocket v1.5.3
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.24.0
 	github.com/openai/openai-go v0.1.0-alpha.53
 	github.com/opentracing/opentracing-go v1.2.0
@@ -92,7 +93,6 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.76.0
 	github.com/georgysavva/scany/v2 v2.1.3
 	github.com/go-chi/chi/v5 v5.2.0
-	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.2.0
 	github.com/jackc/pgerrcode v0.0.0-20240316143900-6e2875d9b438
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect

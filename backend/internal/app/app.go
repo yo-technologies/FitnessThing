@@ -19,6 +19,7 @@ import (
 	"fitness-trainer/internal/app/fitness-trainer/api/workout"
 	"fitness-trainer/internal/app/interceptors"
 	"fitness-trainer/internal/logger"
+	"fitness-trainer/internal/websocket"
 	desc "fitness-trainer/pkg/workouts"
 
 	"github.com/go-chi/chi/v5"
@@ -188,6 +189,15 @@ func (a *App) Run(ctx context.Context) error {
 		return err
 	}
 
+	// Create gRPC client connection for websocket handlers
+	grpcConn, err := grpc.DialContext(ctx, grpcEndpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		return fmt.Errorf("failed to dial gRPC: %w", err)
+	}
+
+	// Create websocket handlers
+	chatWSHandler := websocket.NewChatHandler(grpcConn)
+
 	var corsHandler *cors.Cors
 	if a.options.bypassCors {
 		corsHandler = cors.AllowAll()
@@ -209,6 +219,8 @@ func (a *App) Run(ctx context.Context) error {
 		fmt.Sprintf("%s/swagger", a.options.httpPathPrefix),
 		fmt.Sprintf("%s/docs/", a.options.httpPathPrefix),
 	))
+
+	httpMux.HandleFunc("/ws/chat", chatWSHandler.HandleChat)
 
 	httpMux.Handle("/metrics", promhttp.Handler())
 
@@ -297,11 +309,6 @@ func registerGateway(ctx context.Context, mux *runtime.ServeMux, grpcEndpoint st
 	}
 
 	err = desc.RegisterFileServiceHandlerFromEndpoint(ctx, mux, grpcEndpoint, opts)
-	if err != nil {
-		return err
-	}
-
-	err = desc.RegisterChatServiceHandlerFromEndpoint(ctx, mux, grpcEndpoint, opts)
 	if err != nil {
 		return err
 	}

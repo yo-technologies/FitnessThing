@@ -1096,7 +1096,6 @@ message SendChatMessageRequest {
     (google.api.field_behavior) = REQUIRED,
     (validate.rules).string = { min_len: 1 }
   ];
-  bool stream = 4;
 }
 
 message SendChatMessageResponse {
@@ -1119,18 +1118,6 @@ message SendChatMessageStreamResponse {
 }
 
 service ChatService {
-  // Отправить сообщение в чат с виртуальным тренером
-  rpc SendChatMessage(SendChatMessageRequest) returns (SendChatMessageResponse) {
-    option (google.api.http) = {
-      post: "/v1/chats/messages:send"
-      body: "*"
-    };
-  }
   // Отправить сообщение в чат и получить поток ответов
-  rpc SendChatMessageStream(SendChatMessageRequest) returns (stream SendChatMessageStreamResponse) {
-    option (google.api.http) = {
-      post: "/v1/chats/messages:stream"
-      body: "*"
-    };
-  }
+  rpc SendChatMessageStream(SendChatMessageRequest) returns (stream SendChatMessageStreamResponse) {}
 }

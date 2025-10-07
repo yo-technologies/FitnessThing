@@ -35,7 +35,6 @@ func (i *Implementation) SendChatMessageStream(in *desc.SendChatMessageRequest, 
 
 	req := dto.SendChatMessageRequest{
 		Content: in.GetContent(),
-		Stream:  true,
 	}
 
 	if chatID := in.GetChatId(); chatID != "" {

@@ -37,81 +37,6 @@
     "application/json"
   ],
   "paths": {
-    "/v1/chats/messages:send": {
-      "post": {
-        "summary": "Отправить сообщение в чат с виртуальным тренером",
-        "operationId": "ChatService_SendChatMessage",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/workoutSendChatMessageResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/workoutSendChatMessageRequest"
-            }
-          }
-        ],
-        "tags": [
-          "ChatService"
-        ]
-      }
-    },
-    "/v1/chats/messages:stream": {
-      "post": {
-        "summary": "Отправить сообщение в чат и получить поток ответов",
-        "operationId": "ChatService_SendChatMessageStream",
-        "responses": {
-          "200": {
-            "description": "A successful response.(streaming responses)",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "result": {
-                  "$ref": "#/definitions/workoutSendChatMessageStreamResponse"
-                },
-                "error": {
-                  "$ref": "#/definitions/rpcStatus"
-                }
-              },
-              "title": "Stream result of workoutSendChatMessageStreamResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/workoutSendChatMessageRequest"
-            }
-          }
-        ],
-        "tags": [
-          "ChatService"
-        ]
-      }
-    },
     "/v1/exercises": {
       "get": {
         "summary": "Метод для получения списка всех упражнений",
@@ -2464,26 +2389,6 @@
           "$ref": "#/definitions/workoutRoutine"
         }
       }
-    },
-    "workoutSendChatMessageRequest": {
-      "type": "object",
-      "properties": {
-        "chatId": {
-          "type": "string"
-        },
-        "workoutId": {
-          "type": "string"
-        },
-        "content": {
-          "type": "string"
-        },
-        "stream": {
-          "type": "boolean"
-        }
-      },
-      "required": [
-        "content"
-      ]
     },
     "workoutSendChatMessageResponse": {
       "type": "object",

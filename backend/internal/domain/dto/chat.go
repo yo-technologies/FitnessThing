@@ -9,7 +9,6 @@ type SendChatMessageRequest struct {
 	ChatID    utils.Nullable[domain.ID]
 	WorkoutID utils.Nullable[domain.ID]
 	Content   string
-	Stream    bool
 }
 
 type ChatUsage struct {
