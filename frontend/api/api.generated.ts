@@ -110,11 +110,74 @@ export interface ProtobufAny {
   [key: string]: any;
 }
 
+/**
+ * `NullValue` is a singleton enumeration to represent the null value for the
+ * `Value` type union.
+ *
+ * The JSON representation for `NullValue` is JSON `null`.
+ *
+ *  - NULL_VALUE: Null value.
+ * @default "NULL_VALUE"
+ */
+export enum ProtobufNullValue {
+  NULL_VALUE = "NULL_VALUE",
+}
+
 export interface RpcStatus {
   /** @format int32 */
   code?: number;
   message?: string;
   details?: ProtobufAny[];
+}
+
+export interface WorkoutChat {
+  id?: string;
+  userId?: string;
+  workoutId?: string;
+  title?: string;
+  /** @format date-time */
+  createdAt?: string;
+  /** @format date-time */
+  updatedAt?: string;
+}
+
+export interface WorkoutChatMessage {
+  id?: string;
+  chatId?: string;
+  role?: WorkoutChatMessageRole;
+  content?: string;
+  toolName?: string;
+  toolCallId?: string;
+  toolArguments?: object;
+  /** @format int32 */
+  tokenUsage?: number;
+  error?: string;
+  /** @format date-time */
+  createdAt?: string;
+  /** @format date-time */
+  updatedAt?: string;
+}
+
+export interface WorkoutChatMessageDelta {
+  content?: string;
+}
+
+/** @default "CHAT_MESSAGE_ROLE_UNSPECIFIED" */
+export enum WorkoutChatMessageRole {
+  CHAT_MESSAGE_ROLE_UNSPECIFIED = "CHAT_MESSAGE_ROLE_UNSPECIFIED",
+  CHAT_MESSAGE_ROLE_USER = "CHAT_MESSAGE_ROLE_USER",
+  CHAT_MESSAGE_ROLE_ASSISTANT = "CHAT_MESSAGE_ROLE_ASSISTANT",
+  CHAT_MESSAGE_ROLE_TOOL = "CHAT_MESSAGE_ROLE_TOOL",
+  CHAT_MESSAGE_ROLE_SYSTEM = "CHAT_MESSAGE_ROLE_SYSTEM",
+}
+
+export interface WorkoutChatUsage {
+  /** @format int32 */
+  promptTokens?: number;
+  /** @format int32 */
+  completionTokens?: number;
+  /** @format int32 */
+  totalTokens?: number;
 }
 
 export interface WorkoutCreateExerciseRequest {
@@ -216,10 +279,11 @@ export enum WorkoutExperienceLevel {
   EXPERIENCE_LEVEL_ADVANCED = "EXPERIENCE_LEVEL_ADVANCED",
 }
 
+export type WorkoutGenerateWorkoutResponse = object;
+
 /**
  * Статусы генерации тренировки
- * - GENERATION_STATUS_UNSPECIFIED: не запускалась
- *  - GENERATION_STATUS_RUNNING: в процессе
+ * - GENERATION_STATUS_RUNNING: в процессе
  *  - GENERATION_STATUS_FAILED: завершилась с ошибкой
  *  - GENERATION_STATUS_COMPLETED: успешно завершена
  * @default "GENERATION_STATUS_UNSPECIFIED"
@@ -229,6 +293,11 @@ export enum WorkoutGenerationStatus {
   GENERATION_STATUS_RUNNING = "GENERATION_STATUS_RUNNING",
   GENERATION_STATUS_FAILED = "GENERATION_STATUS_FAILED",
   GENERATION_STATUS_COMPLETED = "GENERATION_STATUS_COMPLETED",
+}
+
+export interface WorkoutGetChatResponse {
+  chat?: WorkoutChat;
+  messages?: WorkoutChatMessage[];
 }
 
 export interface WorkoutGetExerciseAlternativesResponse {
@@ -310,6 +379,19 @@ export interface WorkoutRoutineListResponse {
 
 export interface WorkoutRoutineResponse {
   routine?: WorkoutRoutine;
+}
+
+export interface WorkoutSendChatMessageResponse {
+  chat?: WorkoutChat;
+  messages?: WorkoutChatMessage[];
+  usage?: WorkoutChatUsage;
+}
+
+export interface WorkoutSendChatMessageStreamResponse {
+  messageDelta?: WorkoutChatMessageDelta;
+  usage?: WorkoutChatUsage;
+  status?: string;
+  final?: WorkoutSendChatMessageResponse;
 }
 
 /** Структура сета (подхода) */
@@ -445,7 +527,11 @@ export interface WorkoutWorkout {
   updatedAt?: string;
   isAiGenerated?: boolean;
   reasoning?: string;
-  /** Текущий статус генерации тренировки. */
+  /**
+   * - GENERATION_STATUS_RUNNING: в процессе
+   *  - GENERATION_STATUS_FAILED: завершилась с ошибкой
+   *  - GENERATION_STATUS_COMPLETED: успешно завершена
+   */
   generationStatus?: WorkoutGenerationStatus;
 }
 
@@ -634,6 +720,24 @@ export class HttpClient<SecurityDataType = unknown> {
  */
 export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDataType> {
   v1 = {
+    /**
+     * No description
+     *
+     * @tags ChatService
+     * @name ChatServiceGetChat
+     * @summary Получить полный чат с сообщениями
+     * @request GET:/v1/chats/{workoutId}
+     * @secure
+     */
+    chatServiceGetChat: (workoutId: string, params: RequestParams = {}) =>
+      this.request<WorkoutGetChatResponse, RpcStatus>({
+        path: `/v1/chats/${workoutId}`,
+        method: "GET",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
     /**
      * No description
      *
@@ -1304,7 +1408,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
       body: WorkoutServiceGenerateWorkoutBody,
       params: RequestParams = {},
     ) =>
-      this.request<WorkoutWorkoutResponse, RpcStatus>({
+      this.request<WorkoutGenerateWorkoutResponse, RpcStatus>({
         path: `/v1/workouts/${workoutId}/generate`,
         method: "POST",
         body: body,

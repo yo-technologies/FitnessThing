@@ -37,6 +37,43 @@
     "application/json"
   ],
   "paths": {
+    "/v1/chats": {
+      "get": {
+        "summary": "Получить полный чат с сообщениями",
+        "operationId": "ChatService_GetChat",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/workoutGetChatResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "workoutId",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "chatId",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "ChatService"
+        ]
+      }
+    },
     "/v1/exercises": {
       "get": {
         "summary": "Метод для получения списка всех упражнений",
@@ -2196,6 +2233,21 @@
       "default": "GENERATION_STATUS_UNSPECIFIED",
       "description": "- GENERATION_STATUS_RUNNING: в процессе\n - GENERATION_STATUS_FAILED: завершилась с ошибкой\n - GENERATION_STATUS_COMPLETED: успешно завершена",
       "title": "Статусы генерации тренировки"
+    },
+    "workoutGetChatResponse": {
+      "type": "object",
+      "properties": {
+        "chat": {
+          "$ref": "#/definitions/workoutChat"
+        },
+        "messages": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/workoutChatMessage"
+          }
+        }
+      }
     },
     "workoutGetExerciseAlternativesResponse": {
       "type": "object",

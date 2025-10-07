@@ -29,3 +29,13 @@ type ChatStreamCallbacks struct {
 	OnStatus        func(string) error
 	OnFinalResponse func(ChatCompletionDTO) error
 }
+
+type GetChatDTO struct {
+	Chat     domain.Chat
+	Messages []domain.ChatMessage
+}
+
+type GetChatRequest struct {
+	ChatID    utils.Nullable[domain.ID]
+	WorkoutID utils.Nullable[domain.ID]
+}

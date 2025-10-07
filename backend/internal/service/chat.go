@@ -20,7 +20,7 @@ import (
 
 const (
 	chatHistoryLimit       = 200
-	maxChatCompletionLoops = 6
+	maxChatCompletionLoops = 25
 	assistantErrorMessage  = "Не удалось ответить. Попробуйте ещё раз чуть позже."
 )
 
@@ -39,154 +39,6 @@ type chatSession struct {
 	chat     domain.Chat
 	messages []openai.ChatCompletionMessageParamUnion
 	toolDefs []openai.ChatCompletionToolParam
-}
-
-func (s *Service) startChatSession(ctx context.Context, userID domain.ID, req dto.SendChatMessageRequest) (chatSession, error) {
-	span, ctx := opentracing.StartSpanFromContext(ctx, "service.startChatSession")
-	defer span.Finish()
-	span.SetTag("user_id", userID.String())
-	if req.ChatID.IsValid {
-		span.SetTag("chat_id.requested", req.ChatID.V.String())
-	}
-	if req.WorkoutID.IsValid {
-		span.SetTag("workout_id.requested", req.WorkoutID.V.String())
-	}
-	content := strings.TrimSpace(req.Content)
-	if content == "" {
-		return chatSession{}, fmt.Errorf("message content cannot be empty: %w", domain.ErrInvalidArgument)
-	}
-
-	chat, err := s.ensureChatForRequest(ctx, userID, req)
-	if err != nil {
-		return chatSession{}, err
-	}
-	span.SetTag("chat_id", chat.ID.String())
-	if chat.WorkoutID.IsValid {
-		span.SetTag("workout_id", chat.WorkoutID.V.String())
-	}
-
-	userMessage := domain.NewChatMessage(
-		chat.ID,
-		domain.ChatMessageRoleUser,
-		content,
-		utils.Nullable[string]{},
-		utils.Nullable[string]{},
-		nil,
-	)
-
-	if _, err := s.repository.CreateChatMessage(ctx, userMessage); err != nil {
-		return chatSession{}, fmt.Errorf("failed to save user chat message: %w", err)
-	}
-
-	systemMessages, err := s.buildChatSystemMessages(ctx, userID, chat)
-	if err != nil {
-		return chatSession{}, err
-	}
-
-	history, err := s.repository.ListChatMessages(ctx, chat.ID, chatHistoryLimit, 0)
-	if err != nil {
-		return chatSession{}, fmt.Errorf("failed to load chat history: %w", err)
-	}
-
-	messages := make([]openai.ChatCompletionMessageParamUnion, 0, len(systemMessages)+len(history)+4)
-	messages = append(messages, systemMessages...)
-
-	for _, msg := range history {
-		param, err := s.chatMessageToOpenAIParam(msg)
-		if err != nil {
-			return chatSession{}, err
-		}
-		messages = append(messages, param)
-	}
-
-	return chatSession{
-		chat:     chat,
-		messages: messages,
-		toolDefs: s.chatToolDefinitions(),
-	}, nil
-}
-
-func (s *Service) SendChatMessage(ctx context.Context, userID domain.ID, req dto.SendChatMessageRequest) (dto.ChatCompletionDTO, error) {
-	span, ctx := opentracing.StartSpanFromContext(ctx, "service.SendChatMessage")
-	defer span.Finish()
-
-	session, err := s.startChatSession(ctx, userID, req)
-	if err != nil {
-		return dto.ChatCompletionDTO{}, err
-	}
-
-	messages := make([]openai.ChatCompletionMessageParamUnion, len(session.messages))
-	copy(messages, session.messages)
-	toolDefs := session.toolDefs
-	chat := session.chat
-	agentCtx := agentToolContext{userID: userID, workoutID: chat.WorkoutID}
-
-	var (
-		usage              dto.ChatUsage
-		usageRecorded      bool
-		assistantResponded bool
-	)
-
-	for range maxChatCompletionLoops {
-		params := s.newChatCompletionParams(messages, toolDefs, s.openAIModel, false)
-
-		completion, err := s.openAIClient.CreateChatCompletion(ctx, params)
-		if err != nil {
-			return s.handleAssistantFailure(ctx, chat.ID, err)
-		}
-
-		usage.PromptTokens += int(completion.Usage.PromptTokens)
-		usage.CompletionTokens += int(completion.Usage.CompletionTokens)
-		usage.TotalTokens += int(completion.Usage.TotalTokens)
-		usageRecorded = true
-
-		if len(completion.Choices) == 0 {
-			return s.handleAssistantFailure(ctx, chat.ID, fmt.Errorf("completion returned no choices"))
-		}
-
-		choice := completion.Choices[0]
-		assistantMessage := choice.Message
-
-		if len(assistantMessage.ToolCalls) > 0 {
-			if err := s.handleAssistantToolCalls(ctx, chat.ID, &messages, agentCtx, assistantMessage, nil); err != nil {
-				return dto.ChatCompletionDTO{}, err
-			}
-			continue
-		}
-
-		finalMessage := domain.NewChatMessage(
-			chat.ID,
-			domain.ChatMessageRoleAssistant,
-			assistantMessage.Content,
-			utils.Nullable[string]{},
-			utils.Nullable[string]{},
-			nil,
-		)
-		finalMessage.TokenUsage = utils.NewNullable(int(completion.Usage.TotalTokens), true)
-
-		if _, err := s.repository.CreateChatMessage(ctx, finalMessage); err != nil {
-			return dto.ChatCompletionDTO{}, fmt.Errorf("failed to save assistant message: %w", err)
-		}
-
-		assistantResponded = true
-		break
-	}
-
-	if !assistantResponded {
-		return s.handleAssistantFailure(ctx, chat.ID, fmt.Errorf("assistant did not provide a final response"))
-	}
-
-	updatedHistory, err := s.repository.ListChatMessages(ctx, chat.ID, chatHistoryLimit, 0)
-	if err != nil {
-		return dto.ChatCompletionDTO{}, fmt.Errorf("failed to refresh chat history: %w", err)
-	}
-
-	response := dto.ChatCompletionDTO{Chat: chat, Messages: updatedHistory}
-	if usageRecorded {
-		response.Usage = utils.NewNullable(usage, true)
-	}
-
-	return response, nil
 }
 
 func (s *Service) SendChatMessageStream(ctx context.Context, userID domain.ID, req dto.SendChatMessageRequest, callbacks dto.ChatStreamCallbacks) (dto.ChatCompletionDTO, error) {
@@ -310,6 +162,71 @@ func (s *Service) SendChatMessageStream(ctx context.Context, userID domain.ID, r
 	}
 
 	return finalResult, nil
+}
+
+func (s *Service) startChatSession(ctx context.Context, userID domain.ID, req dto.SendChatMessageRequest) (chatSession, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "service.startChatSession")
+	defer span.Finish()
+	span.SetTag("user_id", userID.String())
+	if req.ChatID.IsValid {
+		span.SetTag("chat_id.requested", req.ChatID.V.String())
+	}
+	if req.WorkoutID.IsValid {
+		span.SetTag("workout_id.requested", req.WorkoutID.V.String())
+	}
+	content := strings.TrimSpace(req.Content)
+	if content == "" {
+		return chatSession{}, fmt.Errorf("message content cannot be empty: %w", domain.ErrInvalidArgument)
+	}
+
+	chat, err := s.ensureChatForRequest(ctx, userID, req)
+	if err != nil {
+		return chatSession{}, err
+	}
+	span.SetTag("chat_id", chat.ID.String())
+	if chat.WorkoutID.IsValid {
+		span.SetTag("workout_id", chat.WorkoutID.V.String())
+	}
+
+	userMessage := domain.NewChatMessage(
+		chat.ID,
+		domain.ChatMessageRoleUser,
+		content,
+		utils.Nullable[string]{},
+		utils.Nullable[string]{},
+		nil,
+	)
+
+	if _, err := s.repository.CreateChatMessage(ctx, userMessage); err != nil {
+		return chatSession{}, fmt.Errorf("failed to save user chat message: %w", err)
+	}
+
+	systemMessages, err := s.buildChatSystemMessages(ctx, userID, chat)
+	if err != nil {
+		return chatSession{}, err
+	}
+
+	history, err := s.repository.ListChatMessages(ctx, chat.ID, chatHistoryLimit, 0)
+	if err != nil {
+		return chatSession{}, fmt.Errorf("failed to load chat history: %w", err)
+	}
+
+	messages := make([]openai.ChatCompletionMessageParamUnion, 0, len(systemMessages)+len(history)+4)
+	messages = append(messages, systemMessages...)
+
+	for _, msg := range history {
+		param, err := s.chatMessageToOpenAIParam(msg)
+		if err != nil {
+			return chatSession{}, err
+		}
+		messages = append(messages, param)
+	}
+
+	return chatSession{
+		chat:     chat,
+		messages: messages,
+		toolDefs: s.chatToolDefinitions(),
+	}, nil
 }
 
 func (s *Service) runStreamingChatCompletion(
@@ -706,4 +623,45 @@ func (s *Service) handleAssistantFailure(ctx context.Context, chatID domain.ID, 
 	}
 
 	return dto.ChatCompletionDTO{}, errors.Join(domain.ErrInternal, originalErr)
+}
+
+func (s *Service) GetChat(ctx context.Context, userID domain.ID, req dto.GetChatRequest) (dto.GetChatDTO, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "service.GetChat")
+	defer span.Finish()
+
+	if !req.ChatID.IsValid && !req.WorkoutID.IsValid {
+		return dto.GetChatDTO{}, fmt.Errorf("either chat_id or workout_id must be provided")
+	}
+
+	var chat domain.Chat
+	var err error
+
+	// Определяем, как искать чат: по workout_id или по chat_id
+	if req.ChatID.IsValid {
+		chat, err = s.repository.GetChatByID(ctx, req.ChatID.V)
+		if err != nil {
+			return dto.GetChatDTO{}, fmt.Errorf("failed to get chat by id: %w", err)
+		}
+	}
+	if req.WorkoutID.IsValid {
+		chat, err = s.repository.GetChatByWorkoutID(ctx, req.WorkoutID.V)
+		if err != nil {
+			return dto.GetChatDTO{}, fmt.Errorf("failed to get chat by workout id: %w", err)
+		}
+	}
+
+	// Проверяем, что пользователь имеет доступ к этому чату
+	if chat.UserID != userID {
+		return dto.GetChatDTO{}, domain.ErrForbidden
+	}
+
+	messages, err := s.repository.ListChatMessages(ctx, chat.ID, 1000, 0) // limit 1000, offset 0
+	if err != nil {
+		return dto.GetChatDTO{}, fmt.Errorf("failed to list chat messages: %w", err)
+	}
+
+	return dto.GetChatDTO{
+		Chat:     chat,
+		Messages: messages,
+	}, nil
 }

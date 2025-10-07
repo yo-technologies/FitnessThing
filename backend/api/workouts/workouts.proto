@@ -1117,7 +1117,24 @@ message SendChatMessageStreamResponse {
   }
 }
 
+message GetChatRequest {
+  optional string workout_id = 1;
+  optional string chat_id = 2;
+}
+
+message GetChatResponse {
+  Chat chat = 1;
+  repeated ChatMessage messages = 2;
+}
+
 service ChatService {
   // Отправить сообщение в чат и получить поток ответов
   rpc SendChatMessageStream(SendChatMessageRequest) returns (stream SendChatMessageStreamResponse) {}
+
+  // Получить полный чат с сообщениями
+  rpc GetChat(GetChatRequest) returns (GetChatResponse) {
+    option (google.api.http) = {
+      get: "/v1/chats"
+    };
+  }
 }

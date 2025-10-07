@@ -146,7 +146,7 @@ func (s *Service) newListExercisesTool() agentTool {
 			Type: openai.F(openai.ChatCompletionToolTypeFunction),
 			Function: openai.F(shared.FunctionDefinitionParam{
 				Name:        openai.String("list_exercises"),
-				Description: openai.String("Fetch exercises optionally filtered by muscle groups or search query."),
+				Description: openai.String("Fetch exercises optionally filtered by muscle group ids."),
 				Parameters:  openai.F(schema),
 				Strict:      openai.Bool(true),
 			}),
@@ -1142,12 +1142,57 @@ func (s *Service) executeTool(ctx context.Context, toolCtx agentToolContext, nam
 		return "", fmt.Errorf("unknown tool: %s", name)
 	}
 
-	result, err := tool.handler(ctx, toolCtx, json.RawMessage(arguments))
+	// Try to split multiple JSON objects if they were concatenated
+	argsList := utils.SplitMultipleJSONObjects(arguments)
+	span.SetTag("arguments.count", len(argsList))
+
+	if len(argsList) == 1 {
+		// Single call
+		result, err := tool.handler(ctx, toolCtx, json.RawMessage(argsList[0]))
+		if err != nil {
+			span.SetTag("error", true)
+			span.LogKV("event", "tool_error", "tool", name, "error.object", err)
+		}
+		return result, err
+	}
+
+	// Multiple calls - execute them sequentially and combine results
+	type callResult struct {
+		Index  int    `json:"index"`
+		Result string `json:"result"`
+		Error  string `json:"error,omitempty"`
+	}
+
+	combinedResults := struct {
+		CallCount int          `json:"call_count"`
+		Results   []callResult `json:"results"`
+	}{
+		CallCount: len(argsList),
+		Results:   make([]callResult, 0, len(argsList)),
+	}
+
+	for i, args := range argsList {
+		result, err := tool.handler(ctx, toolCtx, json.RawMessage(args))
+		callRes := callResult{
+			Index:  i,
+			Result: result,
+		}
+		if err != nil {
+			span.SetTag("error", true)
+			span.LogKV("event", "tool_error", "tool", name, "call_index", i, "error.object", err)
+			callRes.Error = err.Error()
+		}
+		combinedResults.Results = append(combinedResults.Results, callRes)
+	}
+
+	resultJSON, err := json.Marshal(combinedResults)
 	if err != nil {
 		span.SetTag("error", true)
-		span.LogKV("event", "tool_error", "tool", name, "error.object", err)
+		span.LogKV("event", "marshal_error", "error.object", err)
+		return "", fmt.Errorf("failed to marshal combined results: %w", err)
 	}
-	return result, err
+
+	return string(resultJSON), nil
 }
 
 func (s *Service) newChatCompletionParams(messages []openai.ChatCompletionMessageParamUnion, tools []openai.ChatCompletionToolParam, model string, stream bool) openai.ChatCompletionNewParams {

@@ -2059,6 +2059,7 @@ var FileService_ServiceDesc = grpc.ServiceDesc{
 
 const (
 	ChatService_SendChatMessageStream_FullMethodName = "/fitness_trainer.api.workout.ChatService/SendChatMessageStream"
+	ChatService_GetChat_FullMethodName               = "/fitness_trainer.api.workout.ChatService/GetChat"
 )
 
 // ChatServiceClient is the client API for ChatService service.
@@ -2067,6 +2068,8 @@ const (
 type ChatServiceClient interface {
 	// Отправить сообщение в чат и получить поток ответов
 	SendChatMessageStream(ctx context.Context, in *SendChatMessageRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[SendChatMessageStreamResponse], error)
+	// Получить полный чат с сообщениями
+	GetChat(ctx context.Context, in *GetChatRequest, opts ...grpc.CallOption) (*GetChatResponse, error)
 }
 
 type chatServiceClient struct {
@@ -2096,12 +2099,24 @@ func (c *chatServiceClient) SendChatMessageStream(ctx context.Context, in *SendC
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type ChatService_SendChatMessageStreamClient = grpc.ServerStreamingClient[SendChatMessageStreamResponse]
 
+func (c *chatServiceClient) GetChat(ctx context.Context, in *GetChatRequest, opts ...grpc.CallOption) (*GetChatResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetChatResponse)
+	err := c.cc.Invoke(ctx, ChatService_GetChat_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ChatServiceServer is the server API for ChatService service.
 // All implementations must embed UnimplementedChatServiceServer
 // for forward compatibility.
 type ChatServiceServer interface {
 	// Отправить сообщение в чат и получить поток ответов
 	SendChatMessageStream(*SendChatMessageRequest, grpc.ServerStreamingServer[SendChatMessageStreamResponse]) error
+	// Получить полный чат с сообщениями
+	GetChat(context.Context, *GetChatRequest) (*GetChatResponse, error)
 	mustEmbedUnimplementedChatServiceServer()
 }
 
@@ -2114,6 +2129,9 @@ type UnimplementedChatServiceServer struct{}
 
 func (UnimplementedChatServiceServer) SendChatMessageStream(*SendChatMessageRequest, grpc.ServerStreamingServer[SendChatMessageStreamResponse]) error {
 	return status.Errorf(codes.Unimplemented, "method SendChatMessageStream not implemented")
+}
+func (UnimplementedChatServiceServer) GetChat(context.Context, *GetChatRequest) (*GetChatResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetChat not implemented")
 }
 func (UnimplementedChatServiceServer) mustEmbedUnimplementedChatServiceServer() {}
 func (UnimplementedChatServiceServer) testEmbeddedByValue()                     {}
@@ -2147,13 +2165,36 @@ func _ChatService_SendChatMessageStream_Handler(srv interface{}, stream grpc.Ser
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type ChatService_SendChatMessageStreamServer = grpc.ServerStreamingServer[SendChatMessageStreamResponse]
 
+func _ChatService_GetChat_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetChatRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ChatServiceServer).GetChat(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ChatService_GetChat_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ChatServiceServer).GetChat(ctx, req.(*GetChatRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ChatService_ServiceDesc is the grpc.ServiceDesc for ChatService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var ChatService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "fitness_trainer.api.workout.ChatService",
 	HandlerType: (*ChatServiceServer)(nil),
-	Methods:     []grpc.MethodDesc{},
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "GetChat",
+			Handler:    _ChatService_GetChat_Handler,
+		},
+	},
 	Streams: []grpc.StreamDesc{
 		{
 			StreamName:    "SendChatMessageStream",

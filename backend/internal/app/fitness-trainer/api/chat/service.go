@@ -9,8 +9,8 @@ import (
 )
 
 type Service interface {
-	SendChatMessage(ctx context.Context, userID domain.ID, req dto.SendChatMessageRequest) (dto.ChatCompletionDTO, error)
 	SendChatMessageStream(ctx context.Context, userID domain.ID, req dto.SendChatMessageRequest, callbacks dto.ChatStreamCallbacks) (dto.ChatCompletionDTO, error)
+	GetChat(ctx context.Context, userID domain.ID, req dto.GetChatRequest) (dto.GetChatDTO, error)
 }
 
 type Implementation struct {
