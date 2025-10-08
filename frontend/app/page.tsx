@@ -168,13 +168,6 @@ export default function Home() {
         console.log(response.data);
         const workoutId = response.data.workout?.id;
 
-        if (generate && workoutId) {
-          try {
-            await authApi.v1.workoutServiceGenerateWorkout(workoutId, {});
-          } catch (genError) {
-            console.log("Generation failed:", genError);
-          }
-        }
         router.push(`/workouts/${workoutId}`);
       })
       .catch((error) => {

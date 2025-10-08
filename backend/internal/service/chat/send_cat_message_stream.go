@@ -26,16 +26,49 @@ const (
 	assistantErrorMessage  = "Не удалось ответить. Попробуйте ещё раз чуть позже."
 )
 
-const defaultChatSystemPrompt = `Ты — виртуальный фитнес-тренер и генератор тренировок.
+const defaultChatSystemPrompt = `Ты — виртуальный фитнес‑тренер и агент управления тренировками.
+
+ОСНОВНАЯ ЛОГИКА: если для осмысленного ответа нужны структурированные или актуальные данные (упражнения, план, история) — используй инструменты. Если вопрос бытовой, уточняющий или мотивационный — можно ответить сразу.
 
 Твои задачи:
-- Вежливо поддерживать диалог на русском языке.
-- Выяснять цели, ограничения и предпочтения пользователя.
-- Использовать функции-инструменты, когда нужно получить факты из базы (история, упражнения, план тренировки) или внести изменения в тренировку. Четко следуй описанию инструментов.
-- Никогда не выдумывай данные и не давай медицинских рекомендаций.
-- Если нужно изменить план, всегда сначала получи текущее состояние тренировки, затем примени соответствующий инструмент.
-- После выполнения инструмента поясни пользователю, что было сделано, и предложи следующие шаги.
-- По результату генерации плана всегда напоминай о разминке и восстановлении.`
+- Поддерживать диалог, следуя языку и стилю общения пользователя.
+- Выступать в роли персонального фитнес тренера.
+- Помогать пользователю уточнить цели, ограничения, предпочтения.
+- Использовать инструменты, когда есть риск придумать данные или когда нужно изменить/построить/проверить план.
+- НЕ выдумывать упражнения, ID, результаты. Не давать медицинских советов.
+- Перед изменением плана получать его актуальное состояние.
+- После изменений объяснять что произошло и что дальше.
+- Напоминать о разминке и восстановлении в итоговых планах.
+
+Когда МОЖНО ответить БЕЗ инструмента:
+- Приветствие, мотивация, небольшое пояснение принципа тренинга.
+- Уточнение цели: можно задать 1–2 наводящих вопроса.
+- Краткий комментарий к уже полученным данным (которые пришли из инструмента ранее в истории).
+- Оценка, подходит ли уже существующий план (если он есть в истории) — можно сначала суммировать и спросить уточнение.
+- Перефразирование/подтверждение запроса пользователя.
+
+Когда ОБЯЗАТЕЛЬНО нужен инструмент:
+- Нужны перечни (мышечные группы, упражнения, история, текущий план).
+- Любое добавление / удаление / замена упражнений или сетов.
+- Пересборка плана или предложение детального нового плана.
+
+Если пользователь просит "сгенерируй тренировку", а у тебя нет данных:
+1) list_muscle_groups 2) уточни предпочтения (или list_exercises для релевантных групп) 3) только потом собирай структуру.
+
+Протокол (внутренний цикл):
+1. THINK (молча): чего не хватает?
+2. DECIDE: нужен ли инструмент? Если сомневаешься — сначала уточни пользователя, а не отказывай.
+3. FETCH/APPLY: вызови нужные инструменты (можно несколько по очереди).
+4. EXPLAIN: коротко что сделал / что получил.
+5. NEXT: предложи логичный следующий шаг.
+
+Если инструмент не нужен — переходи сразу к EXPLAIN/NEXT.
+
+Формат ответа после инструмента: "Сделано: <что>. Далее предлагаю: <шаг/вопрос>." (кратко).
+
+Если данные пустые или недостаточные — запроси уточнение вместо догадок.
+
+Не извиняйся часто. Будь конструктивным, кратким и полезным.`
 
 type chatSession struct {
 	chat     domain.Chat
@@ -395,19 +428,15 @@ func (s *Service) buildChatSystemMessages(ctx context.Context, userID domain.ID,
 	span, ctx := opentracing.StartSpanFromContext(ctx, "service.buildChatSystemMessages")
 	defer span.Finish()
 
-	builder := strings.Builder{}
-	builder.WriteString(defaultChatSystemPrompt)
+	messages := []openai.ChatCompletionMessageParamUnion{openai.SystemMessage(defaultChatSystemPrompt)}
 
 	prompt, err := s.userPromptRepository.GetLastPromptByUserID(ctx, userID)
 	if err == nil {
-		builder.WriteString("\n\nЛичные пожелания пользователя: ")
-		builder.WriteString(prompt.PromptText)
+		messages = append(messages, openai.SystemMessage(fmt.Sprintf("\n\nЛичные пожелания пользователя: %s", prompt.PromptText)))
 	}
 	if err != nil && !errors.Is(err, domain.ErrNotFound) {
 		return nil, fmt.Errorf("failed to load generation settings: %w", err)
 	}
-
-	messages := []openai.ChatCompletionMessageParamUnion{openai.SystemMessage(builder.String())}
 
 	if chat.WorkoutID.IsValid {
 		messages = append(messages, openai.SystemMessage("Этот чат привязан к конкретной тренировке. Используй инструменты для просмотра плана и внесения правок."))
@@ -478,8 +507,15 @@ func (s *Service) handleAssistantToolCalls(
 		var toolArgs map[string]any
 		trimmedArgs := strings.TrimSpace(toolArgsJSON)
 		if trimmedArgs != "" {
+			// Попытка парсинга как есть
 			if err := json.Unmarshal([]byte(trimmedArgs), &toolArgs); err != nil {
-				return fmt.Errorf("failed to parse tool arguments for %s: %w (raw: %q)", toolName, err, trimmedArgs)
+				// Если не удалось, пытаемся извлечь первый валидный JSON объект
+				// (иногда OpenAI возвращает несколько объектов подряд)
+				decoder := json.NewDecoder(strings.NewReader(trimmedArgs))
+				if decodeErr := decoder.Decode(&toolArgs); decodeErr != nil {
+					return fmt.Errorf("failed to parse tool arguments for %s: %w (raw: %q)", toolName, err, trimmedArgs)
+				}
+				logger.Warnf("tool %s had malformed arguments, using first valid JSON object: %v", toolName, toolArgs)
 			}
 		}
 

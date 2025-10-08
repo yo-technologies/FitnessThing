@@ -204,10 +204,10 @@ func exerciseLogHistoryPayloadFromDomain(logs []dto.ExerciseLogDTO) exerciseLogH
 }
 
 type workoutPayload struct {
-	ID            string    `json:"id"`
-	CreatedAt     time.Time `json:"created_at"`
-	FinishedAt    time.Time `json:"finished_at"`
-	ExerciseNames []string  `json:"exercise_names"`
+	ID         string     `json:"id"`
+	CreatedAt  time.Time  `json:"created_at"`
+	FinishedAt time.Time  `json:"finished_at"`
+	Exercises  []exercise `json:"exercises"`
 }
 
 type listExercisesResponse struct {
@@ -226,20 +226,20 @@ func (t *Tools) convertWorkoutsToHistoryResponse(ctx context.Context, workoutsDT
 	response := getWorkoutHistoryResponse{Workouts: make([]workoutPayload, 0, len(workoutsDTO))}
 
 	for _, workoutDTO := range workoutsDTO {
-		names := make([]string, 0, len(workoutDTO.ExerciseLogs))
+		exercises := make([]exercise, 0, len(workoutDTO.ExerciseLogs))
 		for _, log := range workoutDTO.ExerciseLogs {
 			exercise, err := t.service.GetExerciseByID(ctx, log.ExerciseID)
 			if err != nil {
 				return response, fmt.Errorf("failed to load exercise %s: %w", log.ExerciseID, err)
 			}
-			names = append(names, exercise.Name)
+			exercises = append(exercises, exerciseFromDomain(exercise))
 		}
 
 		response.Workouts = append(response.Workouts, workoutPayload{
-			ID:            workoutDTO.Workout.ID.String(),
-			CreatedAt:     workoutDTO.Workout.CreatedAt,
-			FinishedAt:    workoutDTO.Workout.FinishedAt,
-			ExerciseNames: names,
+			ID:         workoutDTO.Workout.ID.String(),
+			CreatedAt:  workoutDTO.Workout.CreatedAt,
+			FinishedAt: workoutDTO.Workout.FinishedAt,
+			Exercises:  exercises,
 		})
 	}
 

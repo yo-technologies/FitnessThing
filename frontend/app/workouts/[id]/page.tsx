@@ -10,23 +10,25 @@ import {
   ModalHeader,
   useDisclosure,
 } from "@nextui-org/modal";
-import { Accordion, AccordionItem } from "@nextui-org/accordion";
 import { DropdownItem } from "@nextui-org/dropdown";
 import { useRouter } from "next/navigation";
 import { use, useEffect, useState } from "react";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { toast } from "react-toastify";
-import ReactMarkdown from "react-markdown";
 
-import { BoltIcon, ChevronRightIcon, PlusIcon } from "@/config/icons";
+import {
+  BoltIcon,
+  ChatBubbleIcon,
+  ChevronRightIcon,
+  PlusIcon,
+} from "@/config/icons";
 import { ModalSelectExercise } from "@/components/pick-exercises-modal";
 import { PageHeader } from "@/components/page-header";
 import { Loading } from "@/components/loading";
-import { AIGenerationLoader } from "@/components/ai-generation-loader";
+import { WorkoutChatPanel } from "@/components/workout-chat";
 import {
   WorkoutExerciseLogDetails,
   WorkoutGetWorkoutResponse,
-  WorkoutGenerationStatus,
 } from "@/api/api.generated";
 import { authApi } from "@/api/api";
 import { weightUnitLabel } from "@/utils/units";
@@ -168,27 +170,6 @@ function ExerciseLogCard({
   );
 }
 
-function GenerationError({
-  generationError,
-  onRetry,
-}: {
-  generationError: string;
-  onRetry: () => void;
-}) {
-  return (
-    <div className="p-4">
-      <h2 className="text-lg text-red-500">Ошибка генерации тренировки</h2>
-      <p>{generationError}</p>
-      <button
-        className="mt-4 px-4 py-2 bg-blue-500 text-white rounded"
-        onClick={onRetry}
-      >
-        Повторить
-      </button>
-    </div>
-  );
-}
-
 export default function WorkoutDetailsPage({
   params,
 }: {
@@ -196,9 +177,6 @@ export default function WorkoutDetailsPage({
 }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isError, setIsError] = useState(false);
-  const [generationStatus, setGenerationStatus] = useState<
-    WorkoutGenerationStatus | undefined
-  >(undefined);
 
   const [workoutDetails, setWorkoutDetails] =
     useState<WorkoutGetWorkoutResponse>({});
@@ -209,36 +187,29 @@ export default function WorkoutDetailsPage({
 
   const { isOpen, onOpen, onClose } = useDisclosure();
 
+  const {
+    isOpen: isChatOpen,
+    onOpen: onChatOpen,
+    onClose: onChatClose,
+  } = useDisclosure();
+
+  // При закрытии панели чата обновляем данные тренировки (вдруг были изменения через инструменты)
+  const handleChatClose = () => {
+    onChatClose();
+    // Лёгкий рефреш без изменения глобального isLoading, чтобы не мигал весь экран
+    fetchWorkoutDetails().catch((e) => {
+      console.warn("Failed to refresh workout after chat close", e);
+    });
+  };
+
   async function fetchWorkoutDetails() {
     try {
       const response = await authApi.v1.workoutServiceGetWorkout(id);
 
       setWorkoutDetails(response.data!);
-      setGenerationStatus(response.data.workout?.generationStatus);
     } catch (error) {
       console.log(error);
       throw error;
-    }
-  }
-
-  // Поллинг только статуса: не трогаем workoutDetails пока генерация не завершена
-  async function pollGenerationStatus() {
-    try {
-      const response = await authApi.v1.workoutServiceGetWorkout(id);
-      const status = response.data.workout?.generationStatus;
-
-      if (status !== generationStatus) {
-        setGenerationStatus(status);
-      }
-      if (
-        status !== WorkoutGenerationStatus.GENERATION_STATUS_RUNNING &&
-        status !== WorkoutGenerationStatus.GENERATION_STATUS_UNSPECIFIED
-      ) {
-        // completed or failed – refresh full details
-        setWorkoutDetails(response.data!);
-      }
-    } catch (error) {
-      console.log("Polling error", error);
     }
   }
 
@@ -300,17 +271,6 @@ export default function WorkoutDetailsPage({
     }
   }
 
-  async function generateWorkout() {
-    try {
-      await authApi.v1.workoutServiceGenerateWorkout(id, {});
-      // Refresh status
-      await fetchWorkoutDetails();
-    } catch (error) {
-      console.log(error);
-      toast.error("Ошибка при генерации тренировки");
-    }
-  }
-
   async function onDelete() {
     try {
       await authApi.v1
@@ -338,18 +298,6 @@ export default function WorkoutDetailsPage({
   useEffect(() => {
     fetchData();
   }, []);
-
-  useEffect(() => {
-    if (
-      generationStatus === WorkoutGenerationStatus.GENERATION_STATUS_RUNNING
-    ) {
-      const interval = setInterval(() => {
-        pollGenerationStatus();
-      }, 2000);
-
-      return () => clearInterval(interval);
-    }
-  }, [generationStatus]);
 
   if (isLoading) {
     return <Loading />;
@@ -422,45 +370,10 @@ export default function WorkoutDetailsPage({
     return (
       <>
         <section className="flex flex-col gap-4 flex-grow">
-          {workoutDetails.workout?.isAiGenerated && (
-            <Accordion className="px-4" title="Сгенерировано ИИ">
-              <AccordionItem
-                className="flex flex-col p-0"
-                classNames={{
-                  trigger: "p-0",
-                  content: "p-0 mt-2",
-                  title: "text-xs font-semibold text-default-400",
-                }}
-                title="Записка от ИИ"
-              >
-                <ReactMarkdown className="text-xs/4 text-default-400">
-                  {workoutDetails.workout?.reasoning}
-                </ReactMarkdown>
-              </AccordionItem>
-            </Accordion>
-          )}
           <div
             ref={exerciseListParent}
             className="flex flex-col gap-4 px-4 flex-grow"
           >
-            {workoutDetails.exerciseLogs?.length === 0 && (
-              <div className="p-4 flex flex-col flex-grow justify-center">
-                <div className="flex flex-col gap-4">
-                  <div className="gap-2">
-                    <p className="text-center text-default-600 text-lg">
-                      Тренировка пуста.
-                    </p>
-                    <p className="text-center text-default-400 text-xs">
-                      Добавьте упражнения вручную или сгенерируйте с помощью ИИ.
-                    </p>
-                  </div>
-                  <Button color="secondary" size="sm" onPress={generateWorkout}>
-                    <BoltIcon className="w-4 h-4" />
-                    <span>Сгенерировать</span>
-                  </Button>
-                </div>
-              </div>
-            )}
             {workoutDetails.exerciseLogs?.map((exerciseLogDetails, index) => (
               <ExerciseLogCard
                 key={index}
@@ -500,10 +413,10 @@ export default function WorkoutDetailsPage({
       <>
         <div className="py-4 flex flex-col h-full flex-grow max-w-full basis-full gap-4">
           <PageHeader
-            enableBackButton={true}
+            enableBackButton
             inner={
-              <div className="flex flex-row items-end justify-start w-full h-full">
-                <WorkoutTimer startTime={workoutDetails.workout!.createdAt} />
+              <div className="flex h-full w-full items-center justify-start">
+                <WorkoutTimer startTime={workoutDetails.workout?.createdAt} />
               </div>
             }
             title={"Тренировка"}
@@ -521,29 +434,12 @@ export default function WorkoutDetailsPage({
             ref={switchParent}
             className="min-h-[160px] flex flex-col flex-grow"
           >
-            {generationStatus ===
-              WorkoutGenerationStatus.GENERATION_STATUS_RUNNING && (
-              <AIGenerationLoader />
-            )}
-            {generationStatus ===
-              WorkoutGenerationStatus.GENERATION_STATUS_FAILED && (
-              <GenerationError
-                generationError={"Ошибка генерации тренировки"}
-                onRetry={generateWorkout}
-              />
-            )}
-            {(generationStatus === undefined ||
-              generationStatus ===
-                WorkoutGenerationStatus.GENERATION_STATUS_UNSPECIFIED ||
-              generationStatus ===
-                WorkoutGenerationStatus.GENERATION_STATUS_COMPLETED) && (
-              <WorkoutSections
-                id={id}
-                workoutDetails={workoutDetails}
-                onFinishModalOpen={onFinishModalOpen}
-                onOpen={onOpen}
-              />
-            )}
+            <WorkoutSections
+              id={id}
+              workoutDetails={workoutDetails}
+              onFinishModalOpen={onFinishModalOpen}
+              onOpen={onOpen}
+            />
           </div>
         </div>
         <ModalSelectExercise
@@ -555,9 +451,28 @@ export default function WorkoutDetailsPage({
           onSubmit={addExercisesToWorkout}
         />
         <FinishWorkoutModal />
+        <Button
+          isIconOnly
+          aria-label="Открыть чат с тренером"
+          className="fixed bottom-20 right-6 z-40 shadow-lg w-14 h-14"
+          color="secondary"
+          radius="full"
+          onPress={onChatOpen}
+        >
+          <ChatBubbleIcon className="h-7 w-7" />
+        </Button>
       </>
     );
   }
 
-  return <MainContent />;
+  return (
+    <>
+      <MainContent />
+      <WorkoutChatPanel
+        isOpen={isChatOpen}
+        workoutId={id}
+        onClose={handleChatClose}
+      />
+    </>
+  );
 }

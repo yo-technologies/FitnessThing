@@ -11,6 +11,7 @@ import (
 	"github.com/gorilla/websocket"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 const (
@@ -39,6 +40,12 @@ func (h *ChatHandler) HandleChat(w http.ResponseWriter, r *http.Request) {
 
 	// Get token from header
 	token := r.Header.Get(authHeader)
+	if token == "" {
+		if initData := r.URL.Query().Get("init_data"); initData != "" {
+			token = "tma " + initData
+		}
+	}
+
 	if token == "" {
 		logger.Error("No access token provided")
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
@@ -101,7 +108,7 @@ func (h *ChatHandler) HandleChat(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Send response to websocket
-		respBytes, err := json.Marshal(resp)
+		respBytes, err := protojson.Marshal(resp)
 		if err != nil {
 			logger.Error("Failed to marshal response: %v", err)
 			h.sendError(conn, "Internal error")

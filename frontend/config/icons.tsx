@@ -115,6 +115,19 @@ export function BoltIcon(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
+export function ChatBubbleIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      fill="currentColor"
+      viewBox="0 0 512 512"
+      xmlns="http://www.w3.org/2000/svg"
+      {...props}
+    >
+      <path d="M256 32C114.6 32 0 125.1 0 240c0 49.7 22.9 95.3 61 130.6C49.8 420.7 25.9 446.4 25.3 447c-6.6 7-8.4 17.2-4.6 25.9S32.3 488 42 488c66.1 0 116.9-31 140.5-48.1c23.2 6.3 48.2 9.7 73.5 9.7c141.4 0 256-93.1 256-208S397.4 32 256 32zM128 248c0-13.3 14.3-24 32-24s32 10.7 32 24s-14.3 24-32 24s-32-10.7-32-24zm112 0c0-13.3 14.3-24 32-24s32 10.7 32 24s-14.3 24-32 24s-32-10.7-32-24zm112 0c0-13.3 14.3-24 32-24s32 10.7 32 24s-14.3 24-32 24s-32-10.7-32-24z" />
+    </svg>
+  );
+}
+
 export function TrashCanIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg

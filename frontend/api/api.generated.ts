@@ -70,11 +70,6 @@ export interface WorkoutServiceAddPowerRatingToExerciseLogBody {
 
 export type WorkoutServiceCompleteWorkoutBody = object;
 
-export interface WorkoutServiceGenerateWorkoutBody {
-  /** пользовательский промпт при перезапуске */
-  userPrompt?: string;
-}
-
 export interface WorkoutServiceLogExerciseBody {
   exerciseId: string;
 }
@@ -279,20 +274,9 @@ export enum WorkoutExperienceLevel {
   EXPERIENCE_LEVEL_ADVANCED = "EXPERIENCE_LEVEL_ADVANCED",
 }
 
-export type WorkoutGenerateWorkoutResponse = object;
-
-/**
- * Статусы генерации тренировки
- * - GENERATION_STATUS_RUNNING: в процессе
- *  - GENERATION_STATUS_FAILED: завершилась с ошибкой
- *  - GENERATION_STATUS_COMPLETED: успешно завершена
- * @default "GENERATION_STATUS_UNSPECIFIED"
- */
-export enum WorkoutGenerationStatus {
-  GENERATION_STATUS_UNSPECIFIED = "GENERATION_STATUS_UNSPECIFIED",
-  GENERATION_STATUS_RUNNING = "GENERATION_STATUS_RUNNING",
-  GENERATION_STATUS_FAILED = "GENERATION_STATUS_FAILED",
-  GENERATION_STATUS_COMPLETED = "GENERATION_STATUS_COMPLETED",
+export interface WorkoutGetChatRequest {
+  workoutId?: string;
+  chatId?: string;
 }
 
 export interface WorkoutGetChatResponse {
@@ -446,9 +430,6 @@ export enum WorkoutSetType {
 
 export interface WorkoutStartWorkoutRequest {
   routineId?: string;
-  /** deprecated: используйте отдельный эндпоинт GenerateWorkout */
-  generateWorkout?: boolean;
-  userPrompt?: string;
 }
 
 export interface WorkoutUpdateUserRequest {
@@ -525,14 +506,6 @@ export interface WorkoutWorkout {
   finishedAt?: string;
   /** @format date-time */
   updatedAt?: string;
-  isAiGenerated?: boolean;
-  reasoning?: string;
-  /**
-   * - GENERATION_STATUS_RUNNING: в процессе
-   *  - GENERATION_STATUS_FAILED: завершилась с ошибкой
-   *  - GENERATION_STATUS_COMPLETED: успешно завершена
-   */
-  generationStatus?: WorkoutGenerationStatus;
 }
 
 /** Настройки генерации тренировок */
@@ -726,14 +699,16 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @tags ChatService
      * @name ChatServiceGetChat
      * @summary Получить полный чат с сообщениями
-     * @request GET:/v1/chats/{workoutId}
+     * @request POST:/v1/chats/search
      * @secure
      */
-    chatServiceGetChat: (workoutId: string, params: RequestParams = {}) =>
+    chatServiceGetChat: (body: WorkoutGetChatRequest, params: RequestParams = {}) =>
       this.request<WorkoutGetChatResponse, RpcStatus>({
-        path: `/v1/chats/${workoutId}`,
-        method: "GET",
+        path: `/v1/chats/search`,
+        method: "POST",
+        body: body,
         secure: true,
+        type: ContentType.Json,
         format: "json",
         ...params,
       }),
@@ -1386,30 +1361,6 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
     ) =>
       this.request<WorkoutServiceCompleteWorkoutBody, RpcStatus>({
         path: `/v1/workouts/${workoutId}/complete`,
-        method: "POST",
-        body: body,
-        secure: true,
-        type: ContentType.Json,
-        format: "json",
-        ...params,
-      }),
-
-    /**
-     * No description
-     *
-     * @tags WorkoutService
-     * @name WorkoutServiceGenerateWorkout
-     * @summary Запустить (или перезапустить после ошибки) генерацию тренировки
-     * @request POST:/v1/workouts/{workoutId}/generate
-     * @secure
-     */
-    workoutServiceGenerateWorkout: (
-      workoutId: string,
-      body: WorkoutServiceGenerateWorkoutBody,
-      params: RequestParams = {},
-    ) =>
-      this.request<WorkoutGenerateWorkoutResponse, RpcStatus>({
-        path: `/v1/workouts/${workoutId}/generate`,
         method: "POST",
         body: body,
         secure: true,

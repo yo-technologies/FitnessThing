@@ -315,5 +315,10 @@ func registerGateway(ctx context.Context, mux *runtime.ServeMux, grpcEndpoint st
 		return err
 	}
 
+	err = desc.RegisterChatServiceHandlerFromEndpoint(ctx, mux, grpcEndpoint, opts)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }

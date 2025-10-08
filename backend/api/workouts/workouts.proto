@@ -1028,7 +1028,8 @@ service ChatService {
   // Получить полный чат с сообщениями
   rpc GetChat(GetChatRequest) returns (GetChatResponse) {
     option (google.api.http) = {
-      get: "/v1/chats/search"
+      post: "/v1/chats/search"
+      body: "*"
     };
   }
 }

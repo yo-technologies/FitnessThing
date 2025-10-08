@@ -38,7 +38,7 @@
   ],
   "paths": {
     "/v1/chats/search": {
-      "get": {
+      "post": {
         "summary": "Получить полный чат с сообщениями",
         "operationId": "ChatService_GetChat",
         "responses": {
@@ -57,16 +57,12 @@
         },
         "parameters": [
           {
-            "name": "workoutId",
-            "in": "query",
-            "required": false,
-            "type": "string"
-          },
-          {
-            "name": "chatId",
-            "in": "query",
-            "required": false,
-            "type": "string"
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/workoutGetChatRequest"
+            }
           }
         ],
         "tags": [
@@ -2170,6 +2166,17 @@
         "EXPERIENCE_LEVEL_ADVANCED"
       ],
       "default": "EXPERIENCE_LEVEL_UNSPECIFIED"
+    },
+    "workoutGetChatRequest": {
+      "type": "object",
+      "properties": {
+        "workoutId": {
+          "type": "string"
+        },
+        "chatId": {
+          "type": "string"
+        }
+      }
     },
     "workoutGetChatResponse": {
       "type": "object",

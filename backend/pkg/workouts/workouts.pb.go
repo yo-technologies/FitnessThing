@@ -6158,10 +6158,10 @@ const file_workouts_workouts_proto_rawDesc = "" +
 	"\x1fUpdateWorkoutGenerationSettings\x12C.fitness_trainer.api.workout.UpdateWorkoutGenerationSettingsRequest\x1a\x16.google.protobuf.Empty\"0\x82\xd3\xe4\x93\x02*:\x01*\x1a%/v1/users/workout_generation_settings\x12\xa5\x01\n" +
 	"\x1cGetWorkoutGenerationSettings\x12\x16.google.protobuf.Empty\x1a>.fitness_trainer.api.workout.WorkoutGenerationSettingsResponse\"-\x82\xd3\xe4\x93\x02'\x12%/v1/users/workout_generation_settings2\xa4\x01\n" +
 	"\vFileService\x12\x94\x01\n" +
-	"\rPresignUpload\x121.fitness_trainer.api.workout.PresignUploadRequest\x1a2.fitness_trainer.api.workout.PresignUploadResponse\"\x1c\x82\xd3\xe4\x93\x02\x16:\x01*\"\x11/v1/files/presign2\x9c\x02\n" +
+	"\rPresignUpload\x121.fitness_trainer.api.workout.PresignUploadRequest\x1a2.fitness_trainer.api.workout.PresignUploadResponse\"\x1c\x82\xd3\xe4\x93\x02\x16:\x01*\"\x11/v1/files/presign2\xa0\x02\n" +
 	"\vChatService\x12\x8c\x01\n" +
-	"\x15SendChatMessageStream\x123.fitness_trainer.api.workout.SendChatMessageRequest\x1a:.fitness_trainer.api.workout.SendChatMessageStreamResponse\"\x000\x01\x12~\n" +
-	"\aGetChat\x12+.fitness_trainer.api.workout.GetChatRequest\x1a,.fitness_trainer.api.workout.GetChatResponse\"\x18\x82\xd3\xe4\x93\x02\x12\x12\x10/v1/chats/searchB\xe1\x01\x92A\x9c\x01\x12=\n" +
+	"\x15SendChatMessageStream\x123.fitness_trainer.api.workout.SendChatMessageRequest\x1a:.fitness_trainer.api.workout.SendChatMessageStreamResponse\"\x000\x01\x12\x81\x01\n" +
+	"\aGetChat\x12+.fitness_trainer.api.workout.GetChatRequest\x1a,.fitness_trainer.api.workout.GetChatResponse\"\x1b\x82\xd3\xe4\x93\x02\x15:\x01*\"\x10/v1/chats/searchB\xe1\x01\x92A\x9c\x01\x12=\n" +
 	"\x13Fitness Trainer API\x12\x1fAPI for fitness Trainer service2\x051.0.0\"\x04/api*\x02\x01\x022\x10application/json:\x10application/jsonZ\x1f\n" +
 	"\x1d\n" +
 	"\x06Bearer\x12\x13\b\x02\x1a\rAuthorization \x02b\f\n" +
