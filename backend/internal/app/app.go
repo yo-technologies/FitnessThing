@@ -190,7 +190,7 @@ func (a *App) Run(ctx context.Context) error {
 	}
 
 	// Create gRPC client connection for websocket handlers
-	grpcConn, err := grpc.DialContext(ctx, grpcEndpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	grpcConn, err := grpc.NewClient(grpcEndpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return fmt.Errorf("failed to dial gRPC: %w", err)
 	}

@@ -13,18 +13,18 @@ import (
 	"time"
 
 	"fitness-trainer/internal/app"
-	openai_client "fitness-trainer/internal/clients/openai"
 	"fitness-trainer/internal/clients/ratelimiter"
 	"fitness-trainer/internal/db"
 	"fitness-trainer/internal/logger"
 	"fitness-trainer/internal/repository"
 	"fitness-trainer/internal/service"
+	"fitness-trainer/internal/service/background"
 	"fitness-trainer/internal/telegram/token_parser"
 	"fitness-trainer/internal/tracer"
 
 	genai_client "fitness-trainer/internal/clients/gemini"
+	openai_client "fitness-trainer/internal/clients/openai"
 	s3_client "fitness-trainer/internal/clients/s3"
-	"fitness-trainer/internal/service/background"
 	prompt_generator_service "fitness-trainer/internal/service/prompt_generator"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -101,8 +101,8 @@ func Run() error {
 		return err
 	}
 
-	openAIRawClient := newOpenAIClient()
-	openAIClient := openai_client.New(openAIRawClient)
+	openAIClient := newOpenAIClient()
+	openAIClientWrapper := openai_client.New(openAIClient)
 	openAIModel := os.Getenv("OPENAI_MODEL")
 	if openAIModel == "" {
 		return fmt.Errorf("OPENAI_MODEL environment variable is not set")
@@ -112,7 +112,7 @@ func Run() error {
 		contextManager,
 		s3ClientWrapper,
 		repo,
-		openAIClient,
+		openAIClientWrapper,
 		openAIModel,
 	)
 
