@@ -19,6 +19,7 @@ import (
 	"fitness-trainer/internal/repository"
 	"fitness-trainer/internal/service"
 	"fitness-trainer/internal/service/background"
+	"fitness-trainer/internal/service/chat"
 	"fitness-trainer/internal/service/tools"
 	"fitness-trainer/internal/telegram/token_parser"
 	"fitness-trainer/internal/tracer"
@@ -113,9 +114,19 @@ func Run() error {
 		contextManager,
 		s3ClientWrapper,
 		repo,
+	)
+
+	tools := tools.New(
+		service,
+	)
+
+	chatService := chat.New(
+		tools,
+		repo,
+		repo,
+		repo,
 		openAIClientWrapper,
 		openAIModel,
-		tools.New(nil), // tools will set service later to avoid circular dependency
 	)
 
 	telegramTokenParser := newTelegramTokenParser()
@@ -180,6 +191,7 @@ func Run() error {
 
 	app := app.New(
 		service,
+		chatService,
 		telegramTokenParser,
 		app.WithHTTPPathPrefix("/api"),
 	)

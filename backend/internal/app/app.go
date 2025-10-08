@@ -114,12 +114,12 @@ type service interface {
 	exercise.Service
 	routine.Service
 	file.Service
-	chat.Service
 	interceptors.UserService
 }
 
 type App struct {
 	service             service
+	chatService         chat.Service
 	telegramTokenParser interceptors.TelegramTokenParser
 
 	options *Options
@@ -127,6 +127,7 @@ type App struct {
 
 func New(
 	service service,
+	chatService chat.Service,
 	telegramTokenParser interceptors.TelegramTokenParser,
 	options ...OptionsFunc,
 ) *App {
@@ -136,6 +137,7 @@ func New(
 	}
 	return &App{
 		service:             service,
+		chatService:         chatService,
 		telegramTokenParser: telegramTokenParser,
 		options:             opts,
 	}
@@ -165,7 +167,7 @@ func (a *App) Run(ctx context.Context) error {
 	routineService := routine.New(a.service)
 	userServiceServer := user.New(a.service)
 	fileServiceServer := file.New(a.service)
-	chatService := chat.New(a.service)
+	chatService := chat.New(a.chatService)
 
 	// Register the service
 	desc.RegisterWorkoutServiceServer(srv, workoutService)

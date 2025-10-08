@@ -1,4 +1,4 @@
-package service
+package chat
 
 import (
 	"context"
@@ -126,11 +126,11 @@ func (s *Service) SendChatMessageStream(ctx context.Context, userID domain.ID, r
 			finalRecord.TokenUsage = utils.NewNullable(totalUsage.TotalTokens, true)
 		}
 
-		if _, err := s.repository.CreateChatMessage(ctx, finalRecord); err != nil {
+		if _, err := s.chatRepository.CreateChatMessage(ctx, finalRecord); err != nil {
 			return dto.ChatCompletionDTO{}, fmt.Errorf("failed to save assistant message: %w", err)
 		}
 
-		updatedHistory, err := s.repository.ListChatMessages(ctx, chat.ID, chatHistoryLimit, 0)
+		updatedHistory, err := s.chatRepository.ListChatMessages(ctx, chat.ID, chatHistoryLimit, 0)
 		if err != nil {
 			return dto.ChatCompletionDTO{}, fmt.Errorf("failed to refresh chat history: %w", err)
 		}
@@ -188,7 +188,7 @@ func (s *Service) startChatSession(ctx context.Context, userID domain.ID, req dt
 		nil,
 	)
 
-	if _, err := s.repository.CreateChatMessage(ctx, userMessage); err != nil {
+	if _, err := s.chatRepository.CreateChatMessage(ctx, userMessage); err != nil {
 		return chatSession{}, fmt.Errorf("failed to save user chat message: %w", err)
 	}
 
@@ -197,7 +197,7 @@ func (s *Service) startChatSession(ctx context.Context, userID domain.ID, req dt
 		return chatSession{}, err
 	}
 
-	history, err := s.repository.ListChatMessages(ctx, chat.ID, chatHistoryLimit, 0)
+	history, err := s.chatRepository.ListChatMessages(ctx, chat.ID, chatHistoryLimit, 0)
 	if err != nil {
 		return chatSession{}, fmt.Errorf("failed to load chat history: %w", err)
 	}
@@ -333,7 +333,7 @@ func (s *Service) ensureChatForRequest(ctx context.Context, userID domain.ID, re
 	defer span.Finish()
 
 	if req.ChatID.IsValid {
-		chat, err := s.repository.GetChatByID(ctx, req.ChatID.V)
+		chat, err := s.chatRepository.GetChatByID(ctx, req.ChatID.V)
 		if err != nil {
 			return domain.Chat{}, err
 		}
@@ -348,7 +348,7 @@ func (s *Service) ensureChatForRequest(ctx context.Context, userID domain.ID, re
 	}
 
 	if req.WorkoutID.IsValid {
-		workout, err := s.repository.GetWorkoutByID(ctx, req.WorkoutID.V)
+		workout, err := s.workoutRepository.GetWorkoutByID(ctx, req.WorkoutID.V)
 		if err != nil {
 			return domain.Chat{}, err
 		}
@@ -356,7 +356,7 @@ func (s *Service) ensureChatForRequest(ctx context.Context, userID domain.ID, re
 			return domain.Chat{}, domain.ErrForbidden
 		}
 
-		chat, err := s.repository.GetChatByWorkoutID(ctx, req.WorkoutID.V)
+		chat, err := s.chatRepository.GetChatByWorkoutID(ctx, req.WorkoutID.V)
 		if err == nil {
 			return chat, nil
 		}
@@ -367,7 +367,7 @@ func (s *Service) ensureChatForRequest(ctx context.Context, userID domain.ID, re
 		title := fmt.Sprintf("Тренировка %s", workout.CreatedAt.Format("02.01.2006"))
 		newChat := domain.NewChat(userID, utils.NewNullable(req.WorkoutID.V, true), title)
 
-		createdChat, err := s.repository.CreateChat(ctx, newChat)
+		createdChat, err := s.chatRepository.CreateChat(ctx, newChat)
 		if err != nil {
 			return domain.Chat{}, fmt.Errorf("failed to create chat for workout: %w", err)
 		}
@@ -378,7 +378,7 @@ func (s *Service) ensureChatForRequest(ctx context.Context, userID domain.ID, re
 	title := fmt.Sprintf("Чат %s", time.Now().Format("02.01.2006 15:04"))
 	newChat := domain.NewChat(userID, utils.Nullable[domain.ID]{}, title)
 
-	createdChat, err := s.repository.CreateChat(ctx, newChat)
+	createdChat, err := s.chatRepository.CreateChat(ctx, newChat)
 	if err != nil {
 		return domain.Chat{}, fmt.Errorf("failed to create chat: %w", err)
 	}
@@ -393,7 +393,7 @@ func (s *Service) buildChatSystemMessages(ctx context.Context, userID domain.ID,
 	builder := strings.Builder{}
 	builder.WriteString(defaultChatSystemPrompt)
 
-	prompt, err := s.repository.GetLastPromptByUserID(ctx, userID)
+	prompt, err := s.userPromptRepository.GetLastPromptByUserID(ctx, userID)
 	if err == nil {
 		builder.WriteString("\n\nЛичные пожелания пользователя: ")
 		builder.WriteString(prompt.PromptText)
@@ -499,7 +499,7 @@ func (s *Service) handleAssistantToolCalls(
 			assistantRecord.ToolCallID = utils.NewNullable(toolCall.ID, true)
 		}
 
-		savedAssistant, err := s.repository.CreateChatMessage(ctx, assistantRecord)
+		savedAssistant, err := s.chatRepository.CreateChatMessage(ctx, assistantRecord)
 		if err != nil {
 			return fmt.Errorf("failed to persist assistant tool call: %w", err)
 		}
@@ -541,7 +541,7 @@ func (s *Service) handleAssistantToolCalls(
 			toolRecord.ToolCallID = utils.NewNullable(toolCall.ID, true)
 		}
 
-		savedTool, err := s.repository.CreateChatMessage(ctx, toolRecord)
+		savedTool, err := s.chatRepository.CreateChatMessage(ctx, toolRecord)
 		if err != nil {
 			return fmt.Errorf("failed to persist tool message: %w", err)
 		}
@@ -576,50 +576,9 @@ func (s *Service) handleAssistantFailure(ctx context.Context, chatID domain.ID, 
 	)
 	errMsg.Error = utils.NewNullable(originalErr.Error(), true)
 
-	if _, err := s.repository.CreateChatMessage(ctx, errMsg); err != nil {
+	if _, err := s.chatRepository.CreateChatMessage(ctx, errMsg); err != nil {
 		return dto.ChatCompletionDTO{}, fmt.Errorf("failed to persist assistant error message: %w", err)
 	}
 
 	return dto.ChatCompletionDTO{}, errors.Join(domain.ErrInternal, originalErr)
-}
-
-func (s *Service) GetChat(ctx context.Context, userID domain.ID, req dto.GetChatRequest) (dto.GetChatDTO, error) {
-	span, ctx := opentracing.StartSpanFromContext(ctx, "service.GetChat")
-	defer span.Finish()
-
-	if !req.ChatID.IsValid && !req.WorkoutID.IsValid {
-		return dto.GetChatDTO{}, fmt.Errorf("either chat_id or workout_id must be provided")
-	}
-
-	var chat domain.Chat
-	var err error
-
-	// Определяем, как искать чат: по workout_id или по chat_id
-	if req.ChatID.IsValid {
-		chat, err = s.repository.GetChatByID(ctx, req.ChatID.V)
-		if err != nil {
-			return dto.GetChatDTO{}, fmt.Errorf("failed to get chat by id: %w", err)
-		}
-	}
-	if req.WorkoutID.IsValid {
-		chat, err = s.repository.GetChatByWorkoutID(ctx, req.WorkoutID.V)
-		if err != nil {
-			return dto.GetChatDTO{}, fmt.Errorf("failed to get chat by workout id: %w", err)
-		}
-	}
-
-	// Проверяем, что пользователь имеет доступ к этому чату
-	if chat.UserID != userID {
-		return dto.GetChatDTO{}, domain.ErrForbidden
-	}
-
-	messages, err := s.repository.ListChatMessages(ctx, chat.ID, 1000, 0) // limit 1000, offset 0
-	if err != nil {
-		return dto.GetChatDTO{}, fmt.Errorf("failed to list chat messages: %w", err)
-	}
-
-	return dto.GetChatDTO{
-		Chat:     chat,
-		Messages: messages,
-	}, nil
 }
