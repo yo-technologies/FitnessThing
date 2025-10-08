@@ -249,6 +249,13 @@ func (s *Service) GetExerciseLog(ctx context.Context, userID, exerciseLogID doma
 	}, nil
 }
 
+func (s *Service) GetExerciseLogByID(ctx context.Context, id domain.ID) (domain.ExerciseLog, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "service.GetExerciseLogByID")
+	defer span.Finish()
+
+	return s.repository.GetExerciseLogByID(ctx, id)
+}
+
 func (s *Service) LogExercise(ctx context.Context, userID, workoutID, exerciseID domain.ID) (domain.ExerciseLog, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "service.LogExercise")
 	defer span.Finish()

@@ -2,11 +2,12 @@ package service
 
 import (
 	"context"
-	"sync"
 
 	openai_client "fitness-trainer/internal/clients/openai"
 	"fitness-trainer/internal/domain"
 	"fitness-trainer/internal/domain/dto"
+
+	"github.com/openai/openai-go"
 )
 
 type userRepository interface {
@@ -126,14 +127,19 @@ type s3Client interface {
 	GeneratePutPresignedURL(ctx context.Context, key string) (string, error)
 }
 
+type toolsService interface {
+	ChatAgentToolDefinitions() []openai.ChatCompletionToolParam
+	ExecuteChatAgentTool(ctx context.Context, ctxData domain.AgentChatContext, name string, arguments string) (string, error)
+	NewChatCompletionParams(messages []openai.ChatCompletionMessageParamUnion, toolDefs []openai.ChatCompletionToolParam, model string, stream bool) openai.ChatCompletionNewParams
+}
+
 type Service struct {
 	s3Client     s3Client
 	unitOfWork   unitOfWork
 	repository   repository
 	openAIClient openai_client.ChatClient
 	openAIModel  string
-	chatTools    map[string]agentTool
-	chatToolsOnce sync.Once
+	toolsService toolsService
 }
 
 func New(
@@ -142,6 +148,7 @@ func New(
 	repository repository,
 	openAIClient openai_client.ChatClient,
 	openAIModel string,
+	toolsService toolsService,
 ) *Service {
 	return &Service{
 		unitOfWork:   unitOfWork,
@@ -149,5 +156,6 @@ func New(
 		repository:   repository,
 		openAIClient: openAIClient,
 		openAIModel:  openAIModel,
+		toolsService: toolsService,
 	}
 }

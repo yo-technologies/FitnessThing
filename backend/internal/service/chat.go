@@ -10,6 +10,7 @@ import (
 	"time"
 
 	openai_client "fitness-trainer/internal/clients/openai"
+
 	"fitness-trainer/internal/domain"
 	"fitness-trainer/internal/domain/dto"
 	"fitness-trainer/internal/utils"
@@ -54,7 +55,7 @@ func (s *Service) SendChatMessageStream(ctx context.Context, userID domain.ID, r
 	copy(messages, session.messages)
 	toolDefs := session.toolDefs
 	chat := session.chat
-	agentCtx := agentToolContext{userID: userID, workoutID: chat.WorkoutID}
+	agentCtx := domain.NewAgentChatContext(userID, chat.WorkoutID)
 
 	notifyStatus := func(status string) error {
 		if callbacks.OnStatus != nil {
@@ -88,7 +89,7 @@ func (s *Service) SendChatMessageStream(ctx context.Context, userID domain.ID, r
 	)
 
 	for range maxChatCompletionLoops {
-		params := s.newChatCompletionParams(messages, toolDefs, s.openAIModel, true)
+		params := s.toolsService.NewChatCompletionParams(messages, toolDefs, s.openAIModel, true)
 
 		stream, err := s.openAIClient.CreateChatCompletionStream(ctx, params)
 		if err != nil {
@@ -215,7 +216,7 @@ func (s *Service) startChatSession(ctx context.Context, userID domain.ID, req dt
 	return chatSession{
 		chat:     chat,
 		messages: messages,
-		toolDefs: s.chatToolDefinitions(),
+		toolDefs: s.toolsService.ChatAgentToolDefinitions(),
 	}, nil
 }
 
@@ -454,7 +455,7 @@ func (s *Service) handleAssistantToolCalls(
 	ctx context.Context,
 	chatID domain.ID,
 	messages *[]openai.ChatCompletionMessageParamUnion,
-	toolCtx agentToolContext,
+	chatCtx domain.AgentChatContext,
 	assistantMessage openai.ChatCompletionMessage,
 	callbacks *dto.ChatStreamCallbacks,
 ) error {
@@ -515,7 +516,7 @@ func (s *Service) handleAssistantToolCalls(
 			}
 		}
 
-		result, err := s.executeTool(ctx, toolCtx, toolName, toolArgsJSON)
+		result, err := s.toolsService.ExecuteChatAgentTool(ctx, chatCtx, toolName, toolArgsJSON)
 		if err != nil {
 			_, failureErr := s.handleAssistantFailure(ctx, chatID, fmt.Errorf("tool %s error: %w", toolName, err))
 			if failureErr != nil {

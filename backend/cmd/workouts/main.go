@@ -19,6 +19,7 @@ import (
 	"fitness-trainer/internal/repository"
 	"fitness-trainer/internal/service"
 	"fitness-trainer/internal/service/background"
+	"fitness-trainer/internal/service/tools"
 	"fitness-trainer/internal/telegram/token_parser"
 	"fitness-trainer/internal/tracer"
 
@@ -114,6 +115,7 @@ func Run() error {
 		repo,
 		openAIClientWrapper,
 		openAIModel,
+		tools.New(nil), // tools will set service later to avoid circular dependency
 	)
 
 	telegramTokenParser := newTelegramTokenParser()

@@ -16,6 +16,7 @@ require (
 	github.com/openai/openai-go v0.1.0-alpha.53
 	github.com/opentracing/opentracing-go v1.2.0
 	github.com/prometheus/client_golang v1.20.5
+	github.com/samber/lo v1.51.0
 	github.com/swaggest/swgui v1.8.2
 	github.com/telegram-mini-apps/init-data-golang v1.5.0
 	github.com/throttled/throttled/v2 v2.13.0
