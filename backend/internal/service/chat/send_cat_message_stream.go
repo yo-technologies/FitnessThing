@@ -10,6 +10,7 @@ import (
 	"time"
 
 	openai_client "fitness-trainer/internal/clients/openai"
+	"fitness-trainer/internal/logger"
 
 	"fitness-trainer/internal/domain"
 	"fitness-trainer/internal/domain/dto"
@@ -99,7 +100,11 @@ func (s *Service) SendChatMessageStream(ctx context.Context, userID domain.ID, r
 
 		assistantMessage, usage, err := s.runStreamingChatCompletion(stream, &callbacks)
 		if err != nil {
-			_, _ = s.handleAssistantFailure(ctx, chat.ID, err)
+			_, handlerErr := s.handleAssistantFailure(ctx, chat.ID, err)
+			if handlerErr != nil {
+				logger.Errorf("error handling assistant failure: %v", handlerErr)
+			}
+
 			return dto.ChatCompletionDTO{}, err
 		}
 
@@ -208,7 +213,7 @@ func (s *Service) startChatSession(ctx context.Context, userID domain.ID, req dt
 	for _, msg := range history {
 		param, err := s.chatMessageToOpenAIParam(msg)
 		if err != nil {
-			return chatSession{}, err
+			return chatSession{}, fmt.Errorf("failed to convert chat message to OpenAI param: %w", err)
 		}
 		messages = append(messages, param)
 	}
