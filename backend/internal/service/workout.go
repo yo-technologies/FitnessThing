@@ -2,14 +2,12 @@ package service
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
 	"fitness-trainer/internal/domain"
 	"fitness-trainer/internal/domain/dto"
 	"fitness-trainer/internal/logger"
-	"fitness-trainer/internal/utils"
 
 	"github.com/opentracing/opentracing-go"
 )
@@ -33,7 +31,7 @@ func (s *Service) StartWorkout(ctx context.Context, userID domain.ID, opts domai
 		}
 	}
 
-	workout := domain.NewWorkout(userID, opts.RoutineID, opts.GenerateWorkout)
+	workout := domain.NewWorkout(userID, opts.RoutineID)
 
 	workout, err = s.repository.CreateWorkout(txCtx, workout)
 	if err != nil {
@@ -97,197 +95,6 @@ func (s *Service) enrichWorkoutFromRoutine(ctx context.Context, userID, workoutI
 	}
 
 	return nil
-}
-
-// GenerateWorkout validates workflow and triggers async generation (idempotent-ish start)
-// Валидации:
-//   - тренировка принадлежит пользователю
-//   - статус не Running
-//   - тренировка помечена как AI-generated (иначе бессмысленно генерировать)
-//   - лимитер разрешает генерацию
-func (s *Service) GenerateWorkout(ctx context.Context, userID, workoutID domain.ID, userPrompt string) error {
-	span, ctx := opentracing.StartSpanFromContext(ctx, "service.GenerateWorkout")
-	defer span.Finish()
-
-	workout, err := s.repository.GetWorkoutByID(ctx, workoutID)
-	if err != nil {
-		return err
-	}
-	if workout.UserID != userID {
-		return domain.ErrNotFound
-	}
-	if workout.IsGenerationRunning() {
-		return fmt.Errorf("generation already running: %w", domain.ErrAlreadyExists)
-	}
-	if workout.IsGenerationCompleted() {
-		return fmt.Errorf("generation already completed: %w", domain.ErrAlreadyExists)
-	}
-
-	allowed, err := s.generateWorkoutLimiter.Allow(ctx, userID)
-	if err != nil {
-		return err
-	}
-	if !allowed {
-		return fmt.Errorf("generate workout limit exceeded: %w", domain.ErrTooManyRequests)
-	}
-
-	workout.SetGenerationRunning()
-	workout.IsAIGenerated = true
-
-	workout, err = s.repository.UpdateWorkout(ctx, workoutID, workout)
-	if err != nil {
-		return fmt.Errorf("failed to update workout: %w", err)
-	}
-
-	go s.generateWorkoutAsync(context.WithoutCancel(ctx), userID, workoutID, userPrompt)
-
-	return nil
-}
-
-func (s *Service) generateWorkoutAsync(ctx context.Context, userID domain.ID, workoutID domain.ID, userPrompt string) {
-	span, ctx := opentracing.StartSpanFromContext(ctx, "service.generateWorkoutAsync")
-	defer span.Finish()
-
-	var err error
-
-	defer func() {
-		if err != nil {
-			logger.Error(err.Error())
-			s.updateWorkoutGenerationError(ctx, workoutID, err.Error())
-		}
-	}()
-
-	// Begin transaction
-	txCtx, err := s.unitOfWork.Begin(ctx)
-	if err != nil {
-		err = fmt.Errorf("failed to begin transaction for async generation: %w", err)
-		return
-	}
-	defer s.unitOfWork.Rollback(txCtx)
-
-	// Generate workout (limiter already checked)
-	generatedWorkout, err := s.generateWorkout(txCtx, userID, userPrompt)
-	if err != nil {
-		err = fmt.Errorf("failed to generate workout: %w", err)
-		return
-	}
-
-	logger.Infof("Generated workout with %d exercises for user %s", len(generatedWorkout.ExerciseIDs), userID)
-
-	// Log exercises
-	for _, exerciseID := range generatedWorkout.ExerciseIDs {
-		_, err = s.LogExercise(txCtx, userID, workoutID, exerciseID)
-		if err != nil {
-			err = fmt.Errorf("failed to log exercise: %w", err)
-			return
-		}
-	}
-
-	// Update workout with reasoning and set generating=false
-	workout, err := s.repository.GetWorkoutByID(txCtx, workoutID)
-	if err != nil {
-		err = fmt.Errorf("failed to get workout: %w", err)
-		return
-	}
-
-	workout.Reasoning = generatedWorkout.Reasoning
-	workout.SetGenerationCompleted()
-
-	_, err = s.repository.UpdateWorkout(txCtx, workoutID, workout)
-	if err != nil {
-		err = fmt.Errorf("failed to update workout: %w", err)
-		return
-	}
-
-	// Commit
-	err = s.unitOfWork.Commit(txCtx)
-	if err != nil {
-		err = fmt.Errorf("failed to commit async generation: %w", err)
-		return
-	}
-}
-
-func (s *Service) updateWorkoutGenerationError(ctx context.Context, workoutID domain.ID, errorMsg string) {
-	workout, err := s.repository.GetWorkoutByID(ctx, workoutID)
-	if err != nil {
-		logger.Errorf("failed to get workout: %v", err)
-		return
-	}
-
-	workout.SetGenerationFailed()
-	workout.GenerationError = utils.NewNullable(errorMsg, true)
-
-	_, err = s.repository.UpdateWorkout(ctx, workoutID, workout)
-	if err != nil {
-		logger.Errorf("failed to update workout with error: %v", err)
-	}
-}
-
-func (s *Service) generateWorkout(ctx context.Context, userID domain.ID, _ string) (dto.GeneratedWorkoutDTO, error) {
-	span, ctx := opentracing.StartSpanFromContext(ctx, "service.generateWorkout")
-	defer span.Finish()
-
-	userWorkouts, err := s.repository.GetWorkouts(ctx, userID, workoutsCount, 0)
-	if err != nil {
-		return dto.GeneratedWorkoutDTO{}, err
-	}
-
-	userWorkoutsDTO := make([]dto.SlimWorkoutDTO, 0, len(userWorkouts))
-	for _, workout := range userWorkouts {
-		exerciseLogs, err := s.repository.GetExerciseLogsByWorkoutID(ctx, workout.ID)
-		if err != nil {
-			return dto.GeneratedWorkoutDTO{}, err
-		}
-
-		exerciseIDs := make([]domain.ID, 0, len(exerciseLogs))
-		for _, exerciseLog := range exerciseLogs {
-			exerciseIDs = append(exerciseIDs, exerciseLog.ExerciseID)
-		}
-
-		exerciseNames := make([]string, 0, len(exerciseIDs))
-		for _, exerciseLog := range exerciseLogs {
-			exercise, err := s.repository.GetExerciseByID(ctx, exerciseLog.ExerciseID)
-			if err != nil {
-				return dto.GeneratedWorkoutDTO{}, err
-			}
-
-			exerciseNames = append(exerciseNames, exercise.Name)
-		}
-
-		userWorkoutsDTO = append(userWorkoutsDTO, dto.SlimWorkoutDTO{
-			ID:            workout.ID,
-			CreatedAt:     workout.CreatedAt,
-			ExerciseNames: exerciseNames,
-		})
-	}
-
-	exercises, err := s.repository.GetExercises(ctx, []domain.ID{}, []domain.ID{})
-	if err != nil {
-		return dto.GeneratedWorkoutDTO{}, fmt.Errorf("failed to get exercises: %w", err)
-	}
-
-	exerciseDTOs := make([]dto.SlimExerciseDTO, 0, len(exercises))
-	for _, exercise := range exercises {
-		exerciseDTOs = append(exerciseDTOs, dto.SlimExerciseDTO{
-			ID:                 exercise.ID,
-			Name:               exercise.Name,
-			TargetMuscleGroups: exercise.TargetMuscleGroups,
-		})
-	}
-
-	prompt, err := s.repository.GetLastPromptByUserID(ctx, userID)
-	if err != nil && !errors.Is(err, domain.ErrNotFound) {
-		return dto.GeneratedWorkoutDTO{}, fmt.Errorf("failed to get last prompt: %w", err)
-	}
-
-	opts := &dto.GenerateWorkoutOptions{
-		UserID:     userID,
-		Exercises:  exerciseDTOs,
-		Workouts:   userWorkoutsDTO,
-		UserPrompt: prompt.PromptText,
-	}
-
-	return s.workoutGenerator.GenerateWorkout(ctx, opts)
 }
 
 func (s *Service) GetWorkout(ctx context.Context, userID domain.ID, workoutID domain.ID) (dto.WorkoutDetailsDTO, error) {

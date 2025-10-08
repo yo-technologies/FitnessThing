@@ -40,9 +40,6 @@ func (i *Implementation) StartWorkout(ctx context.Context, in *desc.StartWorkout
 		opts.RoutineID = utils.NewNullable(parsedID, true)
 	}
 
-	opts.GenerateWorkout = in.GetGenerateWorkout()
-	opts.UserPrompt = in.GetUserPrompt()
-
 	workout, err := i.service.StartWorkout(ctx, userID, opts)
 	if err != nil {
 		return nil, err

@@ -14,18 +14,14 @@ import (
 )
 
 type workoutEntity struct {
-	ID               pgtype.UUID
-	UserID           pgtype.UUID
-	RoutineID        pgtype.UUID
-	Notes            string
-	Rating           int
-	FinishedAt       pgtype.Timestamptz
-	CreatedAt        pgtype.Timestamptz
-	UpdatedAt        pgtype.Timestamptz
-	IsAIGenerated    pgtype.Bool `db:"is_ai_generated"`
-	Reasoning        pgtype.Text
-	GenerationStatus pgtype.Text `db:"generation_status"`
-	GenerationError  pgtype.Text `db:"generation_error"`
+	ID         pgtype.UUID
+	UserID     pgtype.UUID
+	RoutineID  pgtype.UUID
+	Notes      string
+	Rating     int
+	FinishedAt pgtype.Timestamptz
+	CreatedAt  pgtype.Timestamptz
+	UpdatedAt  pgtype.Timestamptz
 }
 
 func (w workoutEntity) toDomain() domain.Workout {
@@ -35,35 +31,24 @@ func (w workoutEntity) toDomain() domain.Workout {
 			CreatedAt: w.CreatedAt.Time,
 			UpdatedAt: w.UpdatedAt.Time,
 		},
-		UserID:           domain.ID(w.UserID.Bytes),
-		RoutineID:        utils.NewNullable(domain.ID(w.RoutineID.Bytes), w.RoutineID.Valid),
-		Notes:            w.Notes,
-		Rating:           w.Rating,
-		FinishedAt:       w.FinishedAt.Time,
-		IsAIGenerated:    w.IsAIGenerated.Bool,
-		Reasoning:        w.Reasoning.String,
-		GenerationStatus: domain.WorkoutGenerationStatus(w.GenerationStatus.String),
-		GenerationError:  utils.NewNullable(w.GenerationError.String, w.GenerationError.Valid),
+		UserID:     domain.ID(w.UserID.Bytes),
+		RoutineID:  utils.NewNullable(domain.ID(w.RoutineID.Bytes), w.RoutineID.Valid),
+		Notes:      w.Notes,
+		Rating:     w.Rating,
+		FinishedAt: w.FinishedAt.Time,
 	}
 }
 
 func workoutFromDomain(workout domain.Workout) workoutEntity {
 	return workoutEntity{
-		ID:               uuidToPgtype(workout.ID),
-		UserID:           uuidToPgtype(workout.UserID),
-		RoutineID:        pgtype.UUID{Bytes: uuid.UUID(workout.RoutineID.V), Valid: workout.RoutineID.IsValid},
-		Notes:            workout.Notes,
-		Rating:           workout.Rating,
-		FinishedAt:       timeToPgtype(workout.FinishedAt),
-		CreatedAt:        timeToPgtype(workout.CreatedAt),
-		UpdatedAt:        timeToPgtype(workout.UpdatedAt),
-		IsAIGenerated:    pgtype.Bool{Bool: workout.IsAIGenerated, Valid: true},
-		Reasoning:        pgtype.Text{String: workout.Reasoning, Valid: workout.Reasoning != ""},
-		GenerationStatus: pgtype.Text{
-			String: string(workout.GenerationStatus), 
-			Valid: workout.GenerationStatus != domain.WorkoutGenerationStatusUnspecified,
-		},
-		GenerationError:  nullableStringToPgtype(workout.GenerationError),
+		ID:         uuidToPgtype(workout.ID),
+		UserID:     uuidToPgtype(workout.UserID),
+		RoutineID:  pgtype.UUID{Bytes: uuid.UUID(workout.RoutineID.V), Valid: workout.RoutineID.IsValid},
+		Notes:      workout.Notes,
+		Rating:     workout.Rating,
+		FinishedAt: timeToPgtype(workout.FinishedAt),
+		CreatedAt:  timeToPgtype(workout.CreatedAt),
+		UpdatedAt:  timeToPgtype(workout.UpdatedAt),
 	}
 }
 
@@ -81,8 +66,8 @@ func (r *PGXRepository) CreateWorkout(ctx context.Context, workout domain.Workou
 	defer span.Finish()
 
 	query := `
-		INSERT INTO workouts (id, user_id, routine_id, notes, rating, finished_at, is_ai_generated, reasoning, generation_status, generation_error)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		INSERT INTO workouts (id, user_id, routine_id, notes, rating, finished_at)
+			VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING created_at
 	`
 
@@ -97,10 +82,6 @@ func (r *PGXRepository) CreateWorkout(ctx context.Context, workout domain.Workou
 		entity.Notes,
 		entity.Rating,
 		entity.FinishedAt,
-		entity.IsAIGenerated,
-		entity.Reasoning,
-		entity.GenerationStatus,
-		entity.GenerationError,
 	); err != nil {
 		logger.Errorf("failed to create workout: %v", err)
 		return domain.Workout{}, err
@@ -114,7 +95,7 @@ func (r *PGXRepository) GetWorkoutByID(ctx context.Context, id domain.ID) (domai
 	defer span.Finish()
 
 	query := `
-		SELECT id, user_id, routine_id, created_at, notes, rating, finished_at, updated_at, is_ai_generated, reasoning, generation_status, generation_error
+		SELECT id, user_id, routine_id, created_at, notes, rating, finished_at, updated_at
 		FROM workouts
 		WHERE id = $1
 	`
@@ -138,7 +119,7 @@ func (r *PGXRepository) GetActiveWorkouts(ctx context.Context, userID domain.ID)
 	defer span.Finish()
 
 	query := `
-		SELECT id, user_id, routine_id, created_at, notes, rating, finished_at, updated_at, is_ai_generated, reasoning, generation_status, generation_error
+		SELECT id, user_id, routine_id, created_at, notes, rating, finished_at, updated_at
 		FROM workouts
 		WHERE user_id = $1 AND finished_at IS NULL
 	`
@@ -161,26 +142,18 @@ func (r *PGXRepository) UpdateWorkout(ctx context.Context, id domain.ID, workout
 	workoutEntity := workoutFromDomain(workout)
 	query := `
 		UPDATE workouts
-		SET notes = $1, rating = $2, finished_at = $3, updated_at = now(), is_ai_generated = $5, reasoning = $6, generation_status = $7, generation_error = $8
+		SET notes = $1, rating = $2, finished_at = $3, updated_at = now()
 		WHERE id = $4
 		RETURNING updated_at
 	`
 
 	engine := r.contextManager.GetEngineFromContext(ctx)
 
-	if err := pgxscan.Get(
-		ctx,
-		engine,
-		&workoutEntity.UpdatedAt,
-		query,
+	if err := pgxscan.Get(ctx, engine, &workoutEntity.UpdatedAt, query,
 		workoutEntity.Notes,
 		workoutEntity.Rating,
 		workoutEntity.FinishedAt,
 		uuidToPgtype(id),
-		workoutEntity.IsAIGenerated,
-		workoutEntity.Reasoning,
-		workoutEntity.GenerationStatus,
-		workoutEntity.GenerationError,
 	); err != nil {
 		logger.Errorf("failed to update workout: %v", err)
 		return domain.Workout{}, err
@@ -218,7 +191,7 @@ func (r *PGXRepository) GetWorkouts(ctx context.Context, userID domain.ID, limit
 	defer span.Finish()
 
 	query := `
-		SELECT id, user_id, routine_id, created_at, notes, rating, finished_at, updated_at, is_ai_generated, reasoning, generation_status, generation_error
+		SELECT id, user_id, routine_id, created_at, notes, rating, finished_at, updated_at
 		FROM workouts
 		WHERE user_id = $1 AND finished_at IS NOT NULL
 		ORDER BY created_at DESC

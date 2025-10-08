@@ -25,7 +25,6 @@ type Service interface {
 	AddNotesToExerciseLog(ctx context.Context, userID, workoutID, exerciseLogID domain.ID, notes string) error
 	AddPowerRatingToExerciseLog(ctx context.Context, userID, workoutID, exerciseLogID domain.ID, powerRating int) error
 	UpdateExerciseLogWeightUnit(ctx context.Context, userID, workoutID, exerciseLogID domain.ID, unit domain.WeightUnit) (dto.ExerciseLogDTO, error)
-	GenerateWorkout(ctx context.Context, userID, workoutID domain.ID, userPrompt string) error
 
 	LogSet(ctx context.Context, userID, workoutID, exerciseLogID domain.ID, setlogDTO dto.CreateSetLogDTO) (domain.ExerciseSetLog, error)
 	DeleteSetLog(ctx context.Context, userID, workoutID, exerciseLogID domain.ID, setLogID domain.ID) error

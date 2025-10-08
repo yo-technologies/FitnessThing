@@ -9,10 +9,6 @@ import (
 	"fitness-trainer/internal/domain/dto"
 )
 
-type workoutGenerator interface {
-	GenerateWorkout(ctx context.Context, options *dto.GenerateWorkoutOptions) (dto.GeneratedWorkoutDTO, error)
-}
-
 type userRepository interface {
 	GetUserByID(ctx context.Context, id domain.ID) (domain.User, error)
 	GetOrCreateUser(ctx context.Context, user domain.User) (domain.User, error)
@@ -130,38 +126,28 @@ type s3Client interface {
 	GeneratePutPresignedURL(ctx context.Context, key string) (string, error)
 }
 
-type generateWorkoutLimiter interface {
-	Allow(ctx context.Context, userID domain.ID) (bool, error)
-}
-
 type Service struct {
-	s3Client               s3Client
-	workoutGenerator       workoutGenerator
-	generateWorkoutLimiter generateWorkoutLimiter
-	unitOfWork             unitOfWork
-	repository             repository
-	openAIClient           openai_client.ChatClient
-	openAIModel            string
-	chatTools              map[string]agentTool
-	chatToolsOnce          sync.Once
+	s3Client     s3Client
+	unitOfWork   unitOfWork
+	repository   repository
+	openAIClient openai_client.ChatClient
+	openAIModel  string
+	chatTools    map[string]agentTool
+	chatToolsOnce sync.Once
 }
 
 func New(
 	unitOfWork unitOfWork,
 	s3Client s3Client,
-	workoutGenerator workoutGenerator,
-	generateWorkoutLimiter generateWorkoutLimiter,
 	repository repository,
 	openAIClient openai_client.ChatClient,
 	openAIModel string,
 ) *Service {
 	return &Service{
-		unitOfWork:             unitOfWork,
-		workoutGenerator:       workoutGenerator,
-		s3Client:               s3Client,
-		generateWorkoutLimiter: generateWorkoutLimiter,
-		repository:             repository,
-		openAIClient:           openAIClient,
-		openAIModel:            openAIModel,
+		unitOfWork:   unitOfWork,
+		s3Client:     s3Client,
+		repository:   repository,
+		openAIClient: openAIClient,
+		openAIModel:  openAIModel,
 	}
 }

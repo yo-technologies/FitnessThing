@@ -869,7 +869,6 @@ var RoutineService_ServiceDesc = grpc.ServiceDesc{
 
 const (
 	WorkoutService_StartWorkout_FullMethodName                = "/fitness_trainer.api.workout.WorkoutService/StartWorkout"
-	WorkoutService_GenerateWorkout_FullMethodName             = "/fitness_trainer.api.workout.WorkoutService/GenerateWorkout"
 	WorkoutService_GetWorkout_FullMethodName                  = "/fitness_trainer.api.workout.WorkoutService/GetWorkout"
 	WorkoutService_DeleteWorkout_FullMethodName               = "/fitness_trainer.api.workout.WorkoutService/DeleteWorkout"
 	WorkoutService_GetActiveWorkouts_FullMethodName           = "/fitness_trainer.api.workout.WorkoutService/GetActiveWorkouts"
@@ -895,8 +894,6 @@ const (
 type WorkoutServiceClient interface {
 	// Метод для начала новой тренировки
 	StartWorkout(ctx context.Context, in *StartWorkoutRequest, opts ...grpc.CallOption) (*WorkoutResponse, error)
-	// Запустить (или перезапустить после ошибки) генерацию тренировки
-	GenerateWorkout(ctx context.Context, in *GenerateWorkoutRequest, opts ...grpc.CallOption) (*GenerateWorkoutResponse, error)
 	// Метод для получения состояния тренировки
 	GetWorkout(ctx context.Context, in *GetWorkoutRequest, opts ...grpc.CallOption) (*GetWorkoutResponse, error)
 	// Удалить тренировку
@@ -945,16 +942,6 @@ func (c *workoutServiceClient) StartWorkout(ctx context.Context, in *StartWorkou
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(WorkoutResponse)
 	err := c.cc.Invoke(ctx, WorkoutService_StartWorkout_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *workoutServiceClient) GenerateWorkout(ctx context.Context, in *GenerateWorkoutRequest, opts ...grpc.CallOption) (*GenerateWorkoutResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GenerateWorkoutResponse)
-	err := c.cc.Invoke(ctx, WorkoutService_GenerateWorkout_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1137,8 +1124,6 @@ func (c *workoutServiceClient) UpdateExerciseLogWeightUnit(ctx context.Context, 
 type WorkoutServiceServer interface {
 	// Метод для начала новой тренировки
 	StartWorkout(context.Context, *StartWorkoutRequest) (*WorkoutResponse, error)
-	// Запустить (или перезапустить после ошибки) генерацию тренировки
-	GenerateWorkout(context.Context, *GenerateWorkoutRequest) (*GenerateWorkoutResponse, error)
 	// Метод для получения состояния тренировки
 	GetWorkout(context.Context, *GetWorkoutRequest) (*GetWorkoutResponse, error)
 	// Удалить тренировку
@@ -1185,9 +1170,6 @@ type UnimplementedWorkoutServiceServer struct{}
 
 func (UnimplementedWorkoutServiceServer) StartWorkout(context.Context, *StartWorkoutRequest) (*WorkoutResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method StartWorkout not implemented")
-}
-func (UnimplementedWorkoutServiceServer) GenerateWorkout(context.Context, *GenerateWorkoutRequest) (*GenerateWorkoutResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GenerateWorkout not implemented")
 }
 func (UnimplementedWorkoutServiceServer) GetWorkout(context.Context, *GetWorkoutRequest) (*GetWorkoutResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetWorkout not implemented")
@@ -1275,24 +1257,6 @@ func _WorkoutService_StartWorkout_Handler(srv interface{}, ctx context.Context, 
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(WorkoutServiceServer).StartWorkout(ctx, req.(*StartWorkoutRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _WorkoutService_GenerateWorkout_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GenerateWorkoutRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(WorkoutServiceServer).GenerateWorkout(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: WorkoutService_GenerateWorkout_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(WorkoutServiceServer).GenerateWorkout(ctx, req.(*GenerateWorkoutRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1613,10 +1577,6 @@ var WorkoutService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "StartWorkout",
 			Handler:    _WorkoutService_StartWorkout_Handler,
-		},
-		{
-			MethodName: "GenerateWorkout",
-			Handler:    _WorkoutService_GenerateWorkout_Handler,
 		},
 		{
 			MethodName: "GetWorkout",

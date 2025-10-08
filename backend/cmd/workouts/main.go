@@ -26,7 +26,6 @@ import (
 	s3_client "fitness-trainer/internal/clients/s3"
 	"fitness-trainer/internal/service/background"
 	prompt_generator_service "fitness-trainer/internal/service/prompt_generator"
-	workout_generator_service "fitness-trainer/internal/service/workout_generator"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -102,12 +101,6 @@ func Run() error {
 		return err
 	}
 
-	clientWrapper := genai_client.New(
-		genaiClient,
-		os.Getenv("GENAI_MODEL_NAME"),
-		genai_client.WorkoutResponseSchema,
-	)
-
 	openAIRawClient := newOpenAIClient()
 	openAIClient := openai_client.New(openAIRawClient)
 	openAIModel := os.Getenv("OPENAI_MODEL")
@@ -115,33 +108,9 @@ func Run() error {
 		return fmt.Errorf("OPENAI_MODEL environment variable is not set")
 	}
 
-	workoutGenerator := workout_generator_service.New(clientWrapper)
-
-	workoutGenerationQuota := throttled.RateQuota{
-		MaxRate:  throttled.PerDay(5),
-		MaxBurst: 5,
-	}
-
-	workoutGenerationStore, err := memstore.NewCtx(65536)
-	if err != nil {
-		return fmt.Errorf("failed to create in memory store: %w", err)
-	}
-
-	workoutGenerationRateLimiter, err := throttled.NewGCRARateLimiterCtx(
-		workoutGenerationStore,
-		workoutGenerationQuota,
-	)
-	if err != nil {
-		return fmt.Errorf("failed to create rate limiter: %w", err)
-	}
-
-	workoutGenerationRateLimiterWrapper := ratelimiter.New(workoutGenerationRateLimiter)
-
 	service := service.New(
 		contextManager,
 		s3ClientWrapper,
-		workoutGenerator,
-		workoutGenerationRateLimiterWrapper,
 		repo,
 		openAIClient,
 		openAIModel,

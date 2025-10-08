@@ -35,24 +35,6 @@ func WorkoutToProto(workout domain.Workout) *desc.Workout {
 		Rating:           int32(workout.Rating),
 		FinishedAt:       timestamppb.New(workout.FinishedAt),
 		UpdatedAt:        timestamppb.New(workout.UpdatedAt),
-		Reasoning:        workout.Reasoning,
-		IsAiGenerated:    workout.IsAIGenerated,
-		GenerationStatus: generationStatusToProto(workout.GenerationStatus),
-	}
-}
-
-func generationStatusToProto(s domain.WorkoutGenerationStatus) desc.GenerationStatus {
-	switch s {
-	case domain.WorkoutGenerationStatusRunning:
-		return desc.GenerationStatus_GENERATION_STATUS_RUNNING
-	case domain.WorkoutGenerationStatusFailed:
-		return desc.GenerationStatus_GENERATION_STATUS_FAILED
-	case domain.WorkoutGenerationStatusCompleted:
-		return desc.GenerationStatus_GENERATION_STATUS_COMPLETED
-	case domain.WorkoutGenerationStatusUnspecified:
-		return desc.GenerationStatus_GENERATION_STATUS_UNSPECIFIED
-	default:
-		return desc.GenerationStatus_GENERATION_STATUS_UNSPECIFIED
 	}
 }
 

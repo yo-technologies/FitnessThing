@@ -272,58 +272,18 @@ func NewSet(exerciseInstanceID ID, setType SetType, reps int, weight float32, ti
 type Workout struct {
 	Model
 
-	UserID           ID
-	RoutineID        utils.Nullable[ID]
-	Notes            string
-	Rating           int
-	FinishedAt       time.Time
-	IsAIGenerated    bool
-	Reasoning        string
-	GenerationStatus WorkoutGenerationStatus
-	GenerationError  utils.Nullable[string]
+	UserID     ID
+	RoutineID  utils.Nullable[ID]
+	Notes      string
+	Rating     int
+	FinishedAt time.Time
 }
 
-type WorkoutGenerationStatus string
-
-const (
-	WorkoutGenerationStatusUnspecified = ""
-	WorkoutGenerationStatusRunning     = "running"
-	WorkoutGenerationStatusFailed      = "failed"
-	WorkoutGenerationStatusCompleted   = "completed"
-)
-
-// Generation status helpers (encapsulate status transitions and checks)
-func (w Workout) IsGenerationRunning() bool {
-	return w.GenerationStatus == WorkoutGenerationStatusRunning
-}
-
-func (w Workout) IsGenerationFailed() bool {
-	return w.GenerationStatus == WorkoutGenerationStatusFailed
-}
-
-func (w Workout) IsGenerationCompleted() bool {
-	return w.GenerationStatus == WorkoutGenerationStatusCompleted
-}
-
-func (w *Workout) SetGenerationRunning() {
-	w.GenerationStatus = WorkoutGenerationStatusRunning
-	w.GenerationError = utils.Nullable[string]{}
-}
-
-func (w *Workout) SetGenerationFailed() {
-	w.GenerationStatus = WorkoutGenerationStatusFailed
-}
-
-func (w *Workout) SetGenerationCompleted() {
-	w.GenerationStatus = WorkoutGenerationStatusCompleted
-}
-
-func NewWorkout(userID ID, routineID utils.Nullable[ID], isAIGenerated bool) Workout {
+func NewWorkout(userID ID, routineID utils.Nullable[ID]) Workout {
 	return Workout{
-		Model:         NewModel(),
-		UserID:        userID,
-		RoutineID:     routineID,
-		IsAIGenerated: isAIGenerated,
+		Model:     NewModel(),
+		UserID:    userID,
+		RoutineID: routineID,
 	}
 }
 

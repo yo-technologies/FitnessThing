@@ -304,7 +304,6 @@ func (s *Service) newGetWorkoutHistoryTool() agentTool {
 				CreatedAt     time.Time `json:"created_at"`
 				FinishedAt    time.Time `json:"finished_at"`
 				ExerciseNames []string  `json:"exercise_names"`
-				Reasoning     string    `json:"reasoning"`
 			}
 
 			payload := struct {
@@ -331,7 +330,6 @@ func (s *Service) newGetWorkoutHistoryTool() agentTool {
 					CreatedAt:     workout.CreatedAt,
 					FinishedAt:    workout.FinishedAt,
 					ExerciseNames: names,
-					Reasoning:     workout.Reasoning,
 				})
 			}
 

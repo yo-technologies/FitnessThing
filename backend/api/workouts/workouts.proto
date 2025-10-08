@@ -118,11 +118,6 @@ message Workout {
   int32 rating = 6;
   google.protobuf.Timestamp finished_at = 7;
   google.protobuf.Timestamp updated_at = 8;
-  bool is_ai_generated = 9;
-  string reasoning = 10;
-  // reserved old fields (was: is_generating = 11, generation_error = 12)
-  reserved 11, 12;
-  GenerationStatus generation_status = 13;
 }
 
 // Лог выполнения упражнения
@@ -172,14 +167,6 @@ enum WeightUnit {
   WEIGHT_UNIT_UNSPECIFIED = 0;
   WEIGHT_UNIT_KG = 1;
   WEIGHT_UNIT_LB = 2;
-}
-
-// Статусы генерации тренировки
-enum GenerationStatus {
-  GENERATION_STATUS_UNSPECIFIED = 0;
-  GENERATION_STATUS_RUNNING = 1;     // в процессе
-  GENERATION_STATUS_FAILED = 2;      // завершилась с ошибкой
-  GENERATION_STATUS_COMPLETED = 3;   // успешно завершена
 }
 
 service ExerciseService {
@@ -551,14 +538,6 @@ service WorkoutService {
     };
   }
 
-  // Запустить (или перезапустить после ошибки) генерацию тренировки
-  rpc GenerateWorkout(GenerateWorkoutRequest) returns (GenerateWorkoutResponse) {
-    option (google.api.http) = {
-      post: "/v1/workouts/{workout_id}/generate"
-      body: "*"
-    };
-  }
-
   // Метод для получения состояния тренировки
   rpc GetWorkout(GetWorkoutRequest) returns (GetWorkoutResponse) {
     option (google.api.http) = {
@@ -690,17 +669,7 @@ service WorkoutService {
 
 message StartWorkoutRequest {
   optional string routine_id = 2;
-  // deprecated: используйте отдельный эндпоинт GenerateWorkout
-  optional bool generate_workout = 3;
-  optional string user_prompt = 4;
 }
-
-message GenerateWorkoutRequest {
-  string workout_id = 1 [(google.api.field_behavior) = REQUIRED];
-  optional string user_prompt = 2; // пользовательский промпт при перезапуске
-}
-
-message GenerateWorkoutResponse {}
 
 message GetWorkoutRequest {
   string workout_id = 1 [
@@ -1052,6 +1021,18 @@ message PresignUploadResponse {
   string get_url = 2;
 }
 
+service ChatService {
+  // Отправить сообщение в чат и получить поток ответов
+  rpc SendChatMessageStream(SendChatMessageRequest) returns (stream SendChatMessageStreamResponse) {}
+
+  // Получить полный чат с сообщениями
+  rpc GetChat(GetChatRequest) returns (GetChatResponse) {
+    option (google.api.http) = {
+      get: "/v1/chats/search"
+    };
+  }
+}
+
 message Chat {
   string id = 1;
   string user_id = 2;
@@ -1125,16 +1106,4 @@ message GetChatRequest {
 message GetChatResponse {
   Chat chat = 1;
   repeated ChatMessage messages = 2;
-}
-
-service ChatService {
-  // Отправить сообщение в чат и получить поток ответов
-  rpc SendChatMessageStream(SendChatMessageRequest) returns (stream SendChatMessageStreamResponse) {}
-
-  // Получить полный чат с сообщениями
-  rpc GetChat(GetChatRequest) returns (GetChatResponse) {
-    option (google.api.http) = {
-      get: "/v1/chats"
-    };
-  }
 }

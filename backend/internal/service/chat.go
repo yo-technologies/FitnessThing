@@ -461,11 +461,6 @@ func (s *Service) handleAssistantToolCalls(
 	span, ctx := opentracing.StartSpanFromContext(ctx, "service.handleAssistantToolCalls")
 	defer span.Finish()
 
-	var statusFn func(string) error
-	if callbacks != nil {
-		statusFn = callbacks.OnStatus
-	}
-
 	// Сохраняем отдельный assistant message для каждого tool call
 	// Это упрощает восстановление истории и UI логику
 	contentForFirst := assistantMessage.Content
@@ -514,8 +509,8 @@ func (s *Service) handleAssistantToolCalls(
 		}
 		*messages = append(*messages, param)
 
-		if statusFn != nil {
-			if err := statusFn(fmt.Sprintf("invoking tool %s", toolName)); err != nil {
+		if callbacks.OnStatus != nil {
+			if err := callbacks.OnStatus(fmt.Sprintf("invoking tool %s", toolName)); err != nil {
 				return err
 			}
 		}
@@ -556,8 +551,8 @@ func (s *Service) handleAssistantToolCalls(
 		}
 		*messages = append(*messages, toolParam)
 
-		if statusFn != nil {
-			if err := statusFn(fmt.Sprintf("tool %s completed", toolName)); err != nil {
+		if callbacks.OnStatus != nil {
+			if err := callbacks.OnStatus(fmt.Sprintf("tool %s completed", toolName)); err != nil {
 				return err
 			}
 		}
@@ -569,6 +564,7 @@ func (s *Service) handleAssistantToolCalls(
 func (s *Service) handleAssistantFailure(ctx context.Context, chatID domain.ID, originalErr error) (dto.ChatCompletionDTO, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "service.handleAssistantFailure")
 	defer span.Finish()
+
 	errMsg := domain.NewChatMessage(
 		chatID,
 		domain.ChatMessageRoleAssistant,
