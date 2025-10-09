@@ -6,8 +6,8 @@ import (
 	"fitness-trainer/internal/domain"
 	"fmt"
 
-	"github.com/openai/openai-go"
-	"github.com/openai/openai-go/shared"
+	"github.com/openai/openai-go/v3"
+	"github.com/openai/openai-go/v3/shared"
 	"github.com/opentracing/opentracing-go"
 )
 
@@ -28,15 +28,12 @@ func (t *Tools) newAddExercisesToWorkoutTool() agentTool {
 
 	return agentTool{
 		name: "add_exercises_to_workout",
-		definition: openai.ChatCompletionToolParam{
-			Type: openai.F(openai.ChatCompletionToolTypeFunction),
-			Function: openai.F(shared.FunctionDefinitionParam{
-				Name:        openai.String("add_exercises_to_workout"),
-				Description: openai.String("Add one or more exercises to the current workout. Creates exercise logs for each exercise."),
-				Parameters:  openai.F(schema),
-				Strict:      openai.Bool(true),
-			}),
-		},
+		definition: openai.ChatCompletionFunctionTool(shared.FunctionDefinitionParam{
+			Name:        "add_exercises_to_workout",
+			Description: openai.String("Add one or more exercises to the current workout. Creates exercise logs for each exercise."),
+			Parameters:  schema,
+			Strict:      openai.Bool(true),
+		}),
 		handler: t.addExercisesToWorkoutHandler,
 	}
 }

@@ -8,15 +8,15 @@ import (
 	"fitness-trainer/internal/utils"
 	"fmt"
 
-	"github.com/openai/openai-go"
-	"github.com/openai/openai-go/shared"
+	"github.com/openai/openai-go/v3"
+	"github.com/openai/openai-go/v3/shared"
 	"github.com/opentracing/opentracing-go"
 )
 
 func (t *Tools) newUpdateSetLogTool() agentTool {
 	schema := shared.FunctionParameters{
 		"type":     "object",
-		"required": []string{"exercise_log_id", "set_log_id"},
+		"required": []string{"exercise_log_id", "set_log_id", "reps", "weight"},
 		"properties": map[string]any{
 			"exercise_log_id": map[string]any{
 				"type":        "string",
@@ -40,15 +40,12 @@ func (t *Tools) newUpdateSetLogTool() agentTool {
 
 	return agentTool{
 		name: "update_set_log",
-		definition: openai.ChatCompletionToolParam{
-			Type: openai.F(openai.ChatCompletionToolTypeFunction),
-			Function: openai.F(shared.FunctionDefinitionParam{
-				Name:        openai.String("update_set_log"),
-				Description: openai.String("Update actual performance data (reps or weight) for a specific logged set."),
-				Parameters:  openai.F(schema),
-				Strict:      openai.Bool(true),
-			}),
-		},
+		definition: openai.ChatCompletionFunctionTool(shared.FunctionDefinitionParam{
+			Name:        "update_set_log",
+			Description: openai.String("Update actual performance data (reps or weight) for a specific logged set."),
+			Parameters:  schema,
+			Strict:      openai.Bool(true),
+		}),
 		handler: t.updateSetLogHandler,
 	}
 }

@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/openai/openai-go"
-	"github.com/openai/openai-go/shared"
+	"github.com/openai/openai-go/v3"
+	"github.com/openai/openai-go/v3/shared"
 	"github.com/opentracing/opentracing-go"
 )
 
@@ -26,7 +26,7 @@ func (t *Tools) newReplaceExpectedSetsTool() agentTool {
 				"type": "array",
 				"items": map[string]any{
 					"type":     "object",
-					"required": []string{"set_type"},
+					"required": []string{"set_type", "reps", "weight", "time_seconds"},
 					"properties": map[string]any{
 						"set_type": map[string]any{
 							"type": "string",
@@ -55,15 +55,12 @@ func (t *Tools) newReplaceExpectedSetsTool() agentTool {
 
 	return agentTool{
 		name: "replace_expected_sets",
-		definition: openai.ChatCompletionToolParam{
-			Type: openai.F(openai.ChatCompletionToolTypeFunction),
-			Function: openai.F(shared.FunctionDefinitionParam{
-				Name:        openai.String("replace_expected_sets"),
-				Description: openai.String("Replace the planned sets for an exercise log in the current workout."),
-				Parameters:  openai.F(schema),
-				Strict:      openai.Bool(true),
-			}),
-		},
+		definition: openai.ChatCompletionFunctionTool(shared.FunctionDefinitionParam{
+			Name:        "replace_expected_sets",
+			Description: openai.String("Replace the planned sets for an exercise log in the current workout."),
+			Parameters:  schema,
+			Strict:      openai.Bool(true),
+		}),
 		handler: t.replaceExpectedSetsHandler,
 	}
 }

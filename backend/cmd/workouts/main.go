@@ -37,8 +37,8 @@ import (
 	"github.com/google/generative-ai-go/genai"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
-	"github.com/openai/openai-go"
-	"github.com/openai/openai-go/option"
+	"github.com/openai/openai-go/v3"
+	"github.com/openai/openai-go/v3/option"
 	"github.com/throttled/throttled/v2"
 	"github.com/throttled/throttled/v2/store/memstore"
 
@@ -309,7 +309,7 @@ func newGeminiClient(ctx context.Context) (*genai.Client, error) {
 	)
 }
 
-func newOpenAIClient() *openai.Client {
+func newOpenAIClient() openai.Client {
 	proxyURL := loadProxyData()
 	apiKey := os.Getenv("OPENAI_API_KEY")
 	if apiKey == "" {
@@ -324,7 +324,6 @@ func newOpenAIClient() *openai.Client {
 			Transport: &ProxyRoundTripper{
 				proxy: proxyURL,
 			},
-			Timeout: 30 * time.Second,
 		}),
 	}
 

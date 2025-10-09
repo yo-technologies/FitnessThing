@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/openai/openai-go"
-	"github.com/openai/openai-go/option"
-	"github.com/openai/openai-go/packages/ssestream"
+	"github.com/openai/openai-go/v3"
+	"github.com/openai/openai-go/v3/option"
+	"github.com/openai/openai-go/v3/packages/ssestream"
 	"github.com/opentracing/opentracing-go"
 )
 
@@ -16,10 +16,10 @@ type ChatClient interface {
 }
 
 type Client struct {
-	client *openai.Client
+	client openai.Client
 }
 
-func New(client *openai.Client) *Client {
+func New(client openai.Client) *Client {
 	return &Client{client: client}
 }
 

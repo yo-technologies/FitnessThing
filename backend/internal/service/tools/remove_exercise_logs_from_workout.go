@@ -6,8 +6,8 @@ import (
 	"fitness-trainer/internal/domain"
 	"fmt"
 
-	"github.com/openai/openai-go"
-	"github.com/openai/openai-go/shared"
+	"github.com/openai/openai-go/v3"
+	"github.com/openai/openai-go/v3/shared"
 	"github.com/opentracing/opentracing-go"
 )
 
@@ -28,15 +28,12 @@ func (t *Tools) newRemoveExerciseLogsTool() agentTool {
 
 	return agentTool{
 		name: "remove_exercise_logs_from_workout",
-		definition: openai.ChatCompletionToolParam{
-			Type: openai.F(openai.ChatCompletionToolTypeFunction),
-			Function: openai.F(shared.FunctionDefinitionParam{
-				Name:        openai.String("remove_exercise_logs_from_workout"),
-				Description: openai.String("Remove one or more exercise logs from the current workout."),
-				Parameters:  openai.F(schema),
-				Strict:      openai.Bool(true),
-			}),
-		},
+		definition: openai.ChatCompletionFunctionTool(shared.FunctionDefinitionParam{
+			Name:        "remove_exercise_logs_from_workout",
+			Description: openai.String("Remove one or more exercise logs from the current workout."),
+			Parameters:  schema,
+			Strict:      openai.Bool(true),
+		}),
 		handler: t.removeExerciseLogsHandler,
 	}
 }

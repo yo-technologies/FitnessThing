@@ -6,28 +6,27 @@ import (
 	"fitness-trainer/internal/domain"
 	"fmt"
 
-	"github.com/openai/openai-go"
-	"github.com/openai/openai-go/shared"
+	"github.com/openai/openai-go/v3"
+	"github.com/openai/openai-go/v3/shared"
 	"github.com/opentracing/opentracing-go"
 )
 
 var getWorkoutPlanSchema = shared.FunctionParameters{
 	"type":                 "object",
 	"additionalProperties": false,
+	"required":             []string{},
+	"properties":           map[string]any{},
 }
 
 func (t *Tools) newGetWorkoutPlanTool() agentTool {
 	return agentTool{
 		name: "get_workout_plan",
-		definition: openai.ChatCompletionToolParam{
-			Type: openai.F(openai.ChatCompletionToolTypeFunction),
-			Function: openai.F(shared.FunctionDefinitionParam{
-				Name:        openai.String("get_workout_plan"),
-				Description: openai.String("Return the current state of the workout including exercises, expected sets, and logged performance."),
-				Parameters:  openai.F(getWorkoutPlanSchema),
-				Strict:      openai.Bool(true),
-			}),
-		},
+		definition: openai.ChatCompletionFunctionTool(shared.FunctionDefinitionParam{
+			Name:        "get_workout_plan",
+			Description: openai.String("Return the current state of the workout including exercises, expected sets, and logged performance."),
+			Parameters:  getWorkoutPlanSchema,
+			Strict:      openai.Bool(true),
+		}),
 		handler: t.getWorkoutPlanToolHandler,
 	}
 }

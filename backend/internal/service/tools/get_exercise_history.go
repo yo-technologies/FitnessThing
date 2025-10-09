@@ -6,15 +6,15 @@ import (
 	"fitness-trainer/internal/domain"
 	"fmt"
 
-	"github.com/openai/openai-go"
-	"github.com/openai/openai-go/shared"
+	"github.com/openai/openai-go/v3"
+	"github.com/openai/openai-go/v3/shared"
 	"github.com/opentracing/opentracing-go"
 )
 
 func (t *Tools) newGetExerciseHistoryTool() agentTool {
 	schema := shared.FunctionParameters{
 		"type":     "object",
-		"required": []string{"exercise_id"},
+		"required": []string{"exercise_id", "logs_limit"},
 		"properties": map[string]any{
 			"exercise_id": map[string]any{
 				"type":        "string",
@@ -32,15 +32,12 @@ func (t *Tools) newGetExerciseHistoryTool() agentTool {
 
 	return agentTool{
 		name: "get_exercise_history",
-		definition: openai.ChatCompletionToolParam{
-			Type: openai.F(openai.ChatCompletionToolTypeFunction),
-			Function: openai.F(shared.FunctionDefinitionParam{
-				Name:        openai.String("get_exercise_history"),
-				Description: openai.String("Return recent performance history for a specific exercise."),
-				Parameters:  openai.F(schema),
-				Strict:      openai.Bool(true),
-			}),
-		},
+		definition: openai.ChatCompletionFunctionTool(shared.FunctionDefinitionParam{
+			Name:        "get_exercise_history",
+			Description: openai.String("Return recent performance history for a specific exercise."),
+			Parameters:  schema,
+			Strict:      openai.Bool(true),
+		}),
 		handler: t.getExerciseHistoryHandler,
 	}
 }

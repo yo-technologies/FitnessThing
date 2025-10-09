@@ -7,13 +7,13 @@ import (
 
 	"fitness-trainer/internal/domain"
 
-	"github.com/openai/openai-go"
+	"github.com/openai/openai-go/v3"
 )
 
 type toolsService interface {
-	ChatAgentToolDefinitions() []openai.ChatCompletionToolParam
+	ChatAgentToolDefinitions() []openai.ChatCompletionToolUnionParam
 	ExecuteChatAgentTool(ctx context.Context, ctxData domain.AgentChatContext, name string, arguments string) (string, error)
-	NewChatCompletionParams(messages []openai.ChatCompletionMessageParamUnion, toolDefs []openai.ChatCompletionToolParam, model string, stream bool) openai.ChatCompletionNewParams
+	NewChatCompletionParams(messages []openai.ChatCompletionMessageParamUnion, toolDefs []openai.ChatCompletionToolUnionParam, model string, stream bool) openai.ChatCompletionNewParams
 }
 
 type chatRepository interface {

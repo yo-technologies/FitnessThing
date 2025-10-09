@@ -12,7 +12,8 @@ import (
 
 	openai_client "fitness-trainer/internal/clients/openai"
 
-	"github.com/openai/openai-go"
+	"github.com/openai/openai-go/v3"
+	"github.com/openai/openai-go/v3/shared"
 	"github.com/opentracing/opentracing-go"
 )
 
@@ -20,7 +21,7 @@ type agentToolHandler func(ctx context.Context, chatCtx domain.AgentChatContext,
 
 type agentTool struct {
 	name       string
-	definition openai.ChatCompletionToolParam
+	definition openai.ChatCompletionToolUnionParam
 	handler    agentToolHandler
 }
 
@@ -65,7 +66,7 @@ func New(
 	}
 }
 
-func (t *Tools) ChatAgentToolDefinitions() []openai.ChatCompletionToolParam {
+func (t *Tools) ChatAgentToolDefinitions() []openai.ChatCompletionToolUnionParam {
 	return t.chatToolDefinitions()
 }
 
@@ -76,7 +77,7 @@ func (t *Tools) ExecuteChatAgentTool(ctx context.Context, ctxData domain.AgentCh
 	return t.executeTool(ctx, ctxData, name, arguments)
 }
 
-func (t *Tools) NewChatCompletionParams(messages []openai.ChatCompletionMessageParamUnion, tools []openai.ChatCompletionToolParam, model string, stream bool) openai.ChatCompletionNewParams {
+func (t *Tools) NewChatCompletionParams(messages []openai.ChatCompletionMessageParamUnion, tools []openai.ChatCompletionToolUnionParam, model string, stream bool) openai.ChatCompletionNewParams {
 	return t.newChatCompletionParams(messages, tools, model, stream)
 }
 
@@ -103,10 +104,10 @@ func (t *Tools) ensureChatTools() {
 	})
 }
 
-func (t *Tools) chatToolDefinitions() []openai.ChatCompletionToolParam {
+func (t *Tools) chatToolDefinitions() []openai.ChatCompletionToolUnionParam {
 	t.ensureChatTools()
 
-	defs := make([]openai.ChatCompletionToolParam, 0, len(t.chatTools))
+	defs := make([]openai.ChatCompletionToolUnionParam, 0, len(t.chatTools))
 	for _, tool := range t.chatTools {
 		defs = append(defs, tool.definition)
 	}
@@ -173,19 +174,19 @@ func (t *Tools) executeTool(ctx context.Context, chatCtx domain.AgentChatContext
 	return string(resultJSON), nil
 }
 
-func (t *Tools) newChatCompletionParams(messages []openai.ChatCompletionMessageParamUnion, tools []openai.ChatCompletionToolParam, model string, stream bool) openai.ChatCompletionNewParams {
+func (t *Tools) newChatCompletionParams(messages []openai.ChatCompletionMessageParamUnion, tools []openai.ChatCompletionToolUnionParam, model string, stream bool) openai.ChatCompletionNewParams {
 	params := openai.ChatCompletionNewParams{
-		Model:    openai.String(model),
-		Messages: openai.F(messages),
+		Model:    shared.ChatModel(model),
+		Messages: messages,
 	}
 
 	if len(tools) > 0 {
-		params.Tools = openai.F(tools)
-		params.ToolChoice = openai.F[openai.ChatCompletionToolChoiceOptionUnionParam](openai.ChatCompletionToolChoiceOptionAuto(openai.ChatCompletionToolChoiceOptionAutoAuto))
+		params.Tools = tools
+		params.ToolChoice = openai.ChatCompletionToolChoiceOptionUnionParam{OfAuto: openai.String("auto")}
 	}
 
 	if stream {
-		params.StreamOptions = openai.F(openai.ChatCompletionStreamOptionsParam{IncludeUsage: openai.Bool(true)})
+		params.StreamOptions = openai.ChatCompletionStreamOptionsParam{IncludeUsage: openai.Bool(true)}
 	}
 
 	return params

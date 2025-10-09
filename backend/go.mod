@@ -13,7 +13,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.3
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.24.0
-	github.com/openai/openai-go v0.1.0-alpha.53
+	github.com/openai/openai-go/v3 v3.2.0
 	github.com/opentracing/opentracing-go v1.2.0
 	github.com/prometheus/client_golang v1.20.5
 	github.com/samber/lo v1.51.0
