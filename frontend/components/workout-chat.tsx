@@ -14,6 +14,7 @@ import { Textarea } from "@nextui-org/input";
 import { Spinner } from "@nextui-org/spinner";
 import { Divider } from "@nextui-org/divider";
 import { Drawer, DrawerContent } from "@nextui-org/drawer";
+import { ScrollShadow } from "@nextui-org/react";
 
 import { AssistantMarkdown } from "./assistant-markdown";
 
@@ -464,6 +465,7 @@ export function WorkoutChatPanel({
   ]);
 
   const canSend = inputValue.trim().length > 0 && !isStreaming;
+  const showThinking = streamState.status === "assistant_thinking";
 
   return (
     <Drawer
@@ -492,64 +494,75 @@ export function WorkoutChatPanel({
           <Divider />
 
           <div className="flex flex-1 flex-col overflow-hidden">
-            <div ref={scrollRef} className="flex-1 overflow-y-auto">
-              {content}
-            </div>
-
-            <div className="px-4 pb-2 text-[11px] text-default-400 min-h-[20px] flex flex-col gap-0.5">
-              {streamState.status === "assistant_thinking" && (
-                <p className="flex items-center gap-1 text-xs">
-                  <Spinner
-                    classNames={{ wrapper: "w-3 h-3" }}
-                    color="secondary"
-                    size="sm"
-                  />{" "}
-                  Думает…
-                </p>
-              )}
-              {streamState.status === "assistant_completed" && (
-                <p className="text-xs text-success">Готово</p>
-              )}
-              {streamState.usageTokens ? (
-                <p className="text-xs text-[10px] opacity-70">
-                  Токенов: {streamState.usageTokens}
-                </p>
-              ) : null}
-            </div>
-
-            {error && hasMessages && (
-              <div className="px-4 pb-2 text-xs text-danger">{error}</div>
-            )}
-
-            <div className="flex items-center gap-2 border-t border-default-200 px-4 py-2 mb-4">
-              <Textarea
-                className="flex-1"
-                classNames={{
-                  inputWrapper: "bg-default-100",
-                }}
-                minRows={2}
-                placeholder="Напишите сообщение..."
-                value={inputValue}
-                onChange={(event) => setInputValue(event.target.value)}
-                onKeyDown={(event) =>
-                  handleKeyDown(
-                    event as unknown as ReactKeyboardEvent<HTMLTextAreaElement>,
-                  )
-                }
-              />
-              <Button
-                isIconOnly
-                aria-label="Отправить сообщение"
-                className="shrink-0"
-                color="secondary"
-                isDisabled={!canSend}
-                isLoading={isStreaming}
-                radius="full"
-                onPress={handleSend}
+            <div className="h-full relative flex flex-1 flex-col overflow-hidden">
+              <ScrollShadow
+                ref={scrollRef}
+                className="flex-1 overflow-y-auto h-full"
+                size={60}
               >
-                <RightArrowIcon className="h-5 w-5" />
-              </Button>
+                {/* Контент сообщений; добавляем нижний паддинг, чтобы оверлей не перекрывал последние сообщения */}
+                <div className={`h-full ${showThinking ? "pb-4" : ""}`}>
+                  {content}
+                </div>
+              </ScrollShadow>
+
+              {/* Статус «Думает…» как оверлей поверх контента внизу */}
+              {showThinking && (
+                <div className="absolute inset-x-0 bottom-0 z-20 px-4 pb-2 shadow-md">
+                  <p
+                    aria-live="polite"
+                    className="flex items-center gap-1 text-xs text-default-400"
+                  >
+                    <Spinner
+                      classNames={{ wrapper: "w-3 h-3" }}
+                      color="secondary"
+                      size="sm"
+                    />
+                    Думает…
+                    {streamState.usageTokens ? (
+                      <span className="ml-2 text-[10px] opacity-70">
+                        Токенов: {streamState.usageTokens}
+                      </span>
+                    ) : null}
+                  </p>
+                </div>
+              )}
+
+              {error && hasMessages && (
+                <div className="absolute inset-x-0 bottom-0 z-20 px-4 pb-2 text-xs text-danger">
+                  {error}
+                </div>
+              )}
             </div>
+          </div>
+          <div className="flex items-center gap-2 border-t border-default-200 px-4 py-2 mb-4">
+            <Textarea
+              className="flex-1"
+              classNames={{
+                inputWrapper: "bg-default-100",
+              }}
+              minRows={2}
+              placeholder="Напишите сообщение..."
+              value={inputValue}
+              onChange={(event) => setInputValue(event.target.value)}
+              onKeyDown={(event) =>
+                handleKeyDown(
+                  event as unknown as ReactKeyboardEvent<HTMLTextAreaElement>,
+                )
+              }
+            />
+            <Button
+              isIconOnly
+              aria-label="Отправить сообщение"
+              className="shrink-0"
+              color="secondary"
+              isDisabled={!canSend}
+              isLoading={isStreaming}
+              radius="full"
+              onPress={handleSend}
+            >
+              <RightArrowIcon className="h-5 w-5" />
+            </Button>
           </div>
         </div>
       </DrawerContent>
