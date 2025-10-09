@@ -13,7 +13,6 @@ import (
 	openai_client "fitness-trainer/internal/clients/openai"
 
 	"github.com/openai/openai-go/v3"
-	"github.com/openai/openai-go/v3/shared"
 	"github.com/opentracing/opentracing-go"
 )
 
@@ -75,10 +74,6 @@ func (t *Tools) ExecuteChatAgentTool(ctx context.Context, ctxData domain.AgentCh
 	defer span.Finish()
 
 	return t.executeTool(ctx, ctxData, name, arguments)
-}
-
-func (t *Tools) NewChatCompletionParams(messages []openai.ChatCompletionMessageParamUnion, tools []openai.ChatCompletionToolUnionParam, model string, stream bool) openai.ChatCompletionNewParams {
-	return t.newChatCompletionParams(messages, tools, model, stream)
 }
 
 func (t *Tools) ensureChatTools() {
@@ -174,20 +169,3 @@ func (t *Tools) executeTool(ctx context.Context, chatCtx domain.AgentChatContext
 	return string(resultJSON), nil
 }
 
-func (t *Tools) newChatCompletionParams(messages []openai.ChatCompletionMessageParamUnion, tools []openai.ChatCompletionToolUnionParam, model string, stream bool) openai.ChatCompletionNewParams {
-	params := openai.ChatCompletionNewParams{
-		Model:    shared.ChatModel(model),
-		Messages: messages,
-	}
-
-	if len(tools) > 0 {
-		params.Tools = tools
-		params.ToolChoice = openai.ChatCompletionToolChoiceOptionUnionParam{OfAuto: openai.String("auto")}
-	}
-
-	if stream {
-		params.StreamOptions = openai.ChatCompletionStreamOptionsParam{IncludeUsage: openai.Bool(true)}
-	}
-
-	return params
-}

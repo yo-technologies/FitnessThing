@@ -17,6 +17,7 @@ import (
 	"fitness-trainer/internal/utils"
 
 	"github.com/openai/openai-go/v3"
+	"github.com/openai/openai-go/v3/shared"
 	"github.com/opentracing/opentracing-go"
 )
 
@@ -123,7 +124,7 @@ func (s *Service) SendChatMessageStream(ctx context.Context, userID domain.ID, r
 	)
 
 	for range maxChatCompletionLoops {
-		params := s.toolsService.NewChatCompletionParams(messages, toolDefs, s.openAIModel, true)
+		params := s.newChatCompletionParams(messages, toolDefs, s.openAIModel, s.reasoningEffort, true)
 
 		stream, err := s.openAIClient.CreateChatCompletionStream(ctx, params)
 		if err != nil {
@@ -620,4 +621,23 @@ func (s *Service) handleAssistantFailure(ctx context.Context, chatID domain.ID, 
 	}
 
 	return dto.ChatCompletionDTO{}, errors.Join(domain.ErrInternal, originalErr)
+}
+
+func (s *Service) newChatCompletionParams(messages []openai.ChatCompletionMessageParamUnion, tools []openai.ChatCompletionToolUnionParam, model string, reasoningEffort string, stream bool) openai.ChatCompletionNewParams {
+	params := openai.ChatCompletionNewParams{
+		Model:           shared.ChatModel(model),
+		Messages:        messages,
+		ReasoningEffort: shared.ReasoningEffort(reasoningEffort),
+	}
+
+	if len(tools) > 0 {
+		params.Tools = tools
+		params.ToolChoice = openai.ChatCompletionToolChoiceOptionUnionParam{OfAuto: openai.String("auto")}
+	}
+
+	if stream {
+		params.StreamOptions = openai.ChatCompletionStreamOptionsParam{IncludeUsage: openai.Bool(true)}
+	}
+
+	return params
 }

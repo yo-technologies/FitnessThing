@@ -13,7 +13,6 @@ import (
 type toolsService interface {
 	ChatAgentToolDefinitions() []openai.ChatCompletionToolUnionParam
 	ExecuteChatAgentTool(ctx context.Context, ctxData domain.AgentChatContext, name string, arguments string) (string, error)
-	NewChatCompletionParams(messages []openai.ChatCompletionMessageParamUnion, toolDefs []openai.ChatCompletionToolUnionParam, model string, stream bool) openai.ChatCompletionNewParams
 }
 
 type chatRepository interface {
@@ -39,8 +38,9 @@ type Service struct {
 	workoutRepository    workoutRepository
 	userPromptRepository userPromptRepository
 
-	openAIClient openai_client.ChatClient
-	openAIModel  string
+	openAIClient    openai_client.ChatClient
+	openAIModel     string
+	reasoningEffort string
 }
 
 func New(
@@ -50,6 +50,7 @@ func New(
 	userPromptRepository userPromptRepository,
 	openAIClient openai_client.ChatClient,
 	openAIModel string,
+	reasoningEffort string,
 ) *Service {
 	return &Service{
 		toolsService:         toolsService,

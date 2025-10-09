@@ -110,6 +110,11 @@ func Run() error {
 		return fmt.Errorf("OPENAI_MODEL environment variable is not set")
 	}
 
+	reasoningEffort := os.Getenv("REASONING_EFFORT")
+	if reasoningEffort == "" {
+		reasoningEffort = "medium"
+	}
+
 	service := service.New(
 		contextManager,
 		s3ClientWrapper,
@@ -127,6 +132,7 @@ func Run() error {
 		repo,
 		openAIClientWrapper,
 		openAIModel,
+		reasoningEffort,
 	)
 
 	telegramTokenParser := newTelegramTokenParser()
