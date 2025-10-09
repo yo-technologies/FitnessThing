@@ -59,12 +59,26 @@ function roleLabel(role?: WorkoutChatMessageRole | null) {
   }
 }
 
+function formatTime(iso?: string | null) {
+  if (!iso) return "";
+  try {
+    const d = new Date(iso);
+
+    // Формат HH:MM по локали пользователя
+    return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  } catch {
+    return "";
+  }
+}
+
 function MessageBubble({
   message,
   isStreaming,
+  showHeader,
 }: {
   message: WorkoutChatMessage;
   isStreaming?: boolean;
+  showHeader?: boolean;
 }) {
   const isUser = message.role === WorkoutChatMessageRole.CHAT_MESSAGE_ROLE_USER;
   const isTool = message.role === WorkoutChatMessageRole.CHAT_MESSAGE_ROLE_TOOL;
@@ -76,39 +90,53 @@ function MessageBubble({
     : "bg-default-200 text-default-800";
 
   // Отображение system сообщения
-  if (isSystem) {
+  if (isSystem || isTool) {
     return null;
   }
 
-  // Отображение tool сообщения
-  if (isTool) {
-    return (
-      <div className="flex w-full flex-col gap-1 items-start">
-        <div className="flex items-center gap-2 rounded-medium border border-default-200 bg-default-100 px-3 py-2 text-sm text-default-600">
-          <GearIcon className="inline h-3 w-3" />
-          <span className="text-xs">{message.toolName}</span>
-          {isStreaming && (
-            <span className="flex items-center gap-1 text-warning text-xs ml-2">
-              <Spinner color="warning" size="sm" />
-              <span>выполняется…</span>
+  return (
+    <div className={`flex w-full flex-col gap-2 ${alignment}`}>
+      {showHeader && (
+        <span className="text-xs font-bold text-default-500">
+          {roleLabel(message.role)}
+        </span>
+      )}
+      {message.content && (
+        <div
+          className={`flex max-w-[90%] items-end gap-2 ${
+            isUser ? "self-end" : "self-start"
+          }`}
+        >
+          <div
+            className={`rounded-large px-3 py-2 text-sm shadow-sm ${bubbleClasses} [&_p]:my-0 [&_ul]:my-0 [&_ol]:my-0 [&_pre]:my-0 [&_blockquote]:my-0 [&_h1]:mt-0 [&_h2]:mt-0 [&_h3]:mt-0 [&_h4]:mt-0`}
+          >
+            <AssistantMarkdown content={message.content} />
+            {isStreaming && <span className="ml-1 animate-pulse">▍</span>}
+          </div>
+          {message.createdAt && (
+            <span className="text-[10px] font-light leading-none text-default-500 whitespace-nowrap">
+              {formatTime(message.createdAt)}
             </span>
           )}
         </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className={`flex w-full flex-col gap-1 ${alignment}`}>
-      <span className="text-xs font-semibold text-default-400">
-        {roleLabel(message.role)}
-      </span>
-      {message.content && (
-        <div
-          className={`max-w-[90%] rounded-large px-3 py-2 text-sm shadow-sm ${bubbleClasses}`}
-        >
-          <AssistantMarkdown content={message.content} />
-          {isStreaming && <span className="ml-1 animate-pulse">▍</span>}
+      )}
+      {message.toolName && (
+        <div className="flex w-full flex-col gap-1 items-start">
+          <div className="flex items-baseline gap-2 rounded-medium border border-default-200 bg-default-100 px-2 py-2 text-sm text-default-600 w-fit max-w-full">
+            <GearIcon className="h-3 w-3 self-center" />
+            <span className="text-xs">{message.toolName}</span>
+            {isStreaming && (
+              <span className="flex items-center gap-1 text-warning text-xs ml-2">
+                <Spinner color="warning" size="sm" />
+                <span>выполняется…</span>
+              </span>
+            )}
+            {message.createdAt && (
+              <span className="ml-2 text-[10px] font-light leading-none text-default-500 whitespace-nowrap">
+                {formatTime(message.createdAt)}
+              </span>
+            )}
+          </div>
         </div>
       )}
       {message.error && (
@@ -406,6 +434,35 @@ export function WorkoutChatPanel({
     };
   }, [chat?.id, streamingAssistantMessage]);
 
+  const combinedMessages = useMemo(() => {
+    // Объединяем обычные и стриминговые сообщения, сохраняя порядок
+    const list: WorkoutChatMessage[] = [...messages];
+
+    if (streamingToolMessage) {
+      list.push(streamingToolMessage);
+    }
+
+    if (streamingMessage) {
+      list.push(streamingMessage);
+    }
+
+    return list;
+  }, [messages, streamingMessage, streamingToolMessage]);
+
+  function senderKey(role?: WorkoutChatMessageRole | null) {
+    switch (role) {
+      case WorkoutChatMessageRole.CHAT_MESSAGE_ROLE_USER:
+        return "user";
+      case WorkoutChatMessageRole.CHAT_MESSAGE_ROLE_ASSISTANT:
+        return "assistant";
+      case WorkoutChatMessageRole.CHAT_MESSAGE_ROLE_TOOL:
+        // Считаем tool частью ассистента для группировки заголовков
+        return "assistant";
+      default:
+        return "other";
+    }
+  }
+
   const content = useMemo(() => {
     if (loading) {
       return (
@@ -443,15 +500,32 @@ export function WorkoutChatPanel({
 
     return (
       <div className="flex h-full flex-col gap-3 p-4">
-        {messages.map((message) => (
-          <MessageBubble key={message.id} message={message} />
-        ))}
-        {streamingMessage && (
-          <MessageBubble isStreaming message={streamingMessage} />
-        )}
-        {streamingToolMessage && (
-          <MessageBubble isStreaming message={streamingToolMessage} />
-        )}
+        {combinedMessages.map((message, idx, arr) => {
+          // Пропускаем системные сообщения
+          const isSystemMessage =
+            message.role === WorkoutChatMessageRole.CHAT_MESSAGE_ROLE_SYSTEM;
+
+          if (isSystemMessage) {
+            return null;
+          }
+
+          const prev = idx > 0 ? arr[idx - 1] : undefined;
+          const showHeader =
+            !prev || senderKey(prev.role) !== senderKey(message.role);
+
+          const isStreamingItem =
+            message.id === "streaming" ||
+            streamingToolMessage?.id === message.id;
+
+          return (
+            <MessageBubble
+              key={message.id}
+              isStreaming={isStreamingItem}
+              message={message}
+              showHeader={showHeader}
+            />
+          );
+        })}
       </div>
     );
   }, [
@@ -459,8 +533,7 @@ export function WorkoutChatPanel({
     hasMessages,
     loadChat,
     loading,
-    messages,
-    streamingMessage,
+    combinedMessages,
     streamingToolMessage,
   ]);
 
@@ -501,7 +574,7 @@ export function WorkoutChatPanel({
                 size={60}
               >
                 {/* Контент сообщений; добавляем нижний паддинг, чтобы оверлей не перекрывал последние сообщения */}
-                <div className={`h-full ${showThinking ? "pb-4" : ""}`}>
+                <div className={`min-h-full ${showThinking ? "pb-4" : ""}`}>
                   {content}
                 </div>
               </ScrollShadow>
