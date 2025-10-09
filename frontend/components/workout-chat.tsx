@@ -14,7 +14,8 @@ import { Textarea } from "@nextui-org/input";
 import { Spinner } from "@nextui-org/spinner";
 import { Divider } from "@nextui-org/divider";
 import { Drawer, DrawerContent } from "@nextui-org/drawer";
-import Markdown from "react-markdown";
+
+import { AssistantMarkdown } from "./assistant-markdown";
 
 import {
   WorkoutChat,
@@ -103,9 +104,9 @@ function MessageBubble({
       </span>
       {message.content && (
         <div
-          className={`max-w-[90%] whitespace-pre-wrap rounded-large px-3 py-2 text-sm shadow-sm ${bubbleClasses}`}
+          className={`max-w-[90%] rounded-large px-3 py-2 text-sm shadow-sm ${bubbleClasses}`}
         >
-          <Markdown>{message.content}</Markdown>
+          <AssistantMarkdown content={message.content} />
           {isStreaming && <span className="ml-1 animate-pulse">▍</span>}
         </div>
       )}
