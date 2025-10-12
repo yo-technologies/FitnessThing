@@ -4,12 +4,14 @@ import {
   WorkoutChatUsage,
   WorkoutSendChatMessageResponse,
   WorkoutSendChatMessageStreamResponse,
+  WorkoutToolEvent,
 } from "./api.generated";
 
 export type WorkoutChatStreamCallbacks = {
   onMessageDelta?: (delta: string) => void;
   onUsage?: (usage: WorkoutChatUsage) => void;
   onStatus?: (status: string) => void;
+  onToolEvent?: (ev: WorkoutToolEvent) => void;
   onFinal?: (final: WorkoutSendChatMessageResponse) => void;
   onError?: (error: Error) => void;
 };
@@ -215,6 +217,10 @@ export function sendWorkoutChatMessageStream(
 
         if (parsed.status) {
           callbacks.onStatus?.(parsed.status);
+        }
+
+        if (parsed.toolEvent) {
+          callbacks.onToolEvent?.(parsed.toolEvent);
         }
 
         if (parsed.final) {

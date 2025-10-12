@@ -476,7 +476,11 @@ func (s *Service) chatMessageToOpenAIParam(message domain.ChatMessage) (openai.C
 		if !message.ToolCallID.IsValid {
 			return openai.ChatCompletionMessageParamUnion{}, fmt.Errorf("tool message missing tool call id")
 		}
-		return openai.ToolMessage(message.Content, message.ToolCallID.V), nil
+		content := message.Content
+		if strings.TrimSpace(content) == "" && message.Error.IsValid {
+			content = fmt.Sprintf("error: %s", message.Error.V)
+		}
+		return openai.ToolMessage(content, message.ToolCallID.V), nil
 	case domain.ChatMessageRoleSystem:
 		return openai.SystemMessage(message.Content), nil
 	default:
@@ -562,12 +566,10 @@ func (s *Service) handleAssistantToolCalls(
 		result, err := s.toolsService.ExecuteChatAgentTool(ctx, chatCtx, toolName, toolArgsJSON)
 		if err != nil {
 			// Не прерываем цикл: сохраняем ошибку как tool-сообщение, чтобы LLM увидела её и могла скорректировать стратегию.
-			errText := fmt.Sprintf("error: %s", err.Error())
-
 			toolRecord := domain.NewChatMessage(
 				chatID,
 				domain.ChatMessageRoleTool,
-				errText,
+				"",
 				utils.Nullable[string]{},
 				utils.Nullable[string]{},
 				nil,
@@ -579,6 +581,8 @@ func (s *Service) handleAssistantToolCalls(
 			if toolCall.ID != "" {
 				toolRecord.ToolCallID = utils.NewNullable(toolCall.ID, true)
 			}
+			// Сохраним сам текст ошибки отдельным полем, чтобы UI мог маркировать, а LLM получала её через синтез контента
+			toolRecord.Error = utils.NewNullable(err.Error(), true)
 
 			savedTool, perr := s.chatRepository.CreateChatMessage(ctx, toolRecord)
 			if perr != nil {

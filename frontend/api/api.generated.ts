@@ -45,6 +45,14 @@ export interface RoutineServiceUpdateSetInExerciseInstanceBody {
   time?: string;
 }
 
+/** @default "STATE_UNSPECIFIED" */
+export enum ToolEventState {
+  STATE_UNSPECIFIED = "STATE_UNSPECIFIED",
+  INVOKING = "INVOKING",
+  COMPLETED = "COMPLETED",
+  ERROR = "ERROR",
+}
+
 export interface WorkoutReportResponseAdditionalInfo {
   /** @format int32 */
   totalSets?: number;
@@ -376,6 +384,7 @@ export interface WorkoutSendChatMessageStreamResponse {
   usage?: WorkoutChatUsage;
   status?: string;
   final?: WorkoutSendChatMessageResponse;
+  toolEvent?: WorkoutToolEvent;
 }
 
 /** Структура сета (подхода) */
@@ -430,6 +439,15 @@ export enum WorkoutSetType {
 
 export interface WorkoutStartWorkoutRequest {
   routineId?: string;
+}
+
+/** Structured tool invocation event for streaming UI updates */
+export interface WorkoutToolEvent {
+  toolName?: string;
+  toolCallId?: string;
+  argsJson?: string;
+  state?: ToolEventState;
+  error?: string;
 }
 
 export interface WorkoutUpdateUserRequest {

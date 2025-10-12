@@ -19,6 +19,7 @@ import { ScrollShadow } from "@nextui-org/react";
 import { AssistantMarkdown } from "./assistant-markdown";
 
 import {
+  ToolEventState,
   WorkoutChat,
   WorkoutChatMessage,
   WorkoutChatMessageRole,
@@ -71,6 +72,44 @@ function formatTime(iso?: string | null) {
   }
 }
 
+function ToolChip({
+  toolName,
+  isError,
+  isStreaming,
+  createdAt,
+}: {
+  toolName: string;
+  isError?: boolean;
+  isStreaming?: boolean;
+  createdAt?: string;
+}) {
+  return (
+    <div className="flex w-full flex-col gap-1 items-start">
+      <div
+        className={
+          `flex items-baseline gap-2 rounded-medium px-2 py-2 text-sm w-fit max-w-full bg-default-100 text-default-600 border ` +
+          (isError ? "border-danger-200" : "border-default-200")
+        }
+      >
+        <GearIcon className={`h-3 w-3 self-center`} />
+        <span className="text-xs">{toolName}</span>
+
+        {isStreaming && (
+          <span className="flex items-center gap-1 text-warning text-xs ml-2">
+            <Spinner color="warning" size="sm" />
+            <span>выполняется…</span>
+          </span>
+        )}
+        {createdAt && (
+          <span className="ml-2 text-[10px] font-light leading-none text-default-500 whitespace-nowrap">
+            {formatTime(createdAt)}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function MessageBubble({
   message,
   isStreaming,
@@ -90,7 +129,26 @@ function MessageBubble({
     : "bg-default-200 text-default-800";
 
   // Отображение system сообщения
-  if (isSystem || isTool) {
+  if (isSystem) {
+    return null;
+  }
+
+  if (isTool) {
+    const legacyError =
+      (message.content ?? "").trim().toLowerCase().startsWith("error:") ||
+      false;
+
+    return (
+      <ToolChip
+        createdAt={message.createdAt ?? undefined}
+        isError={Boolean(message.error) || legacyError}
+        isStreaming={isStreaming}
+        toolName={message.toolName ?? "Инструмент"}
+      />
+    );
+  }
+
+  if (!message.content && !message.error && !isStreaming && !showHeader) {
     return null;
   }
 
@@ -118,25 +176,6 @@ function MessageBubble({
               {formatTime(message.createdAt)}
             </span>
           )}
-        </div>
-      )}
-      {message.toolName && (
-        <div className="flex w-full flex-col gap-1 items-start">
-          <div className="flex items-baseline gap-2 rounded-medium border border-default-200 bg-default-100 px-2 py-2 text-sm text-default-600 w-fit max-w-full">
-            <GearIcon className="h-3 w-3 self-center" />
-            <span className="text-xs">{message.toolName}</span>
-            {isStreaming && (
-              <span className="flex items-center gap-1 text-warning text-xs ml-2">
-                <Spinner color="warning" size="sm" />
-                <span>выполняется…</span>
-              </span>
-            )}
-            {message.createdAt && (
-              <span className="ml-2 text-[10px] font-light leading-none text-default-500 whitespace-nowrap">
-                {formatTime(message.createdAt)}
-              </span>
-            )}
-          </div>
         </div>
       )}
       {message.error && (
@@ -281,11 +320,16 @@ export function WorkoutChatPanel({
         },
         onStatus: (status) => {
           console.log("Received status update:", status);
+          // Оставляем только общие статусы (например, assistant_thinking)
+          setStreamState((prev) => ({ ...prev, status }));
+        },
+        onToolEvent: (ev) => {
+          console.log("Received tool event:", ev);
 
-          // Инструмент запускается: "invoking tool <name>"
-          if (status.startsWith("invoking tool ")) {
-            const toolName = status.replace("invoking tool ", "").trim();
+          const state = ev.state ?? ToolEventState.STATE_UNSPECIFIED;
+          const toolName = (ev.toolName ?? "").trim();
 
+          if (state === ToolEventState.INVOKING) {
             // Финализируем уже накопленный assistant streaming текст как отдельное сообщение
             setStreamingAssistantMessage((prev) => {
               if (prev && prev.length > 0) {
@@ -301,31 +345,20 @@ export function WorkoutChatPanel({
                 ]);
               }
 
-              return ""; // очистим, чтобы последующий контент после tool шёл в новое сообщение
+              return "";
             });
 
+            // Создаём стриминговый чип инструмента как TOOL-сообщение с toolName
             setStreamingToolMessage((prev) => {
-              // Если уже есть streaming сообщение с другим инструментом, завершаем его
               if (prev && prev.toolName && prev.toolName !== toolName) {
+                // Завершаем предыдущее
                 setMessages((msgs) => [...msgs, prev]);
-
-                // Создаем новое streaming сообщение для нового инструмента
-                return {
-                  id: `streaming-tool-${Date.now()}`,
-                  chatId: chat?.id,
-                  role: WorkoutChatMessageRole.CHAT_MESSAGE_ROLE_TOOL,
-                  content: "",
-                  toolName,
-                  createdAt: new Date().toISOString(),
-                };
               }
 
-              // Если уже есть streaming с тем же инструментом, оставляем как есть
               if (prev && prev.toolName === toolName) {
                 return prev;
               }
 
-              // Создаем новое streaming сообщение
               return {
                 id: `streaming-tool-${Date.now()}`,
                 chatId: chat?.id,
@@ -339,17 +372,19 @@ export function WorkoutChatPanel({
             return;
           }
 
-          // Инструмент завершён: "tool <name> completed"
-          if (status.startsWith("tool ") && status.endsWith(" completed")) {
-            const toolName = status
-              .replace(/^tool /, "")
-              .replace(/ completed$/, "")
-              .trim();
-
+          if (
+            state === ToolEventState.COMPLETED ||
+            state === ToolEventState.ERROR
+          ) {
+            // Завершаем стриминговый чип инструмента; если ERROR — пометим ошибку без вывода текста
             setStreamingToolMessage((prev) => {
-              if (prev && prev.toolName === toolName) {
-                // Завершаем текущее streaming сообщение инструмента
-                setMessages((msgs) => [...msgs, prev]);
+              if (prev && (!toolName || prev.toolName === toolName)) {
+                const finalized =
+                  state === ToolEventState.ERROR
+                    ? { ...prev, error: prev.error ?? "error" }
+                    : prev;
+
+                setMessages((msgs) => [...msgs, finalized]);
 
                 return null;
               }
@@ -359,8 +394,6 @@ export function WorkoutChatPanel({
 
             return;
           }
-
-          setStreamState((prev) => ({ ...prev, status }));
         },
         onUsage: (usage) => {
           setStreamState((prev) => ({
