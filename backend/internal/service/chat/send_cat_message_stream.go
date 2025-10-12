@@ -550,10 +550,13 @@ func (s *Service) handleAssistantToolCalls(
 		}
 		*messages = append(*messages, param)
 
-		if callbacks.OnStatus != nil {
-			if err := callbacks.OnStatus(fmt.Sprintf("invoking tool %s", toolName)); err != nil {
-				return err
-			}
+		if callbacks.OnToolEvent != nil {
+			_ = callbacks.OnToolEvent(dto.ToolEvent{
+				ToolName:   toolName,
+				ToolCallID: toolCall.ID,
+				ArgsJSON:   toolArgsJSON,
+				State:      dto.ToolInvoking,
+			})
 		}
 
 		result, err := s.toolsService.ExecuteChatAgentTool(ctx, chatCtx, toolName, toolArgsJSON)
@@ -588,10 +591,20 @@ func (s *Service) handleAssistantToolCalls(
 			}
 			*messages = append(*messages, toolParam)
 
-			if callbacks.OnStatus != nil {
-				// Сообщим об ошибке и закроем статус выполнения инструмента, чтобы UI завершил индикатор.
-				_ = callbacks.OnStatus(fmt.Sprintf("tool %s error", toolName))
-				_ = callbacks.OnStatus(fmt.Sprintf("tool %s completed", toolName))
+			if callbacks.OnToolEvent != nil {
+				_ = callbacks.OnToolEvent(dto.ToolEvent{
+					ToolName:   toolName,
+					ToolCallID: toolCall.ID,
+					ArgsJSON:   toolArgsJSON,
+					State:      dto.ToolError,
+					Error:      err.Error(),
+				})
+				_ = callbacks.OnToolEvent(dto.ToolEvent{
+					ToolName:   toolName,
+					ToolCallID: toolCall.ID,
+					ArgsJSON:   toolArgsJSON,
+					State:      dto.ToolCompleted,
+				})
 			}
 
 			// Продолжаем к следующему tool call
@@ -625,10 +638,13 @@ func (s *Service) handleAssistantToolCalls(
 		}
 		*messages = append(*messages, toolParam)
 
-		if callbacks.OnStatus != nil {
-			if err := callbacks.OnStatus(fmt.Sprintf("tool %s completed", toolName)); err != nil {
-				return err
-			}
+		if callbacks.OnToolEvent != nil {
+			_ = callbacks.OnToolEvent(dto.ToolEvent{
+				ToolName:   toolName,
+				ToolCallID: toolCall.ID,
+				ArgsJSON:   toolArgsJSON,
+				State:      dto.ToolCompleted,
+			})
 		}
 	}
 

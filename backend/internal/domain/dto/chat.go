@@ -27,6 +27,7 @@ type ChatStreamCallbacks struct {
 	OnContentDelta  func(string) error
 	OnUsage         func(ChatUsage) error
 	OnStatus        func(string) error
+	OnToolEvent     func(ToolEvent) error
 	OnFinalResponse func(ChatCompletionDTO) error
 }
 
@@ -38,4 +39,21 @@ type GetChatDTO struct {
 type GetChatRequest struct {
 	ChatID    utils.Nullable[domain.ID]
 	WorkoutID utils.Nullable[domain.ID]
+}
+
+type ToolEventState int
+
+const (
+	ToolStateUnspecified ToolEventState = iota
+	ToolInvoking
+	ToolCompleted
+	ToolError
+)
+
+type ToolEvent struct {
+	ToolName   string
+	ToolCallID string
+	ArgsJSON   string
+	State      ToolEventState
+	Error      string
 }

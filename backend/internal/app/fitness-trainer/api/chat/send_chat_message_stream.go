@@ -89,6 +89,32 @@ func (i *Implementation) SendChatMessageStream(in *desc.SendChatMessageRequest, 
 				Payload: &desc.SendChatMessageStreamResponse_Status{Status: status},
 			})
 		},
+		OnToolEvent: func(ev dto.ToolEvent) error {
+			state := desc.ToolEvent_STATE_UNSPECIFIED
+			switch ev.State {
+			case dto.ToolInvoking:
+				state = desc.ToolEvent_INVOKING
+			case dto.ToolCompleted:
+				state = desc.ToolEvent_COMPLETED
+			case dto.ToolError:
+				state = desc.ToolEvent_ERROR
+			}
+
+			var errPtr *string
+			if ev.Error != "" {
+				err := ev.Error
+				errPtr = &err
+			}
+			return send(&desc.SendChatMessageStreamResponse{
+				Payload: &desc.SendChatMessageStreamResponse_ToolEvent{ToolEvent: &desc.ToolEvent{
+					ToolName:   ev.ToolName,
+					ToolCallId: ev.ToolCallID,
+					ArgsJson:   ev.ArgsJSON,
+					State:      state,
+					Error:      errPtr,
+				}},
+			})
+		},
 		OnFinalResponse: func(result dto.ChatCompletionDTO) error {
 			protoChat := mappers.ChatToProto(result.Chat)
 			protoMessages, err := mappers.ChatMessagesToProto(result.Messages)

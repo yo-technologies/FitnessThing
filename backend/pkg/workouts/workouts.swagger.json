@@ -1676,6 +1676,16 @@
         "setType"
       ]
     },
+    "ToolEventState": {
+      "type": "string",
+      "enum": [
+        "STATE_UNSPECIFIED",
+        "INVOKING",
+        "COMPLETED",
+        "ERROR"
+      ],
+      "default": "STATE_UNSPECIFIED"
+    },
     "WorkoutReportResponseAdditionalInfo": {
       "type": "object",
       "properties": {
@@ -2418,6 +2428,9 @@
         },
         "final": {
           "$ref": "#/definitions/workoutSendChatMessageResponse"
+        },
+        "toolEvent": {
+          "$ref": "#/definitions/workoutToolEvent"
         }
       }
     },
@@ -2520,6 +2533,27 @@
           "type": "string"
         }
       }
+    },
+    "workoutToolEvent": {
+      "type": "object",
+      "properties": {
+        "toolName": {
+          "type": "string"
+        },
+        "toolCallId": {
+          "type": "string"
+        },
+        "argsJson": {
+          "type": "string"
+        },
+        "state": {
+          "$ref": "#/definitions/ToolEventState"
+        },
+        "error": {
+          "type": "string"
+        }
+      },
+      "title": "Structured tool invocation event for streaming UI updates"
     },
     "workoutUpdateUserRequest": {
       "type": "object",

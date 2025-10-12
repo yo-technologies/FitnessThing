@@ -351,6 +351,58 @@ func (ChatMessageRole) EnumDescriptor() ([]byte, []int) {
 	return file_workouts_workouts_proto_rawDescGZIP(), []int{5}
 }
 
+type ToolEvent_State int32
+
+const (
+	ToolEvent_STATE_UNSPECIFIED ToolEvent_State = 0
+	ToolEvent_INVOKING          ToolEvent_State = 1
+	ToolEvent_COMPLETED         ToolEvent_State = 2
+	ToolEvent_ERROR             ToolEvent_State = 3
+)
+
+// Enum value maps for ToolEvent_State.
+var (
+	ToolEvent_State_name = map[int32]string{
+		0: "STATE_UNSPECIFIED",
+		1: "INVOKING",
+		2: "COMPLETED",
+		3: "ERROR",
+	}
+	ToolEvent_State_value = map[string]int32{
+		"STATE_UNSPECIFIED": 0,
+		"INVOKING":          1,
+		"COMPLETED":         2,
+		"ERROR":             3,
+	}
+)
+
+func (x ToolEvent_State) Enum() *ToolEvent_State {
+	p := new(ToolEvent_State)
+	*p = x
+	return p
+}
+
+func (x ToolEvent_State) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ToolEvent_State) Descriptor() protoreflect.EnumDescriptor {
+	return file_workouts_workouts_proto_enumTypes[6].Descriptor()
+}
+
+func (ToolEvent_State) Type() protoreflect.EnumType {
+	return &file_workouts_workouts_proto_enumTypes[6]
+}
+
+func (x ToolEvent_State) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ToolEvent_State.Descriptor instead.
+func (ToolEvent_State) EnumDescriptor() ([]byte, []int) {
+	return file_workouts_workouts_proto_rawDescGZIP(), []int{81, 0}
+}
+
 type User struct {
 	state                  protoimpl.MessageState `protogen:"open.v1"`
 	Id                     string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -5247,6 +5299,7 @@ type SendChatMessageStreamResponse struct {
 	//	*SendChatMessageStreamResponse_Usage
 	//	*SendChatMessageStreamResponse_Status
 	//	*SendChatMessageStreamResponse_Final
+	//	*SendChatMessageStreamResponse_ToolEvent
 	Payload       isSendChatMessageStreamResponse_Payload `protobuf_oneof:"payload"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -5325,6 +5378,15 @@ func (x *SendChatMessageStreamResponse) GetFinal() *SendChatMessageResponse {
 	return nil
 }
 
+func (x *SendChatMessageStreamResponse) GetToolEvent() *ToolEvent {
+	if x != nil {
+		if x, ok := x.Payload.(*SendChatMessageStreamResponse_ToolEvent); ok {
+			return x.ToolEvent
+		}
+	}
+	return nil
+}
+
 type isSendChatMessageStreamResponse_Payload interface {
 	isSendChatMessageStreamResponse_Payload()
 }
@@ -5345,6 +5407,10 @@ type SendChatMessageStreamResponse_Final struct {
 	Final *SendChatMessageResponse `protobuf:"bytes,4,opt,name=final,proto3,oneof"`
 }
 
+type SendChatMessageStreamResponse_ToolEvent struct {
+	ToolEvent *ToolEvent `protobuf:"bytes,5,opt,name=tool_event,json=toolEvent,proto3,oneof"`
+}
+
 func (*SendChatMessageStreamResponse_MessageDelta) isSendChatMessageStreamResponse_Payload() {}
 
 func (*SendChatMessageStreamResponse_Usage) isSendChatMessageStreamResponse_Payload() {}
@@ -5352,6 +5418,85 @@ func (*SendChatMessageStreamResponse_Usage) isSendChatMessageStreamResponse_Payl
 func (*SendChatMessageStreamResponse_Status) isSendChatMessageStreamResponse_Payload() {}
 
 func (*SendChatMessageStreamResponse_Final) isSendChatMessageStreamResponse_Payload() {}
+
+func (*SendChatMessageStreamResponse_ToolEvent) isSendChatMessageStreamResponse_Payload() {}
+
+// Structured tool invocation event for streaming UI updates
+type ToolEvent struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ToolName      string                 `protobuf:"bytes,1,opt,name=tool_name,json=toolName,proto3" json:"tool_name,omitempty"`
+	ToolCallId    string                 `protobuf:"bytes,2,opt,name=tool_call_id,json=toolCallId,proto3" json:"tool_call_id,omitempty"`
+	ArgsJson      string                 `protobuf:"bytes,3,opt,name=args_json,json=argsJson,proto3" json:"args_json,omitempty"`
+	State         ToolEvent_State        `protobuf:"varint,4,opt,name=state,proto3,enum=fitness_trainer.api.workout.ToolEvent_State" json:"state,omitempty"`
+	Error         *string                `protobuf:"bytes,5,opt,name=error,proto3,oneof" json:"error,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ToolEvent) Reset() {
+	*x = ToolEvent{}
+	mi := &file_workouts_workouts_proto_msgTypes[81]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ToolEvent) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ToolEvent) ProtoMessage() {}
+
+func (x *ToolEvent) ProtoReflect() protoreflect.Message {
+	mi := &file_workouts_workouts_proto_msgTypes[81]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ToolEvent.ProtoReflect.Descriptor instead.
+func (*ToolEvent) Descriptor() ([]byte, []int) {
+	return file_workouts_workouts_proto_rawDescGZIP(), []int{81}
+}
+
+func (x *ToolEvent) GetToolName() string {
+	if x != nil {
+		return x.ToolName
+	}
+	return ""
+}
+
+func (x *ToolEvent) GetToolCallId() string {
+	if x != nil {
+		return x.ToolCallId
+	}
+	return ""
+}
+
+func (x *ToolEvent) GetArgsJson() string {
+	if x != nil {
+		return x.ArgsJson
+	}
+	return ""
+}
+
+func (x *ToolEvent) GetState() ToolEvent_State {
+	if x != nil {
+		return x.State
+	}
+	return ToolEvent_STATE_UNSPECIFIED
+}
+
+func (x *ToolEvent) GetError() string {
+	if x != nil && x.Error != nil {
+		return *x.Error
+	}
+	return ""
+}
 
 type GetChatRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -5363,7 +5508,7 @@ type GetChatRequest struct {
 
 func (x *GetChatRequest) Reset() {
 	*x = GetChatRequest{}
-	mi := &file_workouts_workouts_proto_msgTypes[81]
+	mi := &file_workouts_workouts_proto_msgTypes[82]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5375,7 +5520,7 @@ func (x *GetChatRequest) String() string {
 func (*GetChatRequest) ProtoMessage() {}
 
 func (x *GetChatRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_workouts_workouts_proto_msgTypes[81]
+	mi := &file_workouts_workouts_proto_msgTypes[82]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5388,7 +5533,7 @@ func (x *GetChatRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetChatRequest.ProtoReflect.Descriptor instead.
 func (*GetChatRequest) Descriptor() ([]byte, []int) {
-	return file_workouts_workouts_proto_rawDescGZIP(), []int{81}
+	return file_workouts_workouts_proto_rawDescGZIP(), []int{82}
 }
 
 func (x *GetChatRequest) GetWorkoutId() string {
@@ -5415,7 +5560,7 @@ type GetChatResponse struct {
 
 func (x *GetChatResponse) Reset() {
 	*x = GetChatResponse{}
-	mi := &file_workouts_workouts_proto_msgTypes[82]
+	mi := &file_workouts_workouts_proto_msgTypes[83]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5427,7 +5572,7 @@ func (x *GetChatResponse) String() string {
 func (*GetChatResponse) ProtoMessage() {}
 
 func (x *GetChatResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_workouts_workouts_proto_msgTypes[82]
+	mi := &file_workouts_workouts_proto_msgTypes[83]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5440,7 +5585,7 @@ func (x *GetChatResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetChatResponse.ProtoReflect.Descriptor instead.
 func (*GetChatResponse) Descriptor() ([]byte, []int) {
-	return file_workouts_workouts_proto_rawDescGZIP(), []int{82}
+	return file_workouts_workouts_proto_rawDescGZIP(), []int{83}
 }
 
 func (x *GetChatResponse) GetChat() *Chat {
@@ -5467,7 +5612,7 @@ type GetWorkoutsResponse_WorkoutDetails struct {
 
 func (x *GetWorkoutsResponse_WorkoutDetails) Reset() {
 	*x = GetWorkoutsResponse_WorkoutDetails{}
-	mi := &file_workouts_workouts_proto_msgTypes[83]
+	mi := &file_workouts_workouts_proto_msgTypes[84]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5479,7 +5624,7 @@ func (x *GetWorkoutsResponse_WorkoutDetails) String() string {
 func (*GetWorkoutsResponse_WorkoutDetails) ProtoMessage() {}
 
 func (x *GetWorkoutsResponse_WorkoutDetails) ProtoReflect() protoreflect.Message {
-	mi := &file_workouts_workouts_proto_msgTypes[83]
+	mi := &file_workouts_workouts_proto_msgTypes[84]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5521,7 +5666,7 @@ type WorkoutReportResponse_AdditionalInfo struct {
 
 func (x *WorkoutReportResponse_AdditionalInfo) Reset() {
 	*x = WorkoutReportResponse_AdditionalInfo{}
-	mi := &file_workouts_workouts_proto_msgTypes[84]
+	mi := &file_workouts_workouts_proto_msgTypes[85]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5533,7 +5678,7 @@ func (x *WorkoutReportResponse_AdditionalInfo) String() string {
 func (*WorkoutReportResponse_AdditionalInfo) ProtoMessage() {}
 
 func (x *WorkoutReportResponse_AdditionalInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_workouts_workouts_proto_msgTypes[84]
+	mi := &file_workouts_workouts_proto_msgTypes[85]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6059,13 +6204,28 @@ const file_workouts_workouts_proto_rawDesc = "" +
 	"\x05usage\x18\x03 \x01(\v2&.fitness_trainer.api.workout.ChatUsageH\x00R\x05usage\x88\x01\x01B\b\n" +
 	"\x06_usage\",\n" +
 	"\x10ChatMessageDelta\x12\x18\n" +
-	"\acontent\x18\x01 \x01(\tR\acontent\"\xa8\x02\n" +
+	"\acontent\x18\x01 \x01(\tR\acontent\"\xf1\x02\n" +
 	"\x1dSendChatMessageStreamResponse\x12T\n" +
 	"\rmessage_delta\x18\x01 \x01(\v2-.fitness_trainer.api.workout.ChatMessageDeltaH\x00R\fmessageDelta\x12>\n" +
 	"\x05usage\x18\x02 \x01(\v2&.fitness_trainer.api.workout.ChatUsageH\x00R\x05usage\x12\x18\n" +
 	"\x06status\x18\x03 \x01(\tH\x00R\x06status\x12L\n" +
-	"\x05final\x18\x04 \x01(\v24.fitness_trainer.api.workout.SendChatMessageResponseH\x00R\x05finalB\t\n" +
-	"\apayload\"m\n" +
+	"\x05final\x18\x04 \x01(\v24.fitness_trainer.api.workout.SendChatMessageResponseH\x00R\x05final\x12G\n" +
+	"\n" +
+	"tool_event\x18\x05 \x01(\v2&.fitness_trainer.api.workout.ToolEventH\x00R\ttoolEventB\t\n" +
+	"\apayload\"\x98\x02\n" +
+	"\tToolEvent\x12\x1b\n" +
+	"\ttool_name\x18\x01 \x01(\tR\btoolName\x12 \n" +
+	"\ftool_call_id\x18\x02 \x01(\tR\n" +
+	"toolCallId\x12\x1b\n" +
+	"\targs_json\x18\x03 \x01(\tR\bargsJson\x12B\n" +
+	"\x05state\x18\x04 \x01(\x0e2,.fitness_trainer.api.workout.ToolEvent.StateR\x05state\x12\x19\n" +
+	"\x05error\x18\x05 \x01(\tH\x00R\x05error\x88\x01\x01\"F\n" +
+	"\x05State\x12\x15\n" +
+	"\x11STATE_UNSPECIFIED\x10\x00\x12\f\n" +
+	"\bINVOKING\x10\x01\x12\r\n" +
+	"\tCOMPLETED\x10\x02\x12\t\n" +
+	"\x05ERROR\x10\x03B\b\n" +
+	"\x06_error\"m\n" +
 	"\x0eGetChatRequest\x12\"\n" +
 	"\n" +
 	"workout_id\x18\x01 \x01(\tH\x00R\tworkoutId\x88\x01\x01\x12\x1c\n" +
@@ -6181,8 +6341,8 @@ func file_workouts_workouts_proto_rawDescGZIP() []byte {
 	return file_workouts_workouts_proto_rawDescData
 }
 
-var file_workouts_workouts_proto_enumTypes = make([]protoimpl.EnumInfo, 6)
-var file_workouts_workouts_proto_msgTypes = make([]protoimpl.MessageInfo, 85)
+var file_workouts_workouts_proto_enumTypes = make([]protoimpl.EnumInfo, 7)
+var file_workouts_workouts_proto_msgTypes = make([]protoimpl.MessageInfo, 86)
 var file_workouts_workouts_proto_goTypes = []any{
 	(SetType)(0),                                     // 0: fitness_trainer.api.workout.SetType
 	(WeightUnit)(0),                                  // 1: fitness_trainer.api.workout.WeightUnit
@@ -6190,282 +6350,286 @@ var file_workouts_workouts_proto_goTypes = []any{
 	(ExperienceLevel)(0),                             // 3: fitness_trainer.api.workout.ExperienceLevel
 	(WorkoutPlanType)(0),                             // 4: fitness_trainer.api.workout.WorkoutPlanType
 	(ChatMessageRole)(0),                             // 5: fitness_trainer.api.workout.ChatMessageRole
-	(*User)(nil),                                     // 6: fitness_trainer.api.workout.User
-	(*MuscleGroup)(nil),                              // 7: fitness_trainer.api.workout.MuscleGroup
-	(*Exercise)(nil),                                 // 8: fitness_trainer.api.workout.Exercise
-	(*Routine)(nil),                                  // 9: fitness_trainer.api.workout.Routine
-	(*ExerciseInstance)(nil),                         // 10: fitness_trainer.api.workout.ExerciseInstance
-	(*Set)(nil),                                      // 11: fitness_trainer.api.workout.Set
-	(*Workout)(nil),                                  // 12: fitness_trainer.api.workout.Workout
-	(*ExerciseLog)(nil),                              // 13: fitness_trainer.api.workout.ExerciseLog
-	(*ExpectedSet)(nil),                              // 14: fitness_trainer.api.workout.ExpectedSet
-	(*SetLog)(nil),                                   // 15: fitness_trainer.api.workout.SetLog
-	(*GetExercisesRequest)(nil),                      // 16: fitness_trainer.api.workout.GetExercisesRequest
-	(*GetExercisesResponse)(nil),                     // 17: fitness_trainer.api.workout.GetExercisesResponse
-	(*GetExerciseAlternativesRequest)(nil),           // 18: fitness_trainer.api.workout.GetExerciseAlternativesRequest
-	(*GetExerciseAlternativesResponse)(nil),          // 19: fitness_trainer.api.workout.GetExerciseAlternativesResponse
-	(*GetExerciseDetailRequest)(nil),                 // 20: fitness_trainer.api.workout.GetExerciseDetailRequest
-	(*ExerciseResponse)(nil),                         // 21: fitness_trainer.api.workout.ExerciseResponse
-	(*CreateExerciseRequest)(nil),                    // 22: fitness_trainer.api.workout.CreateExerciseRequest
-	(*GetMuscleGroupsResponse)(nil),                  // 23: fitness_trainer.api.workout.GetMuscleGroupsResponse
-	(*GetExerciseHistoryRequest)(nil),                // 24: fitness_trainer.api.workout.GetExerciseHistoryRequest
-	(*ExerciseHistoryResponse)(nil),                  // 25: fitness_trainer.api.workout.ExerciseHistoryResponse
-	(*RoutineListResponse)(nil),                      // 26: fitness_trainer.api.workout.RoutineListResponse
-	(*CreateRoutineRequest)(nil),                     // 27: fitness_trainer.api.workout.CreateRoutineRequest
-	(*RoutineResponse)(nil),                          // 28: fitness_trainer.api.workout.RoutineResponse
-	(*UpdateRoutineRequest)(nil),                     // 29: fitness_trainer.api.workout.UpdateRoutineRequest
-	(*GetRoutineDetailRequest)(nil),                  // 30: fitness_trainer.api.workout.GetRoutineDetailRequest
-	(*ExerciseInstanceDetails)(nil),                  // 31: fitness_trainer.api.workout.ExerciseInstanceDetails
-	(*RoutineDetailResponse)(nil),                    // 32: fitness_trainer.api.workout.RoutineDetailResponse
-	(*ExerciseInstanceResponse)(nil),                 // 33: fitness_trainer.api.workout.ExerciseInstanceResponse
-	(*RoutineInstanceResponse)(nil),                  // 34: fitness_trainer.api.workout.RoutineInstanceResponse
-	(*AddExerciseToRoutineRequest)(nil),              // 35: fitness_trainer.api.workout.AddExerciseToRoutineRequest
-	(*DeleteRoutineRequest)(nil),                     // 36: fitness_trainer.api.workout.DeleteRoutineRequest
-	(*GetExerciseInstanceDetailsRequest)(nil),        // 37: fitness_trainer.api.workout.GetExerciseInstanceDetailsRequest
-	(*GetExerciseInstanceDetailsResponse)(nil),       // 38: fitness_trainer.api.workout.GetExerciseInstanceDetailsResponse
-	(*RemoveExerciseInstanceFromRoutineRequest)(nil), // 39: fitness_trainer.api.workout.RemoveExerciseInstanceFromRoutineRequest
-	(*UpdateExerciseInstanceInRoutineRequest)(nil),   // 40: fitness_trainer.api.workout.UpdateExerciseInstanceInRoutineRequest
-	(*AddSetToExerciseInstanceRequest)(nil),          // 41: fitness_trainer.api.workout.AddSetToExerciseInstanceRequest
-	(*UpdateSetInExerciseInstanceRequest)(nil),       // 42: fitness_trainer.api.workout.UpdateSetInExerciseInstanceRequest
-	(*RemoveSetFromExerciseInstanceRequest)(nil),     // 43: fitness_trainer.api.workout.RemoveSetFromExerciseInstanceRequest
-	(*SetResponse)(nil),                              // 44: fitness_trainer.api.workout.SetResponse
-	(*SetExerciseOrderRequest)(nil),                  // 45: fitness_trainer.api.workout.SetExerciseOrderRequest
-	(*StartWorkoutRequest)(nil),                      // 46: fitness_trainer.api.workout.StartWorkoutRequest
-	(*GetWorkoutRequest)(nil),                        // 47: fitness_trainer.api.workout.GetWorkoutRequest
-	(*UpdateExerciseLogWeightUnitRequest)(nil),       // 48: fitness_trainer.api.workout.UpdateExerciseLogWeightUnitRequest
-	(*DeleteWorkoutRequest)(nil),                     // 49: fitness_trainer.api.workout.DeleteWorkoutRequest
-	(*GetWorkoutsRequest)(nil),                       // 50: fitness_trainer.api.workout.GetWorkoutsRequest
-	(*GetWorkoutsResponse)(nil),                      // 51: fitness_trainer.api.workout.GetWorkoutsResponse
-	(*WorkoutsListResponse)(nil),                     // 52: fitness_trainer.api.workout.WorkoutsListResponse
-	(*ExerciseLogDetails)(nil),                       // 53: fitness_trainer.api.workout.ExerciseLogDetails
-	(*GetWorkoutResponse)(nil),                       // 54: fitness_trainer.api.workout.GetWorkoutResponse
-	(*LogExerciseRequest)(nil),                       // 55: fitness_trainer.api.workout.LogExerciseRequest
-	(*GetExerciseLogDetailRequest)(nil),              // 56: fitness_trainer.api.workout.GetExerciseLogDetailRequest
-	(*DeleteExerciseLogRequest)(nil),                 // 57: fitness_trainer.api.workout.DeleteExerciseLogRequest
-	(*AddPowerRatingToExerciseLogRequest)(nil),       // 58: fitness_trainer.api.workout.AddPowerRatingToExerciseLogRequest
-	(*AddNotesToExerciseLogRequest)(nil),             // 59: fitness_trainer.api.workout.AddNotesToExerciseLogRequest
-	(*LogSetRequest)(nil),                            // 60: fitness_trainer.api.workout.LogSetRequest
-	(*UpdateSetLogRequest)(nil),                      // 61: fitness_trainer.api.workout.UpdateSetLogRequest
-	(*DeleteSetLogRequest)(nil),                      // 62: fitness_trainer.api.workout.DeleteSetLogRequest
-	(*CompleteWorkoutRequest)(nil),                   // 63: fitness_trainer.api.workout.CompleteWorkoutRequest
-	(*GetWorkoutReportRequest)(nil),                  // 64: fitness_trainer.api.workout.GetWorkoutReportRequest
-	(*ExerciseLogResponse)(nil),                      // 65: fitness_trainer.api.workout.ExerciseLogResponse
-	(*SetLogResponse)(nil),                           // 66: fitness_trainer.api.workout.SetLogResponse
-	(*WorkoutResponse)(nil),                          // 67: fitness_trainer.api.workout.WorkoutResponse
-	(*WorkoutReportResponse)(nil),                    // 68: fitness_trainer.api.workout.WorkoutReportResponse
-	(*RateWorkoutRequest)(nil),                       // 69: fitness_trainer.api.workout.RateWorkoutRequest
-	(*AddCommentToWorkoutRequest)(nil),               // 70: fitness_trainer.api.workout.AddCommentToWorkoutRequest
-	(*GetUserRequest)(nil),                           // 71: fitness_trainer.api.workout.GetUserRequest
-	(*UpdateUserRequest)(nil),                        // 72: fitness_trainer.api.workout.UpdateUserRequest
-	(*DeleteUserRequest)(nil),                        // 73: fitness_trainer.api.workout.DeleteUserRequest
-	(*UserResponse)(nil),                             // 74: fitness_trainer.api.workout.UserResponse
-	(*WorkoutGenerationSettingsResponse)(nil),        // 75: fitness_trainer.api.workout.WorkoutGenerationSettingsResponse
-	(*WorkoutGenerationSettings)(nil),                // 76: fitness_trainer.api.workout.WorkoutGenerationSettings
-	(*UpdateWorkoutGenerationSettingsRequest)(nil),   // 77: fitness_trainer.api.workout.UpdateWorkoutGenerationSettingsRequest
-	(*PresignUploadRequest)(nil),                     // 78: fitness_trainer.api.workout.PresignUploadRequest
-	(*PresignUploadResponse)(nil),                    // 79: fitness_trainer.api.workout.PresignUploadResponse
-	(*Chat)(nil),                                     // 80: fitness_trainer.api.workout.Chat
-	(*ChatMessage)(nil),                              // 81: fitness_trainer.api.workout.ChatMessage
-	(*ChatUsage)(nil),                                // 82: fitness_trainer.api.workout.ChatUsage
-	(*SendChatMessageRequest)(nil),                   // 83: fitness_trainer.api.workout.SendChatMessageRequest
-	(*SendChatMessageResponse)(nil),                  // 84: fitness_trainer.api.workout.SendChatMessageResponse
-	(*ChatMessageDelta)(nil),                         // 85: fitness_trainer.api.workout.ChatMessageDelta
-	(*SendChatMessageStreamResponse)(nil),            // 86: fitness_trainer.api.workout.SendChatMessageStreamResponse
-	(*GetChatRequest)(nil),                           // 87: fitness_trainer.api.workout.GetChatRequest
-	(*GetChatResponse)(nil),                          // 88: fitness_trainer.api.workout.GetChatResponse
-	(*GetWorkoutsResponse_WorkoutDetails)(nil),       // 89: fitness_trainer.api.workout.GetWorkoutsResponse.WorkoutDetails
-	(*WorkoutReportResponse_AdditionalInfo)(nil),     // 90: fitness_trainer.api.workout.WorkoutReportResponse.AdditionalInfo
-	(*timestamppb.Timestamp)(nil),                    // 91: google.protobuf.Timestamp
-	(*durationpb.Duration)(nil),                      // 92: google.protobuf.Duration
-	(*structpb.Struct)(nil),                          // 93: google.protobuf.Struct
-	(*emptypb.Empty)(nil),                            // 94: google.protobuf.Empty
+	(ToolEvent_State)(0),                             // 6: fitness_trainer.api.workout.ToolEvent.State
+	(*User)(nil),                                     // 7: fitness_trainer.api.workout.User
+	(*MuscleGroup)(nil),                              // 8: fitness_trainer.api.workout.MuscleGroup
+	(*Exercise)(nil),                                 // 9: fitness_trainer.api.workout.Exercise
+	(*Routine)(nil),                                  // 10: fitness_trainer.api.workout.Routine
+	(*ExerciseInstance)(nil),                         // 11: fitness_trainer.api.workout.ExerciseInstance
+	(*Set)(nil),                                      // 12: fitness_trainer.api.workout.Set
+	(*Workout)(nil),                                  // 13: fitness_trainer.api.workout.Workout
+	(*ExerciseLog)(nil),                              // 14: fitness_trainer.api.workout.ExerciseLog
+	(*ExpectedSet)(nil),                              // 15: fitness_trainer.api.workout.ExpectedSet
+	(*SetLog)(nil),                                   // 16: fitness_trainer.api.workout.SetLog
+	(*GetExercisesRequest)(nil),                      // 17: fitness_trainer.api.workout.GetExercisesRequest
+	(*GetExercisesResponse)(nil),                     // 18: fitness_trainer.api.workout.GetExercisesResponse
+	(*GetExerciseAlternativesRequest)(nil),           // 19: fitness_trainer.api.workout.GetExerciseAlternativesRequest
+	(*GetExerciseAlternativesResponse)(nil),          // 20: fitness_trainer.api.workout.GetExerciseAlternativesResponse
+	(*GetExerciseDetailRequest)(nil),                 // 21: fitness_trainer.api.workout.GetExerciseDetailRequest
+	(*ExerciseResponse)(nil),                         // 22: fitness_trainer.api.workout.ExerciseResponse
+	(*CreateExerciseRequest)(nil),                    // 23: fitness_trainer.api.workout.CreateExerciseRequest
+	(*GetMuscleGroupsResponse)(nil),                  // 24: fitness_trainer.api.workout.GetMuscleGroupsResponse
+	(*GetExerciseHistoryRequest)(nil),                // 25: fitness_trainer.api.workout.GetExerciseHistoryRequest
+	(*ExerciseHistoryResponse)(nil),                  // 26: fitness_trainer.api.workout.ExerciseHistoryResponse
+	(*RoutineListResponse)(nil),                      // 27: fitness_trainer.api.workout.RoutineListResponse
+	(*CreateRoutineRequest)(nil),                     // 28: fitness_trainer.api.workout.CreateRoutineRequest
+	(*RoutineResponse)(nil),                          // 29: fitness_trainer.api.workout.RoutineResponse
+	(*UpdateRoutineRequest)(nil),                     // 30: fitness_trainer.api.workout.UpdateRoutineRequest
+	(*GetRoutineDetailRequest)(nil),                  // 31: fitness_trainer.api.workout.GetRoutineDetailRequest
+	(*ExerciseInstanceDetails)(nil),                  // 32: fitness_trainer.api.workout.ExerciseInstanceDetails
+	(*RoutineDetailResponse)(nil),                    // 33: fitness_trainer.api.workout.RoutineDetailResponse
+	(*ExerciseInstanceResponse)(nil),                 // 34: fitness_trainer.api.workout.ExerciseInstanceResponse
+	(*RoutineInstanceResponse)(nil),                  // 35: fitness_trainer.api.workout.RoutineInstanceResponse
+	(*AddExerciseToRoutineRequest)(nil),              // 36: fitness_trainer.api.workout.AddExerciseToRoutineRequest
+	(*DeleteRoutineRequest)(nil),                     // 37: fitness_trainer.api.workout.DeleteRoutineRequest
+	(*GetExerciseInstanceDetailsRequest)(nil),        // 38: fitness_trainer.api.workout.GetExerciseInstanceDetailsRequest
+	(*GetExerciseInstanceDetailsResponse)(nil),       // 39: fitness_trainer.api.workout.GetExerciseInstanceDetailsResponse
+	(*RemoveExerciseInstanceFromRoutineRequest)(nil), // 40: fitness_trainer.api.workout.RemoveExerciseInstanceFromRoutineRequest
+	(*UpdateExerciseInstanceInRoutineRequest)(nil),   // 41: fitness_trainer.api.workout.UpdateExerciseInstanceInRoutineRequest
+	(*AddSetToExerciseInstanceRequest)(nil),          // 42: fitness_trainer.api.workout.AddSetToExerciseInstanceRequest
+	(*UpdateSetInExerciseInstanceRequest)(nil),       // 43: fitness_trainer.api.workout.UpdateSetInExerciseInstanceRequest
+	(*RemoveSetFromExerciseInstanceRequest)(nil),     // 44: fitness_trainer.api.workout.RemoveSetFromExerciseInstanceRequest
+	(*SetResponse)(nil),                              // 45: fitness_trainer.api.workout.SetResponse
+	(*SetExerciseOrderRequest)(nil),                  // 46: fitness_trainer.api.workout.SetExerciseOrderRequest
+	(*StartWorkoutRequest)(nil),                      // 47: fitness_trainer.api.workout.StartWorkoutRequest
+	(*GetWorkoutRequest)(nil),                        // 48: fitness_trainer.api.workout.GetWorkoutRequest
+	(*UpdateExerciseLogWeightUnitRequest)(nil),       // 49: fitness_trainer.api.workout.UpdateExerciseLogWeightUnitRequest
+	(*DeleteWorkoutRequest)(nil),                     // 50: fitness_trainer.api.workout.DeleteWorkoutRequest
+	(*GetWorkoutsRequest)(nil),                       // 51: fitness_trainer.api.workout.GetWorkoutsRequest
+	(*GetWorkoutsResponse)(nil),                      // 52: fitness_trainer.api.workout.GetWorkoutsResponse
+	(*WorkoutsListResponse)(nil),                     // 53: fitness_trainer.api.workout.WorkoutsListResponse
+	(*ExerciseLogDetails)(nil),                       // 54: fitness_trainer.api.workout.ExerciseLogDetails
+	(*GetWorkoutResponse)(nil),                       // 55: fitness_trainer.api.workout.GetWorkoutResponse
+	(*LogExerciseRequest)(nil),                       // 56: fitness_trainer.api.workout.LogExerciseRequest
+	(*GetExerciseLogDetailRequest)(nil),              // 57: fitness_trainer.api.workout.GetExerciseLogDetailRequest
+	(*DeleteExerciseLogRequest)(nil),                 // 58: fitness_trainer.api.workout.DeleteExerciseLogRequest
+	(*AddPowerRatingToExerciseLogRequest)(nil),       // 59: fitness_trainer.api.workout.AddPowerRatingToExerciseLogRequest
+	(*AddNotesToExerciseLogRequest)(nil),             // 60: fitness_trainer.api.workout.AddNotesToExerciseLogRequest
+	(*LogSetRequest)(nil),                            // 61: fitness_trainer.api.workout.LogSetRequest
+	(*UpdateSetLogRequest)(nil),                      // 62: fitness_trainer.api.workout.UpdateSetLogRequest
+	(*DeleteSetLogRequest)(nil),                      // 63: fitness_trainer.api.workout.DeleteSetLogRequest
+	(*CompleteWorkoutRequest)(nil),                   // 64: fitness_trainer.api.workout.CompleteWorkoutRequest
+	(*GetWorkoutReportRequest)(nil),                  // 65: fitness_trainer.api.workout.GetWorkoutReportRequest
+	(*ExerciseLogResponse)(nil),                      // 66: fitness_trainer.api.workout.ExerciseLogResponse
+	(*SetLogResponse)(nil),                           // 67: fitness_trainer.api.workout.SetLogResponse
+	(*WorkoutResponse)(nil),                          // 68: fitness_trainer.api.workout.WorkoutResponse
+	(*WorkoutReportResponse)(nil),                    // 69: fitness_trainer.api.workout.WorkoutReportResponse
+	(*RateWorkoutRequest)(nil),                       // 70: fitness_trainer.api.workout.RateWorkoutRequest
+	(*AddCommentToWorkoutRequest)(nil),               // 71: fitness_trainer.api.workout.AddCommentToWorkoutRequest
+	(*GetUserRequest)(nil),                           // 72: fitness_trainer.api.workout.GetUserRequest
+	(*UpdateUserRequest)(nil),                        // 73: fitness_trainer.api.workout.UpdateUserRequest
+	(*DeleteUserRequest)(nil),                        // 74: fitness_trainer.api.workout.DeleteUserRequest
+	(*UserResponse)(nil),                             // 75: fitness_trainer.api.workout.UserResponse
+	(*WorkoutGenerationSettingsResponse)(nil),        // 76: fitness_trainer.api.workout.WorkoutGenerationSettingsResponse
+	(*WorkoutGenerationSettings)(nil),                // 77: fitness_trainer.api.workout.WorkoutGenerationSettings
+	(*UpdateWorkoutGenerationSettingsRequest)(nil),   // 78: fitness_trainer.api.workout.UpdateWorkoutGenerationSettingsRequest
+	(*PresignUploadRequest)(nil),                     // 79: fitness_trainer.api.workout.PresignUploadRequest
+	(*PresignUploadResponse)(nil),                    // 80: fitness_trainer.api.workout.PresignUploadResponse
+	(*Chat)(nil),                                     // 81: fitness_trainer.api.workout.Chat
+	(*ChatMessage)(nil),                              // 82: fitness_trainer.api.workout.ChatMessage
+	(*ChatUsage)(nil),                                // 83: fitness_trainer.api.workout.ChatUsage
+	(*SendChatMessageRequest)(nil),                   // 84: fitness_trainer.api.workout.SendChatMessageRequest
+	(*SendChatMessageResponse)(nil),                  // 85: fitness_trainer.api.workout.SendChatMessageResponse
+	(*ChatMessageDelta)(nil),                         // 86: fitness_trainer.api.workout.ChatMessageDelta
+	(*SendChatMessageStreamResponse)(nil),            // 87: fitness_trainer.api.workout.SendChatMessageStreamResponse
+	(*ToolEvent)(nil),                                // 88: fitness_trainer.api.workout.ToolEvent
+	(*GetChatRequest)(nil),                           // 89: fitness_trainer.api.workout.GetChatRequest
+	(*GetChatResponse)(nil),                          // 90: fitness_trainer.api.workout.GetChatResponse
+	(*GetWorkoutsResponse_WorkoutDetails)(nil),       // 91: fitness_trainer.api.workout.GetWorkoutsResponse.WorkoutDetails
+	(*WorkoutReportResponse_AdditionalInfo)(nil),     // 92: fitness_trainer.api.workout.WorkoutReportResponse.AdditionalInfo
+	(*timestamppb.Timestamp)(nil),                    // 93: google.protobuf.Timestamp
+	(*durationpb.Duration)(nil),                      // 94: google.protobuf.Duration
+	(*structpb.Struct)(nil),                          // 95: google.protobuf.Struct
+	(*emptypb.Empty)(nil),                            // 96: google.protobuf.Empty
 }
 var file_workouts_workouts_proto_depIdxs = []int32{
-	91,  // 0: fitness_trainer.api.workout.User.date_of_birth:type_name -> google.protobuf.Timestamp
-	91,  // 1: fitness_trainer.api.workout.User.created_at:type_name -> google.protobuf.Timestamp
-	91,  // 2: fitness_trainer.api.workout.User.updated_at:type_name -> google.protobuf.Timestamp
-	91,  // 3: fitness_trainer.api.workout.Exercise.created_at:type_name -> google.protobuf.Timestamp
-	91,  // 4: fitness_trainer.api.workout.Exercise.updated_at:type_name -> google.protobuf.Timestamp
-	91,  // 5: fitness_trainer.api.workout.Routine.created_at:type_name -> google.protobuf.Timestamp
-	91,  // 6: fitness_trainer.api.workout.Routine.updated_at:type_name -> google.protobuf.Timestamp
-	91,  // 7: fitness_trainer.api.workout.ExerciseInstance.created_at:type_name -> google.protobuf.Timestamp
-	91,  // 8: fitness_trainer.api.workout.ExerciseInstance.updated_at:type_name -> google.protobuf.Timestamp
-	91,  // 9: fitness_trainer.api.workout.Set.created_at:type_name -> google.protobuf.Timestamp
+	93,  // 0: fitness_trainer.api.workout.User.date_of_birth:type_name -> google.protobuf.Timestamp
+	93,  // 1: fitness_trainer.api.workout.User.created_at:type_name -> google.protobuf.Timestamp
+	93,  // 2: fitness_trainer.api.workout.User.updated_at:type_name -> google.protobuf.Timestamp
+	93,  // 3: fitness_trainer.api.workout.Exercise.created_at:type_name -> google.protobuf.Timestamp
+	93,  // 4: fitness_trainer.api.workout.Exercise.updated_at:type_name -> google.protobuf.Timestamp
+	93,  // 5: fitness_trainer.api.workout.Routine.created_at:type_name -> google.protobuf.Timestamp
+	93,  // 6: fitness_trainer.api.workout.Routine.updated_at:type_name -> google.protobuf.Timestamp
+	93,  // 7: fitness_trainer.api.workout.ExerciseInstance.created_at:type_name -> google.protobuf.Timestamp
+	93,  // 8: fitness_trainer.api.workout.ExerciseInstance.updated_at:type_name -> google.protobuf.Timestamp
+	93,  // 9: fitness_trainer.api.workout.Set.created_at:type_name -> google.protobuf.Timestamp
 	0,   // 10: fitness_trainer.api.workout.Set.set_type:type_name -> fitness_trainer.api.workout.SetType
-	92,  // 11: fitness_trainer.api.workout.Set.time:type_name -> google.protobuf.Duration
-	91,  // 12: fitness_trainer.api.workout.Set.updated_at:type_name -> google.protobuf.Timestamp
-	91,  // 13: fitness_trainer.api.workout.Workout.created_at:type_name -> google.protobuf.Timestamp
-	91,  // 14: fitness_trainer.api.workout.Workout.finished_at:type_name -> google.protobuf.Timestamp
-	91,  // 15: fitness_trainer.api.workout.Workout.updated_at:type_name -> google.protobuf.Timestamp
-	91,  // 16: fitness_trainer.api.workout.ExerciseLog.created_at:type_name -> google.protobuf.Timestamp
-	91,  // 17: fitness_trainer.api.workout.ExerciseLog.updated_at:type_name -> google.protobuf.Timestamp
+	94,  // 11: fitness_trainer.api.workout.Set.time:type_name -> google.protobuf.Duration
+	93,  // 12: fitness_trainer.api.workout.Set.updated_at:type_name -> google.protobuf.Timestamp
+	93,  // 13: fitness_trainer.api.workout.Workout.created_at:type_name -> google.protobuf.Timestamp
+	93,  // 14: fitness_trainer.api.workout.Workout.finished_at:type_name -> google.protobuf.Timestamp
+	93,  // 15: fitness_trainer.api.workout.Workout.updated_at:type_name -> google.protobuf.Timestamp
+	93,  // 16: fitness_trainer.api.workout.ExerciseLog.created_at:type_name -> google.protobuf.Timestamp
+	93,  // 17: fitness_trainer.api.workout.ExerciseLog.updated_at:type_name -> google.protobuf.Timestamp
 	1,   // 18: fitness_trainer.api.workout.ExerciseLog.weight_unit:type_name -> fitness_trainer.api.workout.WeightUnit
-	92,  // 19: fitness_trainer.api.workout.ExpectedSet.time:type_name -> google.protobuf.Duration
-	91,  // 20: fitness_trainer.api.workout.ExpectedSet.created_at:type_name -> google.protobuf.Timestamp
-	91,  // 21: fitness_trainer.api.workout.ExpectedSet.updated_at:type_name -> google.protobuf.Timestamp
-	91,  // 22: fitness_trainer.api.workout.SetLog.created_at:type_name -> google.protobuf.Timestamp
-	92,  // 23: fitness_trainer.api.workout.SetLog.time:type_name -> google.protobuf.Duration
-	91,  // 24: fitness_trainer.api.workout.SetLog.updated_at:type_name -> google.protobuf.Timestamp
-	8,   // 25: fitness_trainer.api.workout.GetExercisesResponse.exercises:type_name -> fitness_trainer.api.workout.Exercise
-	8,   // 26: fitness_trainer.api.workout.GetExerciseAlternativesResponse.alternatives:type_name -> fitness_trainer.api.workout.Exercise
-	8,   // 27: fitness_trainer.api.workout.ExerciseResponse.exercise:type_name -> fitness_trainer.api.workout.Exercise
-	7,   // 28: fitness_trainer.api.workout.GetMuscleGroupsResponse.muscle_groups:type_name -> fitness_trainer.api.workout.MuscleGroup
-	53,  // 29: fitness_trainer.api.workout.ExerciseHistoryResponse.exercise_logs:type_name -> fitness_trainer.api.workout.ExerciseLogDetails
-	9,   // 30: fitness_trainer.api.workout.RoutineListResponse.routines:type_name -> fitness_trainer.api.workout.Routine
-	9,   // 31: fitness_trainer.api.workout.RoutineResponse.routine:type_name -> fitness_trainer.api.workout.Routine
-	10,  // 32: fitness_trainer.api.workout.ExerciseInstanceDetails.exercise_instance:type_name -> fitness_trainer.api.workout.ExerciseInstance
-	8,   // 33: fitness_trainer.api.workout.ExerciseInstanceDetails.exercise:type_name -> fitness_trainer.api.workout.Exercise
-	11,  // 34: fitness_trainer.api.workout.ExerciseInstanceDetails.sets:type_name -> fitness_trainer.api.workout.Set
-	9,   // 35: fitness_trainer.api.workout.RoutineDetailResponse.routine:type_name -> fitness_trainer.api.workout.Routine
-	31,  // 36: fitness_trainer.api.workout.RoutineDetailResponse.exercise_instances:type_name -> fitness_trainer.api.workout.ExerciseInstanceDetails
-	10,  // 37: fitness_trainer.api.workout.ExerciseInstanceResponse.exercise_instance:type_name -> fitness_trainer.api.workout.ExerciseInstance
-	10,  // 38: fitness_trainer.api.workout.RoutineInstanceResponse.exercise_instance:type_name -> fitness_trainer.api.workout.ExerciseInstance
-	31,  // 39: fitness_trainer.api.workout.GetExerciseInstanceDetailsResponse.exercise_instance_details:type_name -> fitness_trainer.api.workout.ExerciseInstanceDetails
+	94,  // 19: fitness_trainer.api.workout.ExpectedSet.time:type_name -> google.protobuf.Duration
+	93,  // 20: fitness_trainer.api.workout.ExpectedSet.created_at:type_name -> google.protobuf.Timestamp
+	93,  // 21: fitness_trainer.api.workout.ExpectedSet.updated_at:type_name -> google.protobuf.Timestamp
+	93,  // 22: fitness_trainer.api.workout.SetLog.created_at:type_name -> google.protobuf.Timestamp
+	94,  // 23: fitness_trainer.api.workout.SetLog.time:type_name -> google.protobuf.Duration
+	93,  // 24: fitness_trainer.api.workout.SetLog.updated_at:type_name -> google.protobuf.Timestamp
+	9,   // 25: fitness_trainer.api.workout.GetExercisesResponse.exercises:type_name -> fitness_trainer.api.workout.Exercise
+	9,   // 26: fitness_trainer.api.workout.GetExerciseAlternativesResponse.alternatives:type_name -> fitness_trainer.api.workout.Exercise
+	9,   // 27: fitness_trainer.api.workout.ExerciseResponse.exercise:type_name -> fitness_trainer.api.workout.Exercise
+	8,   // 28: fitness_trainer.api.workout.GetMuscleGroupsResponse.muscle_groups:type_name -> fitness_trainer.api.workout.MuscleGroup
+	54,  // 29: fitness_trainer.api.workout.ExerciseHistoryResponse.exercise_logs:type_name -> fitness_trainer.api.workout.ExerciseLogDetails
+	10,  // 30: fitness_trainer.api.workout.RoutineListResponse.routines:type_name -> fitness_trainer.api.workout.Routine
+	10,  // 31: fitness_trainer.api.workout.RoutineResponse.routine:type_name -> fitness_trainer.api.workout.Routine
+	11,  // 32: fitness_trainer.api.workout.ExerciseInstanceDetails.exercise_instance:type_name -> fitness_trainer.api.workout.ExerciseInstance
+	9,   // 33: fitness_trainer.api.workout.ExerciseInstanceDetails.exercise:type_name -> fitness_trainer.api.workout.Exercise
+	12,  // 34: fitness_trainer.api.workout.ExerciseInstanceDetails.sets:type_name -> fitness_trainer.api.workout.Set
+	10,  // 35: fitness_trainer.api.workout.RoutineDetailResponse.routine:type_name -> fitness_trainer.api.workout.Routine
+	32,  // 36: fitness_trainer.api.workout.RoutineDetailResponse.exercise_instances:type_name -> fitness_trainer.api.workout.ExerciseInstanceDetails
+	11,  // 37: fitness_trainer.api.workout.ExerciseInstanceResponse.exercise_instance:type_name -> fitness_trainer.api.workout.ExerciseInstance
+	11,  // 38: fitness_trainer.api.workout.RoutineInstanceResponse.exercise_instance:type_name -> fitness_trainer.api.workout.ExerciseInstance
+	32,  // 39: fitness_trainer.api.workout.GetExerciseInstanceDetailsResponse.exercise_instance_details:type_name -> fitness_trainer.api.workout.ExerciseInstanceDetails
 	0,   // 40: fitness_trainer.api.workout.UpdateExerciseInstanceInRoutineRequest.set_type:type_name -> fitness_trainer.api.workout.SetType
-	92,  // 41: fitness_trainer.api.workout.UpdateExerciseInstanceInRoutineRequest.time:type_name -> google.protobuf.Duration
+	94,  // 41: fitness_trainer.api.workout.UpdateExerciseInstanceInRoutineRequest.time:type_name -> google.protobuf.Duration
 	0,   // 42: fitness_trainer.api.workout.AddSetToExerciseInstanceRequest.set_type:type_name -> fitness_trainer.api.workout.SetType
-	92,  // 43: fitness_trainer.api.workout.AddSetToExerciseInstanceRequest.time:type_name -> google.protobuf.Duration
+	94,  // 43: fitness_trainer.api.workout.AddSetToExerciseInstanceRequest.time:type_name -> google.protobuf.Duration
 	0,   // 44: fitness_trainer.api.workout.UpdateSetInExerciseInstanceRequest.set_type:type_name -> fitness_trainer.api.workout.SetType
-	92,  // 45: fitness_trainer.api.workout.UpdateSetInExerciseInstanceRequest.time:type_name -> google.protobuf.Duration
-	11,  // 46: fitness_trainer.api.workout.SetResponse.set:type_name -> fitness_trainer.api.workout.Set
+	94,  // 45: fitness_trainer.api.workout.UpdateSetInExerciseInstanceRequest.time:type_name -> google.protobuf.Duration
+	12,  // 46: fitness_trainer.api.workout.SetResponse.set:type_name -> fitness_trainer.api.workout.Set
 	1,   // 47: fitness_trainer.api.workout.UpdateExerciseLogWeightUnitRequest.weight_unit:type_name -> fitness_trainer.api.workout.WeightUnit
-	89,  // 48: fitness_trainer.api.workout.GetWorkoutsResponse.workouts:type_name -> fitness_trainer.api.workout.GetWorkoutsResponse.WorkoutDetails
-	12,  // 49: fitness_trainer.api.workout.WorkoutsListResponse.workouts:type_name -> fitness_trainer.api.workout.Workout
-	13,  // 50: fitness_trainer.api.workout.ExerciseLogDetails.exercise_log:type_name -> fitness_trainer.api.workout.ExerciseLog
-	8,   // 51: fitness_trainer.api.workout.ExerciseLogDetails.exercise:type_name -> fitness_trainer.api.workout.Exercise
-	15,  // 52: fitness_trainer.api.workout.ExerciseLogDetails.set_logs:type_name -> fitness_trainer.api.workout.SetLog
-	14,  // 53: fitness_trainer.api.workout.ExerciseLogDetails.expected_sets:type_name -> fitness_trainer.api.workout.ExpectedSet
-	12,  // 54: fitness_trainer.api.workout.GetWorkoutResponse.workout:type_name -> fitness_trainer.api.workout.Workout
-	53,  // 55: fitness_trainer.api.workout.GetWorkoutResponse.exercise_logs:type_name -> fitness_trainer.api.workout.ExerciseLogDetails
-	92,  // 56: fitness_trainer.api.workout.LogSetRequest.time:type_name -> google.protobuf.Duration
+	91,  // 48: fitness_trainer.api.workout.GetWorkoutsResponse.workouts:type_name -> fitness_trainer.api.workout.GetWorkoutsResponse.WorkoutDetails
+	13,  // 49: fitness_trainer.api.workout.WorkoutsListResponse.workouts:type_name -> fitness_trainer.api.workout.Workout
+	14,  // 50: fitness_trainer.api.workout.ExerciseLogDetails.exercise_log:type_name -> fitness_trainer.api.workout.ExerciseLog
+	9,   // 51: fitness_trainer.api.workout.ExerciseLogDetails.exercise:type_name -> fitness_trainer.api.workout.Exercise
+	16,  // 52: fitness_trainer.api.workout.ExerciseLogDetails.set_logs:type_name -> fitness_trainer.api.workout.SetLog
+	15,  // 53: fitness_trainer.api.workout.ExerciseLogDetails.expected_sets:type_name -> fitness_trainer.api.workout.ExpectedSet
+	13,  // 54: fitness_trainer.api.workout.GetWorkoutResponse.workout:type_name -> fitness_trainer.api.workout.Workout
+	54,  // 55: fitness_trainer.api.workout.GetWorkoutResponse.exercise_logs:type_name -> fitness_trainer.api.workout.ExerciseLogDetails
+	94,  // 56: fitness_trainer.api.workout.LogSetRequest.time:type_name -> google.protobuf.Duration
 	0,   // 57: fitness_trainer.api.workout.UpdateSetLogRequest.set_type:type_name -> fitness_trainer.api.workout.SetType
-	92,  // 58: fitness_trainer.api.workout.UpdateSetLogRequest.time:type_name -> google.protobuf.Duration
-	53,  // 59: fitness_trainer.api.workout.ExerciseLogResponse.exercise_log_details:type_name -> fitness_trainer.api.workout.ExerciseLogDetails
-	15,  // 60: fitness_trainer.api.workout.SetLogResponse.set_log:type_name -> fitness_trainer.api.workout.SetLog
-	12,  // 61: fitness_trainer.api.workout.WorkoutResponse.workout:type_name -> fitness_trainer.api.workout.Workout
-	12,  // 62: fitness_trainer.api.workout.WorkoutReportResponse.workout:type_name -> fitness_trainer.api.workout.Workout
-	13,  // 63: fitness_trainer.api.workout.WorkoutReportResponse.exercise_logs:type_name -> fitness_trainer.api.workout.ExerciseLog
-	90,  // 64: fitness_trainer.api.workout.WorkoutReportResponse.additional_info:type_name -> fitness_trainer.api.workout.WorkoutReportResponse.AdditionalInfo
-	91,  // 65: fitness_trainer.api.workout.UpdateUserRequest.date_of_birth:type_name -> google.protobuf.Timestamp
-	6,   // 66: fitness_trainer.api.workout.UserResponse.user:type_name -> fitness_trainer.api.workout.User
-	76,  // 67: fitness_trainer.api.workout.WorkoutGenerationSettingsResponse.settings:type_name -> fitness_trainer.api.workout.WorkoutGenerationSettings
+	94,  // 58: fitness_trainer.api.workout.UpdateSetLogRequest.time:type_name -> google.protobuf.Duration
+	54,  // 59: fitness_trainer.api.workout.ExerciseLogResponse.exercise_log_details:type_name -> fitness_trainer.api.workout.ExerciseLogDetails
+	16,  // 60: fitness_trainer.api.workout.SetLogResponse.set_log:type_name -> fitness_trainer.api.workout.SetLog
+	13,  // 61: fitness_trainer.api.workout.WorkoutResponse.workout:type_name -> fitness_trainer.api.workout.Workout
+	13,  // 62: fitness_trainer.api.workout.WorkoutReportResponse.workout:type_name -> fitness_trainer.api.workout.Workout
+	14,  // 63: fitness_trainer.api.workout.WorkoutReportResponse.exercise_logs:type_name -> fitness_trainer.api.workout.ExerciseLog
+	92,  // 64: fitness_trainer.api.workout.WorkoutReportResponse.additional_info:type_name -> fitness_trainer.api.workout.WorkoutReportResponse.AdditionalInfo
+	93,  // 65: fitness_trainer.api.workout.UpdateUserRequest.date_of_birth:type_name -> google.protobuf.Timestamp
+	7,   // 66: fitness_trainer.api.workout.UserResponse.user:type_name -> fitness_trainer.api.workout.User
+	77,  // 67: fitness_trainer.api.workout.WorkoutGenerationSettingsResponse.settings:type_name -> fitness_trainer.api.workout.WorkoutGenerationSettings
 	2,   // 68: fitness_trainer.api.workout.WorkoutGenerationSettings.primary_goal:type_name -> fitness_trainer.api.workout.Goal
 	3,   // 69: fitness_trainer.api.workout.WorkoutGenerationSettings.experience_level:type_name -> fitness_trainer.api.workout.ExperienceLevel
 	4,   // 70: fitness_trainer.api.workout.WorkoutGenerationSettings.workout_plan_type:type_name -> fitness_trainer.api.workout.WorkoutPlanType
-	91,  // 71: fitness_trainer.api.workout.WorkoutGenerationSettings.updated_at:type_name -> google.protobuf.Timestamp
+	93,  // 71: fitness_trainer.api.workout.WorkoutGenerationSettings.updated_at:type_name -> google.protobuf.Timestamp
 	2,   // 72: fitness_trainer.api.workout.UpdateWorkoutGenerationSettingsRequest.primary_goal:type_name -> fitness_trainer.api.workout.Goal
 	3,   // 73: fitness_trainer.api.workout.UpdateWorkoutGenerationSettingsRequest.experience_level:type_name -> fitness_trainer.api.workout.ExperienceLevel
 	4,   // 74: fitness_trainer.api.workout.UpdateWorkoutGenerationSettingsRequest.workout_plan_type:type_name -> fitness_trainer.api.workout.WorkoutPlanType
-	91,  // 75: fitness_trainer.api.workout.Chat.created_at:type_name -> google.protobuf.Timestamp
-	91,  // 76: fitness_trainer.api.workout.Chat.updated_at:type_name -> google.protobuf.Timestamp
+	93,  // 75: fitness_trainer.api.workout.Chat.created_at:type_name -> google.protobuf.Timestamp
+	93,  // 76: fitness_trainer.api.workout.Chat.updated_at:type_name -> google.protobuf.Timestamp
 	5,   // 77: fitness_trainer.api.workout.ChatMessage.role:type_name -> fitness_trainer.api.workout.ChatMessageRole
-	93,  // 78: fitness_trainer.api.workout.ChatMessage.tool_arguments:type_name -> google.protobuf.Struct
-	91,  // 79: fitness_trainer.api.workout.ChatMessage.created_at:type_name -> google.protobuf.Timestamp
-	91,  // 80: fitness_trainer.api.workout.ChatMessage.updated_at:type_name -> google.protobuf.Timestamp
-	80,  // 81: fitness_trainer.api.workout.SendChatMessageResponse.chat:type_name -> fitness_trainer.api.workout.Chat
-	81,  // 82: fitness_trainer.api.workout.SendChatMessageResponse.messages:type_name -> fitness_trainer.api.workout.ChatMessage
-	82,  // 83: fitness_trainer.api.workout.SendChatMessageResponse.usage:type_name -> fitness_trainer.api.workout.ChatUsage
-	85,  // 84: fitness_trainer.api.workout.SendChatMessageStreamResponse.message_delta:type_name -> fitness_trainer.api.workout.ChatMessageDelta
-	82,  // 85: fitness_trainer.api.workout.SendChatMessageStreamResponse.usage:type_name -> fitness_trainer.api.workout.ChatUsage
-	84,  // 86: fitness_trainer.api.workout.SendChatMessageStreamResponse.final:type_name -> fitness_trainer.api.workout.SendChatMessageResponse
-	80,  // 87: fitness_trainer.api.workout.GetChatResponse.chat:type_name -> fitness_trainer.api.workout.Chat
-	81,  // 88: fitness_trainer.api.workout.GetChatResponse.messages:type_name -> fitness_trainer.api.workout.ChatMessage
-	12,  // 89: fitness_trainer.api.workout.GetWorkoutsResponse.WorkoutDetails.workout:type_name -> fitness_trainer.api.workout.Workout
-	13,  // 90: fitness_trainer.api.workout.GetWorkoutsResponse.WorkoutDetails.exercise_logs:type_name -> fitness_trainer.api.workout.ExerciseLog
-	92,  // 91: fitness_trainer.api.workout.WorkoutReportResponse.AdditionalInfo.total_time:type_name -> google.protobuf.Duration
-	16,  // 92: fitness_trainer.api.workout.ExerciseService.GetExercises:input_type -> fitness_trainer.api.workout.GetExercisesRequest
-	22,  // 93: fitness_trainer.api.workout.ExerciseService.CreateExercise:input_type -> fitness_trainer.api.workout.CreateExerciseRequest
-	20,  // 94: fitness_trainer.api.workout.ExerciseService.GetExerciseDetail:input_type -> fitness_trainer.api.workout.GetExerciseDetailRequest
-	18,  // 95: fitness_trainer.api.workout.ExerciseService.GetExerciseAlternatives:input_type -> fitness_trainer.api.workout.GetExerciseAlternativesRequest
-	24,  // 96: fitness_trainer.api.workout.ExerciseService.GetExerciseHistory:input_type -> fitness_trainer.api.workout.GetExerciseHistoryRequest
-	94,  // 97: fitness_trainer.api.workout.ExerciseService.GetMuscleGroups:input_type -> google.protobuf.Empty
-	94,  // 98: fitness_trainer.api.workout.RoutineService.GetRoutines:input_type -> google.protobuf.Empty
-	27,  // 99: fitness_trainer.api.workout.RoutineService.CreateRoutine:input_type -> fitness_trainer.api.workout.CreateRoutineRequest
-	29,  // 100: fitness_trainer.api.workout.RoutineService.UpdateRoutine:input_type -> fitness_trainer.api.workout.UpdateRoutineRequest
-	30,  // 101: fitness_trainer.api.workout.RoutineService.GetRoutineDetail:input_type -> fitness_trainer.api.workout.GetRoutineDetailRequest
-	36,  // 102: fitness_trainer.api.workout.RoutineService.DeleteRoutine:input_type -> fitness_trainer.api.workout.DeleteRoutineRequest
-	35,  // 103: fitness_trainer.api.workout.RoutineService.AddExerciseToRoutine:input_type -> fitness_trainer.api.workout.AddExerciseToRoutineRequest
-	37,  // 104: fitness_trainer.api.workout.RoutineService.GetExerciseInstanceDetails:input_type -> fitness_trainer.api.workout.GetExerciseInstanceDetailsRequest
-	39,  // 105: fitness_trainer.api.workout.RoutineService.RemoveExerciseInstanceFromRoutine:input_type -> fitness_trainer.api.workout.RemoveExerciseInstanceFromRoutineRequest
-	41,  // 106: fitness_trainer.api.workout.RoutineService.AddSetToExerciseInstance:input_type -> fitness_trainer.api.workout.AddSetToExerciseInstanceRequest
-	42,  // 107: fitness_trainer.api.workout.RoutineService.UpdateSetInExerciseInstance:input_type -> fitness_trainer.api.workout.UpdateSetInExerciseInstanceRequest
-	43,  // 108: fitness_trainer.api.workout.RoutineService.RemoveSetFromExerciseInstance:input_type -> fitness_trainer.api.workout.RemoveSetFromExerciseInstanceRequest
-	45,  // 109: fitness_trainer.api.workout.RoutineService.SetExerciseOrder:input_type -> fitness_trainer.api.workout.SetExerciseOrderRequest
-	46,  // 110: fitness_trainer.api.workout.WorkoutService.StartWorkout:input_type -> fitness_trainer.api.workout.StartWorkoutRequest
-	47,  // 111: fitness_trainer.api.workout.WorkoutService.GetWorkout:input_type -> fitness_trainer.api.workout.GetWorkoutRequest
-	49,  // 112: fitness_trainer.api.workout.WorkoutService.DeleteWorkout:input_type -> fitness_trainer.api.workout.DeleteWorkoutRequest
-	94,  // 113: fitness_trainer.api.workout.WorkoutService.GetActiveWorkouts:input_type -> google.protobuf.Empty
-	50,  // 114: fitness_trainer.api.workout.WorkoutService.GetWorkouts:input_type -> fitness_trainer.api.workout.GetWorkoutsRequest
-	55,  // 115: fitness_trainer.api.workout.WorkoutService.LogExercise:input_type -> fitness_trainer.api.workout.LogExerciseRequest
-	56,  // 116: fitness_trainer.api.workout.WorkoutService.GetExerciseLogDetails:input_type -> fitness_trainer.api.workout.GetExerciseLogDetailRequest
-	57,  // 117: fitness_trainer.api.workout.WorkoutService.DeleteExerciseLog:input_type -> fitness_trainer.api.workout.DeleteExerciseLogRequest
-	58,  // 118: fitness_trainer.api.workout.WorkoutService.AddPowerRatingToExerciseLog:input_type -> fitness_trainer.api.workout.AddPowerRatingToExerciseLogRequest
-	59,  // 119: fitness_trainer.api.workout.WorkoutService.AddNotesToExerciseLog:input_type -> fitness_trainer.api.workout.AddNotesToExerciseLogRequest
-	60,  // 120: fitness_trainer.api.workout.WorkoutService.LogSet:input_type -> fitness_trainer.api.workout.LogSetRequest
-	61,  // 121: fitness_trainer.api.workout.WorkoutService.UpdateSetLog:input_type -> fitness_trainer.api.workout.UpdateSetLogRequest
-	62,  // 122: fitness_trainer.api.workout.WorkoutService.DeleteSetLog:input_type -> fitness_trainer.api.workout.DeleteSetLogRequest
-	63,  // 123: fitness_trainer.api.workout.WorkoutService.CompleteWorkout:input_type -> fitness_trainer.api.workout.CompleteWorkoutRequest
-	64,  // 124: fitness_trainer.api.workout.WorkoutService.GetWorkoutReport:input_type -> fitness_trainer.api.workout.GetWorkoutReportRequest
-	69,  // 125: fitness_trainer.api.workout.WorkoutService.RateWorkout:input_type -> fitness_trainer.api.workout.RateWorkoutRequest
-	70,  // 126: fitness_trainer.api.workout.WorkoutService.AddCommentToWorkout:input_type -> fitness_trainer.api.workout.AddCommentToWorkoutRequest
-	48,  // 127: fitness_trainer.api.workout.WorkoutService.UpdateExerciseLogWeightUnit:input_type -> fitness_trainer.api.workout.UpdateExerciseLogWeightUnitRequest
-	71,  // 128: fitness_trainer.api.workout.UserService.GetUser:input_type -> fitness_trainer.api.workout.GetUserRequest
-	94,  // 129: fitness_trainer.api.workout.UserService.GetMe:input_type -> google.protobuf.Empty
-	72,  // 130: fitness_trainer.api.workout.UserService.UpdateUser:input_type -> fitness_trainer.api.workout.UpdateUserRequest
-	77,  // 131: fitness_trainer.api.workout.UserService.UpdateWorkoutGenerationSettings:input_type -> fitness_trainer.api.workout.UpdateWorkoutGenerationSettingsRequest
-	94,  // 132: fitness_trainer.api.workout.UserService.GetWorkoutGenerationSettings:input_type -> google.protobuf.Empty
-	78,  // 133: fitness_trainer.api.workout.FileService.PresignUpload:input_type -> fitness_trainer.api.workout.PresignUploadRequest
-	83,  // 134: fitness_trainer.api.workout.ChatService.SendChatMessageStream:input_type -> fitness_trainer.api.workout.SendChatMessageRequest
-	87,  // 135: fitness_trainer.api.workout.ChatService.GetChat:input_type -> fitness_trainer.api.workout.GetChatRequest
-	17,  // 136: fitness_trainer.api.workout.ExerciseService.GetExercises:output_type -> fitness_trainer.api.workout.GetExercisesResponse
-	21,  // 137: fitness_trainer.api.workout.ExerciseService.CreateExercise:output_type -> fitness_trainer.api.workout.ExerciseResponse
-	21,  // 138: fitness_trainer.api.workout.ExerciseService.GetExerciseDetail:output_type -> fitness_trainer.api.workout.ExerciseResponse
-	19,  // 139: fitness_trainer.api.workout.ExerciseService.GetExerciseAlternatives:output_type -> fitness_trainer.api.workout.GetExerciseAlternativesResponse
-	25,  // 140: fitness_trainer.api.workout.ExerciseService.GetExerciseHistory:output_type -> fitness_trainer.api.workout.ExerciseHistoryResponse
-	23,  // 141: fitness_trainer.api.workout.ExerciseService.GetMuscleGroups:output_type -> fitness_trainer.api.workout.GetMuscleGroupsResponse
-	26,  // 142: fitness_trainer.api.workout.RoutineService.GetRoutines:output_type -> fitness_trainer.api.workout.RoutineListResponse
-	28,  // 143: fitness_trainer.api.workout.RoutineService.CreateRoutine:output_type -> fitness_trainer.api.workout.RoutineResponse
-	28,  // 144: fitness_trainer.api.workout.RoutineService.UpdateRoutine:output_type -> fitness_trainer.api.workout.RoutineResponse
-	32,  // 145: fitness_trainer.api.workout.RoutineService.GetRoutineDetail:output_type -> fitness_trainer.api.workout.RoutineDetailResponse
-	94,  // 146: fitness_trainer.api.workout.RoutineService.DeleteRoutine:output_type -> google.protobuf.Empty
-	34,  // 147: fitness_trainer.api.workout.RoutineService.AddExerciseToRoutine:output_type -> fitness_trainer.api.workout.RoutineInstanceResponse
-	38,  // 148: fitness_trainer.api.workout.RoutineService.GetExerciseInstanceDetails:output_type -> fitness_trainer.api.workout.GetExerciseInstanceDetailsResponse
-	94,  // 149: fitness_trainer.api.workout.RoutineService.RemoveExerciseInstanceFromRoutine:output_type -> google.protobuf.Empty
-	44,  // 150: fitness_trainer.api.workout.RoutineService.AddSetToExerciseInstance:output_type -> fitness_trainer.api.workout.SetResponse
-	44,  // 151: fitness_trainer.api.workout.RoutineService.UpdateSetInExerciseInstance:output_type -> fitness_trainer.api.workout.SetResponse
-	94,  // 152: fitness_trainer.api.workout.RoutineService.RemoveSetFromExerciseInstance:output_type -> google.protobuf.Empty
-	94,  // 153: fitness_trainer.api.workout.RoutineService.SetExerciseOrder:output_type -> google.protobuf.Empty
-	67,  // 154: fitness_trainer.api.workout.WorkoutService.StartWorkout:output_type -> fitness_trainer.api.workout.WorkoutResponse
-	54,  // 155: fitness_trainer.api.workout.WorkoutService.GetWorkout:output_type -> fitness_trainer.api.workout.GetWorkoutResponse
-	94,  // 156: fitness_trainer.api.workout.WorkoutService.DeleteWorkout:output_type -> google.protobuf.Empty
-	52,  // 157: fitness_trainer.api.workout.WorkoutService.GetActiveWorkouts:output_type -> fitness_trainer.api.workout.WorkoutsListResponse
-	51,  // 158: fitness_trainer.api.workout.WorkoutService.GetWorkouts:output_type -> fitness_trainer.api.workout.GetWorkoutsResponse
-	13,  // 159: fitness_trainer.api.workout.WorkoutService.LogExercise:output_type -> fitness_trainer.api.workout.ExerciseLog
-	65,  // 160: fitness_trainer.api.workout.WorkoutService.GetExerciseLogDetails:output_type -> fitness_trainer.api.workout.ExerciseLogResponse
-	94,  // 161: fitness_trainer.api.workout.WorkoutService.DeleteExerciseLog:output_type -> google.protobuf.Empty
-	94,  // 162: fitness_trainer.api.workout.WorkoutService.AddPowerRatingToExerciseLog:output_type -> google.protobuf.Empty
-	94,  // 163: fitness_trainer.api.workout.WorkoutService.AddNotesToExerciseLog:output_type -> google.protobuf.Empty
-	66,  // 164: fitness_trainer.api.workout.WorkoutService.LogSet:output_type -> fitness_trainer.api.workout.SetLogResponse
-	66,  // 165: fitness_trainer.api.workout.WorkoutService.UpdateSetLog:output_type -> fitness_trainer.api.workout.SetLogResponse
-	94,  // 166: fitness_trainer.api.workout.WorkoutService.DeleteSetLog:output_type -> google.protobuf.Empty
-	94,  // 167: fitness_trainer.api.workout.WorkoutService.CompleteWorkout:output_type -> google.protobuf.Empty
-	68,  // 168: fitness_trainer.api.workout.WorkoutService.GetWorkoutReport:output_type -> fitness_trainer.api.workout.WorkoutReportResponse
-	67,  // 169: fitness_trainer.api.workout.WorkoutService.RateWorkout:output_type -> fitness_trainer.api.workout.WorkoutResponse
-	67,  // 170: fitness_trainer.api.workout.WorkoutService.AddCommentToWorkout:output_type -> fitness_trainer.api.workout.WorkoutResponse
-	65,  // 171: fitness_trainer.api.workout.WorkoutService.UpdateExerciseLogWeightUnit:output_type -> fitness_trainer.api.workout.ExerciseLogResponse
-	74,  // 172: fitness_trainer.api.workout.UserService.GetUser:output_type -> fitness_trainer.api.workout.UserResponse
-	74,  // 173: fitness_trainer.api.workout.UserService.GetMe:output_type -> fitness_trainer.api.workout.UserResponse
-	74,  // 174: fitness_trainer.api.workout.UserService.UpdateUser:output_type -> fitness_trainer.api.workout.UserResponse
-	94,  // 175: fitness_trainer.api.workout.UserService.UpdateWorkoutGenerationSettings:output_type -> google.protobuf.Empty
-	75,  // 176: fitness_trainer.api.workout.UserService.GetWorkoutGenerationSettings:output_type -> fitness_trainer.api.workout.WorkoutGenerationSettingsResponse
-	79,  // 177: fitness_trainer.api.workout.FileService.PresignUpload:output_type -> fitness_trainer.api.workout.PresignUploadResponse
-	86,  // 178: fitness_trainer.api.workout.ChatService.SendChatMessageStream:output_type -> fitness_trainer.api.workout.SendChatMessageStreamResponse
-	88,  // 179: fitness_trainer.api.workout.ChatService.GetChat:output_type -> fitness_trainer.api.workout.GetChatResponse
-	136, // [136:180] is the sub-list for method output_type
-	92,  // [92:136] is the sub-list for method input_type
-	92,  // [92:92] is the sub-list for extension type_name
-	92,  // [92:92] is the sub-list for extension extendee
-	0,   // [0:92] is the sub-list for field type_name
+	95,  // 78: fitness_trainer.api.workout.ChatMessage.tool_arguments:type_name -> google.protobuf.Struct
+	93,  // 79: fitness_trainer.api.workout.ChatMessage.created_at:type_name -> google.protobuf.Timestamp
+	93,  // 80: fitness_trainer.api.workout.ChatMessage.updated_at:type_name -> google.protobuf.Timestamp
+	81,  // 81: fitness_trainer.api.workout.SendChatMessageResponse.chat:type_name -> fitness_trainer.api.workout.Chat
+	82,  // 82: fitness_trainer.api.workout.SendChatMessageResponse.messages:type_name -> fitness_trainer.api.workout.ChatMessage
+	83,  // 83: fitness_trainer.api.workout.SendChatMessageResponse.usage:type_name -> fitness_trainer.api.workout.ChatUsage
+	86,  // 84: fitness_trainer.api.workout.SendChatMessageStreamResponse.message_delta:type_name -> fitness_trainer.api.workout.ChatMessageDelta
+	83,  // 85: fitness_trainer.api.workout.SendChatMessageStreamResponse.usage:type_name -> fitness_trainer.api.workout.ChatUsage
+	85,  // 86: fitness_trainer.api.workout.SendChatMessageStreamResponse.final:type_name -> fitness_trainer.api.workout.SendChatMessageResponse
+	88,  // 87: fitness_trainer.api.workout.SendChatMessageStreamResponse.tool_event:type_name -> fitness_trainer.api.workout.ToolEvent
+	6,   // 88: fitness_trainer.api.workout.ToolEvent.state:type_name -> fitness_trainer.api.workout.ToolEvent.State
+	81,  // 89: fitness_trainer.api.workout.GetChatResponse.chat:type_name -> fitness_trainer.api.workout.Chat
+	82,  // 90: fitness_trainer.api.workout.GetChatResponse.messages:type_name -> fitness_trainer.api.workout.ChatMessage
+	13,  // 91: fitness_trainer.api.workout.GetWorkoutsResponse.WorkoutDetails.workout:type_name -> fitness_trainer.api.workout.Workout
+	14,  // 92: fitness_trainer.api.workout.GetWorkoutsResponse.WorkoutDetails.exercise_logs:type_name -> fitness_trainer.api.workout.ExerciseLog
+	94,  // 93: fitness_trainer.api.workout.WorkoutReportResponse.AdditionalInfo.total_time:type_name -> google.protobuf.Duration
+	17,  // 94: fitness_trainer.api.workout.ExerciseService.GetExercises:input_type -> fitness_trainer.api.workout.GetExercisesRequest
+	23,  // 95: fitness_trainer.api.workout.ExerciseService.CreateExercise:input_type -> fitness_trainer.api.workout.CreateExerciseRequest
+	21,  // 96: fitness_trainer.api.workout.ExerciseService.GetExerciseDetail:input_type -> fitness_trainer.api.workout.GetExerciseDetailRequest
+	19,  // 97: fitness_trainer.api.workout.ExerciseService.GetExerciseAlternatives:input_type -> fitness_trainer.api.workout.GetExerciseAlternativesRequest
+	25,  // 98: fitness_trainer.api.workout.ExerciseService.GetExerciseHistory:input_type -> fitness_trainer.api.workout.GetExerciseHistoryRequest
+	96,  // 99: fitness_trainer.api.workout.ExerciseService.GetMuscleGroups:input_type -> google.protobuf.Empty
+	96,  // 100: fitness_trainer.api.workout.RoutineService.GetRoutines:input_type -> google.protobuf.Empty
+	28,  // 101: fitness_trainer.api.workout.RoutineService.CreateRoutine:input_type -> fitness_trainer.api.workout.CreateRoutineRequest
+	30,  // 102: fitness_trainer.api.workout.RoutineService.UpdateRoutine:input_type -> fitness_trainer.api.workout.UpdateRoutineRequest
+	31,  // 103: fitness_trainer.api.workout.RoutineService.GetRoutineDetail:input_type -> fitness_trainer.api.workout.GetRoutineDetailRequest
+	37,  // 104: fitness_trainer.api.workout.RoutineService.DeleteRoutine:input_type -> fitness_trainer.api.workout.DeleteRoutineRequest
+	36,  // 105: fitness_trainer.api.workout.RoutineService.AddExerciseToRoutine:input_type -> fitness_trainer.api.workout.AddExerciseToRoutineRequest
+	38,  // 106: fitness_trainer.api.workout.RoutineService.GetExerciseInstanceDetails:input_type -> fitness_trainer.api.workout.GetExerciseInstanceDetailsRequest
+	40,  // 107: fitness_trainer.api.workout.RoutineService.RemoveExerciseInstanceFromRoutine:input_type -> fitness_trainer.api.workout.RemoveExerciseInstanceFromRoutineRequest
+	42,  // 108: fitness_trainer.api.workout.RoutineService.AddSetToExerciseInstance:input_type -> fitness_trainer.api.workout.AddSetToExerciseInstanceRequest
+	43,  // 109: fitness_trainer.api.workout.RoutineService.UpdateSetInExerciseInstance:input_type -> fitness_trainer.api.workout.UpdateSetInExerciseInstanceRequest
+	44,  // 110: fitness_trainer.api.workout.RoutineService.RemoveSetFromExerciseInstance:input_type -> fitness_trainer.api.workout.RemoveSetFromExerciseInstanceRequest
+	46,  // 111: fitness_trainer.api.workout.RoutineService.SetExerciseOrder:input_type -> fitness_trainer.api.workout.SetExerciseOrderRequest
+	47,  // 112: fitness_trainer.api.workout.WorkoutService.StartWorkout:input_type -> fitness_trainer.api.workout.StartWorkoutRequest
+	48,  // 113: fitness_trainer.api.workout.WorkoutService.GetWorkout:input_type -> fitness_trainer.api.workout.GetWorkoutRequest
+	50,  // 114: fitness_trainer.api.workout.WorkoutService.DeleteWorkout:input_type -> fitness_trainer.api.workout.DeleteWorkoutRequest
+	96,  // 115: fitness_trainer.api.workout.WorkoutService.GetActiveWorkouts:input_type -> google.protobuf.Empty
+	51,  // 116: fitness_trainer.api.workout.WorkoutService.GetWorkouts:input_type -> fitness_trainer.api.workout.GetWorkoutsRequest
+	56,  // 117: fitness_trainer.api.workout.WorkoutService.LogExercise:input_type -> fitness_trainer.api.workout.LogExerciseRequest
+	57,  // 118: fitness_trainer.api.workout.WorkoutService.GetExerciseLogDetails:input_type -> fitness_trainer.api.workout.GetExerciseLogDetailRequest
+	58,  // 119: fitness_trainer.api.workout.WorkoutService.DeleteExerciseLog:input_type -> fitness_trainer.api.workout.DeleteExerciseLogRequest
+	59,  // 120: fitness_trainer.api.workout.WorkoutService.AddPowerRatingToExerciseLog:input_type -> fitness_trainer.api.workout.AddPowerRatingToExerciseLogRequest
+	60,  // 121: fitness_trainer.api.workout.WorkoutService.AddNotesToExerciseLog:input_type -> fitness_trainer.api.workout.AddNotesToExerciseLogRequest
+	61,  // 122: fitness_trainer.api.workout.WorkoutService.LogSet:input_type -> fitness_trainer.api.workout.LogSetRequest
+	62,  // 123: fitness_trainer.api.workout.WorkoutService.UpdateSetLog:input_type -> fitness_trainer.api.workout.UpdateSetLogRequest
+	63,  // 124: fitness_trainer.api.workout.WorkoutService.DeleteSetLog:input_type -> fitness_trainer.api.workout.DeleteSetLogRequest
+	64,  // 125: fitness_trainer.api.workout.WorkoutService.CompleteWorkout:input_type -> fitness_trainer.api.workout.CompleteWorkoutRequest
+	65,  // 126: fitness_trainer.api.workout.WorkoutService.GetWorkoutReport:input_type -> fitness_trainer.api.workout.GetWorkoutReportRequest
+	70,  // 127: fitness_trainer.api.workout.WorkoutService.RateWorkout:input_type -> fitness_trainer.api.workout.RateWorkoutRequest
+	71,  // 128: fitness_trainer.api.workout.WorkoutService.AddCommentToWorkout:input_type -> fitness_trainer.api.workout.AddCommentToWorkoutRequest
+	49,  // 129: fitness_trainer.api.workout.WorkoutService.UpdateExerciseLogWeightUnit:input_type -> fitness_trainer.api.workout.UpdateExerciseLogWeightUnitRequest
+	72,  // 130: fitness_trainer.api.workout.UserService.GetUser:input_type -> fitness_trainer.api.workout.GetUserRequest
+	96,  // 131: fitness_trainer.api.workout.UserService.GetMe:input_type -> google.protobuf.Empty
+	73,  // 132: fitness_trainer.api.workout.UserService.UpdateUser:input_type -> fitness_trainer.api.workout.UpdateUserRequest
+	78,  // 133: fitness_trainer.api.workout.UserService.UpdateWorkoutGenerationSettings:input_type -> fitness_trainer.api.workout.UpdateWorkoutGenerationSettingsRequest
+	96,  // 134: fitness_trainer.api.workout.UserService.GetWorkoutGenerationSettings:input_type -> google.protobuf.Empty
+	79,  // 135: fitness_trainer.api.workout.FileService.PresignUpload:input_type -> fitness_trainer.api.workout.PresignUploadRequest
+	84,  // 136: fitness_trainer.api.workout.ChatService.SendChatMessageStream:input_type -> fitness_trainer.api.workout.SendChatMessageRequest
+	89,  // 137: fitness_trainer.api.workout.ChatService.GetChat:input_type -> fitness_trainer.api.workout.GetChatRequest
+	18,  // 138: fitness_trainer.api.workout.ExerciseService.GetExercises:output_type -> fitness_trainer.api.workout.GetExercisesResponse
+	22,  // 139: fitness_trainer.api.workout.ExerciseService.CreateExercise:output_type -> fitness_trainer.api.workout.ExerciseResponse
+	22,  // 140: fitness_trainer.api.workout.ExerciseService.GetExerciseDetail:output_type -> fitness_trainer.api.workout.ExerciseResponse
+	20,  // 141: fitness_trainer.api.workout.ExerciseService.GetExerciseAlternatives:output_type -> fitness_trainer.api.workout.GetExerciseAlternativesResponse
+	26,  // 142: fitness_trainer.api.workout.ExerciseService.GetExerciseHistory:output_type -> fitness_trainer.api.workout.ExerciseHistoryResponse
+	24,  // 143: fitness_trainer.api.workout.ExerciseService.GetMuscleGroups:output_type -> fitness_trainer.api.workout.GetMuscleGroupsResponse
+	27,  // 144: fitness_trainer.api.workout.RoutineService.GetRoutines:output_type -> fitness_trainer.api.workout.RoutineListResponse
+	29,  // 145: fitness_trainer.api.workout.RoutineService.CreateRoutine:output_type -> fitness_trainer.api.workout.RoutineResponse
+	29,  // 146: fitness_trainer.api.workout.RoutineService.UpdateRoutine:output_type -> fitness_trainer.api.workout.RoutineResponse
+	33,  // 147: fitness_trainer.api.workout.RoutineService.GetRoutineDetail:output_type -> fitness_trainer.api.workout.RoutineDetailResponse
+	96,  // 148: fitness_trainer.api.workout.RoutineService.DeleteRoutine:output_type -> google.protobuf.Empty
+	35,  // 149: fitness_trainer.api.workout.RoutineService.AddExerciseToRoutine:output_type -> fitness_trainer.api.workout.RoutineInstanceResponse
+	39,  // 150: fitness_trainer.api.workout.RoutineService.GetExerciseInstanceDetails:output_type -> fitness_trainer.api.workout.GetExerciseInstanceDetailsResponse
+	96,  // 151: fitness_trainer.api.workout.RoutineService.RemoveExerciseInstanceFromRoutine:output_type -> google.protobuf.Empty
+	45,  // 152: fitness_trainer.api.workout.RoutineService.AddSetToExerciseInstance:output_type -> fitness_trainer.api.workout.SetResponse
+	45,  // 153: fitness_trainer.api.workout.RoutineService.UpdateSetInExerciseInstance:output_type -> fitness_trainer.api.workout.SetResponse
+	96,  // 154: fitness_trainer.api.workout.RoutineService.RemoveSetFromExerciseInstance:output_type -> google.protobuf.Empty
+	96,  // 155: fitness_trainer.api.workout.RoutineService.SetExerciseOrder:output_type -> google.protobuf.Empty
+	68,  // 156: fitness_trainer.api.workout.WorkoutService.StartWorkout:output_type -> fitness_trainer.api.workout.WorkoutResponse
+	55,  // 157: fitness_trainer.api.workout.WorkoutService.GetWorkout:output_type -> fitness_trainer.api.workout.GetWorkoutResponse
+	96,  // 158: fitness_trainer.api.workout.WorkoutService.DeleteWorkout:output_type -> google.protobuf.Empty
+	53,  // 159: fitness_trainer.api.workout.WorkoutService.GetActiveWorkouts:output_type -> fitness_trainer.api.workout.WorkoutsListResponse
+	52,  // 160: fitness_trainer.api.workout.WorkoutService.GetWorkouts:output_type -> fitness_trainer.api.workout.GetWorkoutsResponse
+	14,  // 161: fitness_trainer.api.workout.WorkoutService.LogExercise:output_type -> fitness_trainer.api.workout.ExerciseLog
+	66,  // 162: fitness_trainer.api.workout.WorkoutService.GetExerciseLogDetails:output_type -> fitness_trainer.api.workout.ExerciseLogResponse
+	96,  // 163: fitness_trainer.api.workout.WorkoutService.DeleteExerciseLog:output_type -> google.protobuf.Empty
+	96,  // 164: fitness_trainer.api.workout.WorkoutService.AddPowerRatingToExerciseLog:output_type -> google.protobuf.Empty
+	96,  // 165: fitness_trainer.api.workout.WorkoutService.AddNotesToExerciseLog:output_type -> google.protobuf.Empty
+	67,  // 166: fitness_trainer.api.workout.WorkoutService.LogSet:output_type -> fitness_trainer.api.workout.SetLogResponse
+	67,  // 167: fitness_trainer.api.workout.WorkoutService.UpdateSetLog:output_type -> fitness_trainer.api.workout.SetLogResponse
+	96,  // 168: fitness_trainer.api.workout.WorkoutService.DeleteSetLog:output_type -> google.protobuf.Empty
+	96,  // 169: fitness_trainer.api.workout.WorkoutService.CompleteWorkout:output_type -> google.protobuf.Empty
+	69,  // 170: fitness_trainer.api.workout.WorkoutService.GetWorkoutReport:output_type -> fitness_trainer.api.workout.WorkoutReportResponse
+	68,  // 171: fitness_trainer.api.workout.WorkoutService.RateWorkout:output_type -> fitness_trainer.api.workout.WorkoutResponse
+	68,  // 172: fitness_trainer.api.workout.WorkoutService.AddCommentToWorkout:output_type -> fitness_trainer.api.workout.WorkoutResponse
+	66,  // 173: fitness_trainer.api.workout.WorkoutService.UpdateExerciseLogWeightUnit:output_type -> fitness_trainer.api.workout.ExerciseLogResponse
+	75,  // 174: fitness_trainer.api.workout.UserService.GetUser:output_type -> fitness_trainer.api.workout.UserResponse
+	75,  // 175: fitness_trainer.api.workout.UserService.GetMe:output_type -> fitness_trainer.api.workout.UserResponse
+	75,  // 176: fitness_trainer.api.workout.UserService.UpdateUser:output_type -> fitness_trainer.api.workout.UserResponse
+	96,  // 177: fitness_trainer.api.workout.UserService.UpdateWorkoutGenerationSettings:output_type -> google.protobuf.Empty
+	76,  // 178: fitness_trainer.api.workout.UserService.GetWorkoutGenerationSettings:output_type -> fitness_trainer.api.workout.WorkoutGenerationSettingsResponse
+	80,  // 179: fitness_trainer.api.workout.FileService.PresignUpload:output_type -> fitness_trainer.api.workout.PresignUploadResponse
+	87,  // 180: fitness_trainer.api.workout.ChatService.SendChatMessageStream:output_type -> fitness_trainer.api.workout.SendChatMessageStreamResponse
+	90,  // 181: fitness_trainer.api.workout.ChatService.GetChat:output_type -> fitness_trainer.api.workout.GetChatResponse
+	138, // [138:182] is the sub-list for method output_type
+	94,  // [94:138] is the sub-list for method input_type
+	94,  // [94:94] is the sub-list for extension type_name
+	94,  // [94:94] is the sub-list for extension extendee
+	0,   // [0:94] is the sub-list for field type_name
 }
 
 func init() { file_workouts_workouts_proto_init() }
@@ -6492,15 +6656,17 @@ func file_workouts_workouts_proto_init() {
 		(*SendChatMessageStreamResponse_Usage)(nil),
 		(*SendChatMessageStreamResponse_Status)(nil),
 		(*SendChatMessageStreamResponse_Final)(nil),
+		(*SendChatMessageStreamResponse_ToolEvent)(nil),
 	}
 	file_workouts_workouts_proto_msgTypes[81].OneofWrappers = []any{}
+	file_workouts_workouts_proto_msgTypes[82].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_workouts_workouts_proto_rawDesc), len(file_workouts_workouts_proto_rawDesc)),
-			NumEnums:      6,
-			NumMessages:   85,
+			NumEnums:      7,
+			NumMessages:   86,
 			NumExtensions: 0,
 			NumServices:   6,
 		},
