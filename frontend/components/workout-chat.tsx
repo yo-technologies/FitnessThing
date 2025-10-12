@@ -31,6 +31,7 @@ import {
   sendWorkoutChatMessageStream,
 } from "@/api/chat-stream";
 import { GearIcon, RightArrowIcon } from "@/config/icons";
+import { formatToolLabel } from "@/config/tools";
 
 type WorkoutChatPanelProps = {
   workoutId: string;
@@ -83,6 +84,8 @@ function ToolChip({
   isStreaming?: boolean;
   createdAt?: string;
 }) {
+  const label = useMemo(() => formatToolLabel(toolName), [toolName]);
+
   return (
     <div className="flex w-full flex-col gap-1 items-start">
       <div
@@ -92,7 +95,7 @@ function ToolChip({
         }
       >
         <GearIcon className={`h-3 w-3 self-center`} />
-        <span className="text-xs">{toolName}</span>
+        <span className="text-xs">{label}</span>
 
         {isStreaming && (
           <span className="flex items-center gap-1 text-warning text-xs ml-2">
