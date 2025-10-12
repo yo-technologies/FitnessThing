@@ -558,11 +558,44 @@ func (s *Service) handleAssistantToolCalls(
 
 		result, err := s.toolsService.ExecuteChatAgentTool(ctx, chatCtx, toolName, toolArgsJSON)
 		if err != nil {
-			_, failureErr := s.handleAssistantFailure(ctx, chatID, fmt.Errorf("tool %s error: %w", toolName, err))
-			if failureErr != nil {
-				return failureErr
+			// Не прерываем цикл: сохраняем ошибку как tool-сообщение, чтобы LLM увидела её и могла скорректировать стратегию.
+			errText := fmt.Sprintf("error: %s", err.Error())
+
+			toolRecord := domain.NewChatMessage(
+				chatID,
+				domain.ChatMessageRoleTool,
+				errText,
+				utils.Nullable[string]{},
+				utils.Nullable[string]{},
+				nil,
+			)
+
+			if toolName != "" {
+				toolRecord.ToolName = utils.NewNullable(toolName, true)
 			}
-			return err
+			if toolCall.ID != "" {
+				toolRecord.ToolCallID = utils.NewNullable(toolCall.ID, true)
+			}
+
+			savedTool, perr := s.chatRepository.CreateChatMessage(ctx, toolRecord)
+			if perr != nil {
+				return fmt.Errorf("failed to persist tool error message: %w", perr)
+			}
+
+			toolParam, perr := s.chatMessageToOpenAIParam(savedTool)
+			if perr != nil {
+				return perr
+			}
+			*messages = append(*messages, toolParam)
+
+			if callbacks.OnStatus != nil {
+				// Сообщим об ошибке и закроем статус выполнения инструмента, чтобы UI завершил индикатор.
+				_ = callbacks.OnStatus(fmt.Sprintf("tool %s error", toolName))
+				_ = callbacks.OnStatus(fmt.Sprintf("tool %s completed", toolName))
+			}
+
+			// Продолжаем к следующему tool call
+			continue
 		}
 
 		toolRecord := domain.NewChatMessage(
