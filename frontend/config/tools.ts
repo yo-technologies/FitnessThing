@@ -43,13 +43,8 @@ export const TOOL_DICTIONARY: Record<string, ToolMeta> = {
   },
   replace_expected_sets: {
     id: "replace_expected_sets",
-    label: "Замена подходов",
+    label: "Установка подходов",
     description: "Полная замена ожидаемых подходов",
-  },
-  update_set_log: {
-    id: "update_set_log",
-    label: "Обновление подхода",
-    description: "Обновление параметров подхода",
   },
 };
 

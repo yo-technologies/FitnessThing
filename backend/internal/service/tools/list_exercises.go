@@ -19,11 +19,17 @@ func (t *Tools) newListExercisesTool() agentTool {
 		"properties": map[string]any{
 			"muscle_group_ids": map[string]any{
 				"type":  "array",
-				"items": map[string]any{"type": "string", "description": "UUID of the muscle group"},
+				"items": map[string]any{
+					"type": "string",
+					"description": "UUID of the muscle group. Exercises matching any of the provided muscle groups will be returned.",
+				},
 			},
 			"exclude_exercise_ids": map[string]any{
 				"type":  "array",
-				"items": map[string]any{"type": "string", "description": "UUID of exercises to exclude"},
+				"items": map[string]any{
+					"type": "string",
+					"description": "UUID of exercises to exclude",
+				},
 			},
 			"limit": map[string]any{
 				"type":        "integer",

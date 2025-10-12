@@ -99,8 +99,11 @@ function ToolChip({
 
         {isStreaming && (
           <span className="flex items-center gap-1 text-warning text-xs ml-2">
-            <Spinner color="warning" size="sm" />
-            <span>выполняется…</span>
+            <Spinner
+              classNames={{ wrapper: "w-3 h-3" }}
+              color="warning"
+              size="sm"
+            />
           </span>
         )}
         {createdAt && (
@@ -502,7 +505,7 @@ export function WorkoutChatPanel({
   const content = useMemo(() => {
     if (loading) {
       return (
-        <div className="flex h-full flex-col items-center justify-center gap-2">
+        <div className="flex w-full flex-col items-center justify-center gap-2">
           <Spinner color="secondary" size="lg" />
           <p className="text-sm text-default-500">Загружаем чат…</p>
         </div>
@@ -511,7 +514,7 @@ export function WorkoutChatPanel({
 
     if (error && !hasMessages) {
       return (
-        <div className="flex h-full flex-col items-center justify-center gap-4">
+        <div className="flex w-full flex-col items-center justify-center gap-4">
           <p className="text-sm text-default-500">{error}</p>
           <Button color="secondary" size="sm" onPress={() => void loadChat()}>
             Повторить
@@ -522,7 +525,7 @@ export function WorkoutChatPanel({
 
     if (!hasMessages) {
       return (
-        <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center text-default-500">
+        <div className="flex w-full flex-col items-center justify-center gap-3 p-6 text-center text-default-500">
           <p className="text-sm">
             Общайтесь с тренером, чтобы настроить тренировку.
           </p>
@@ -535,7 +538,7 @@ export function WorkoutChatPanel({
     }
 
     return (
-      <div className="flex h-full flex-col gap-3 p-4">
+      <div className="flex w-full flex-col gap-3 p-4">
         {combinedMessages.map((message, idx, arr) => {
           // Пропускаем системные сообщения
           const isSystemMessage =
@@ -610,7 +613,9 @@ export function WorkoutChatPanel({
                 size={60}
               >
                 {/* Контент сообщений; добавляем нижний паддинг, чтобы оверлей не перекрывал последние сообщения */}
-                <div className={`min-h-full ${showThinking ? "pb-4" : ""}`}>
+                <div
+                  className={`flex min-h-full min-w-full ${showThinking ? "pb-4" : ""}`}
+                >
                   {content}
                 </div>
               </ScrollShadow>

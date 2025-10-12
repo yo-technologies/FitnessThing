@@ -42,9 +42,6 @@ type service interface {
 	DeleteExerciseLog(ctx context.Context, userID, workoutID, exerciseLogID domain.ID) error
 	ReplaceExpectedSets(ctx context.Context, userID, workoutID, exerciseLogID domain.ID, sets []dto.ExpectedSetInput) error
 
-	// Set log methods
-	UpdateSetLog(ctx context.Context, userID, workoutID, exerciseLogID, setLogID domain.ID, setlogDTO dto.UpdateSetLogDTO) (domain.ExerciseSetLog, error)
-
 	// Muscle groups
 	GetMuscleGroups(ctx context.Context) ([]dto.MuscleGroupDTO, error)
 }
@@ -89,7 +86,6 @@ func (t *Tools) ensureChatTools() {
 			t.newAddExercisesToWorkoutTool(),
 			t.newRemoveExerciseLogsTool(),
 			t.newReplaceExpectedSetsTool(),
-			t.newUpdateSetLogTool(),
 		} {
 			if tool.name == "" {
 				panic("agent tool definition missing name")
@@ -168,4 +164,3 @@ func (t *Tools) executeTool(ctx context.Context, chatCtx domain.AgentChatContext
 
 	return string(resultJSON), nil
 }
-

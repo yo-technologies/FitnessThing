@@ -115,13 +115,6 @@ type listExercisesArgs struct {
 	Limit              *int     `json:"limit"`
 }
 
-type updateSetLogArgs struct {
-	ExerciseLogID string   `json:"exercise_log_id"`
-	SetLogID      string   `json:"set_log_id"`
-	Reps          *int     `json:"reps"`
-	Weight        *float64 `json:"weight"`
-}
-
 type getExerciseHistoryArgs struct {
 	ExerciseID string `json:"exercise_id"`
 	LogsLimit  *int   `json:"logs_limit"`
@@ -148,20 +141,22 @@ type expectedSetInput struct {
 }
 
 type exerciseLogHistory struct {
-	ID        string          `json:"id"`
-	WorkoutID string          `json:"workout_id"`
-	CreatedAt time.Time       `json:"created_at"`
-	Notes     string          `json:"notes"`
-	SetLogs   []setLogHistory `json:"set_logs"`
+	ID         string          `json:"id"`
+	WorkoutID  string          `json:"workout_id"`
+	CreatedAt  time.Time       `json:"created_at"`
+	Notes      string          `json:"notes"`
+	WeightUnit string          `json:"weight_unit"`
+	SetLogs    []setLogHistory `json:"set_logs"`
 }
 
 func exerciseLogHistoryFromDomain(log dto.ExerciseLogDTO) exerciseLogHistory {
 	return exerciseLogHistory{
-		ID:        log.ExerciseLog.ID.String(),
-		WorkoutID: log.ExerciseLog.WorkoutID.String(),
-		CreatedAt: log.ExerciseLog.CreatedAt,
-		Notes:     log.ExerciseLog.Notes,
-		SetLogs:   setLogHistoryListFromDomain(log.SetLogs),
+		ID:         log.ExerciseLog.ID.String(),
+		WorkoutID:  log.ExerciseLog.WorkoutID.String(),
+		CreatedAt:  log.ExerciseLog.CreatedAt,
+		Notes:      log.ExerciseLog.Notes,
+		WeightUnit: log.ExerciseLog.WeightUnit.String(),
+		SetLogs:    setLogHistoryListFromDomain(log.SetLogs),
 	}
 }
 

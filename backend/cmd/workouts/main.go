@@ -39,6 +39,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/openai/openai-go/v3"
 	"github.com/openai/openai-go/v3/option"
+	"github.com/openai/openai-go/v3/shared"
 	"github.com/throttled/throttled/v2"
 	"github.com/throttled/throttled/v2/store/memstore"
 
@@ -110,9 +111,9 @@ func Run() error {
 		return fmt.Errorf("OPENAI_MODEL environment variable is not set")
 	}
 
-	reasoningEffort := os.Getenv("REASONING_EFFORT")
+	reasoningEffort := os.Getenv("CHAT_REASONING_EFFORT")
 	if reasoningEffort == "" {
-		reasoningEffort = "medium"
+		reasoningEffort = string(shared.ReasoningEffortMedium)
 	}
 
 	service := service.New(
