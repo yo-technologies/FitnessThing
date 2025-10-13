@@ -113,6 +113,48 @@ FitnessTrainer/
    - Jaeger UI: http://localhost:16686
    - Dozzle (логи): http://localhost:9999
 
+## ⚙️ Конфигурация
+
+Проект использует гибридный подход к управлению конфигурацией:
+
+### 🔐 Секреты (Environment Variables)
+- API ключи (OpenAI, Gemini, Telegram, AWS)
+- Пароли баз данных
+- Sensitive данные
+
+### ⚙️ Настройки (YAML файлы)
+- Модели LLM и reasoning effort
+- Rate limits и таймауты
+- Конфигурация сервисов
+
+### Локальная разработка
+```bash
+# Секреты
+cp backend/.env.example backend/.env
+
+# Настройки (runtime-configurable)
+cp backend/config.example.yaml backend/config.yaml
+```
+
+### Docker
+```bash
+# Секреты
+cp backend/.env.example backend/.env.docker
+
+# Настройки (runtime-configurable)
+cp backend/config.example.yaml backend/config.docker.yaml
+```
+
+### Runtime изменения
+Изменяйте `config.yaml` или `config.docker.yaml` без перезапуска:
+
+```yaml
+llm:
+  openai:
+    model: "anthropic/claude-3.5-sonnet"
+  reasoning_effort: "high"
+```
+
 ## 📚 API Документация
 
 Полная [документация API в виде Swagger UI](./backend/pkg/workouts/workouts.swagger.json) доступна по адресу `/api/docs/` после запуска приложения.

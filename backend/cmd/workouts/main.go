@@ -14,6 +14,7 @@ import (
 
 	"fitness-trainer/internal/app"
 	"fitness-trainer/internal/clients/ratelimiter"
+	appconfig "fitness-trainer/internal/config"
 	"fitness-trainer/internal/db"
 	"fitness-trainer/internal/logger"
 	"fitness-trainer/internal/repository"
@@ -39,7 +40,6 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/openai/openai-go/v3"
 	"github.com/openai/openai-go/v3/option"
-	"github.com/openai/openai-go/v3/shared"
 	"github.com/throttled/throttled/v2"
 	"github.com/throttled/throttled/v2/store/memstore"
 
@@ -67,6 +67,18 @@ func loadPostgresURL() string {
 func Run() error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+
+	// Initialize config
+	configPath := os.Getenv("CONFIG_PATH")
+	if configPath == "" {
+		configPath = "config.yaml"
+	}
+	
+	if err := appconfig.Initialize(configPath); err != nil {
+		return fmt.Errorf("failed to initialize config: %w", err)
+	}
+	
+	cfg := appconfig.Get()
 
 	tracer.MustSetup(
 		ctx,
@@ -106,15 +118,6 @@ func Run() error {
 
 	openAIClient := newOpenAIClient()
 	openAIClientWrapper := openai_client.New(openAIClient)
-	openAIModel := os.Getenv("OPENAI_MODEL")
-	if openAIModel == "" {
-		return fmt.Errorf("OPENAI_MODEL environment variable is not set")
-	}
-
-	reasoningEffort := os.Getenv("CHAT_REASONING_EFFORT")
-	if reasoningEffort == "" {
-		reasoningEffort = string(shared.ReasoningEffortMedium)
-	}
 
 	service := service.New(
 		contextManager,
@@ -132,18 +135,17 @@ func Run() error {
 		repo,
 		repo,
 		openAIClientWrapper,
-		openAIModel,
-		reasoningEffort,
+		cfg,
 	)
 
 	telegramTokenParser := newTelegramTokenParser()
 
-	promptGenerationDebounce := time.Second * 60
-	promptGenerationPeriod := time.Second * 10
+	promptGenerationDebounce := cfg.GetPromptGenerationDebounce()
+	promptGenerationPeriod := cfg.GetPromptGenerationPeriod()
 
 	promptGenerationQuota := throttled.RateQuota{
-		MaxRate:  throttled.PerHour(5),
-		MaxBurst: 5,
+		MaxRate:  throttled.PerHour(cfg.GetPromptGenerationRatePerHour()),
+		MaxBurst: cfg.GetPromptGenerationRateBurst(),
 	}
 
 	promptGenerationInmemmoryStore, err := memstore.NewCtx(65536)
@@ -163,7 +165,7 @@ func Run() error {
 
 	promptsClientWrapper := genai_client.New(
 		genaiClient,
-		os.Getenv("GENAI_MODEL_NAME"),
+		cfg.GetGenAIModel(),
 		nil,
 	)
 

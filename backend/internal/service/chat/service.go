@@ -4,6 +4,7 @@ import (
 	"context"
 
 	openai_client "fitness-trainer/internal/clients/openai"
+	"fitness-trainer/internal/config"
 
 	"fitness-trainer/internal/domain"
 
@@ -38,9 +39,8 @@ type Service struct {
 	workoutRepository    workoutRepository
 	userPromptRepository userPromptRepository
 
-	openAIClient    openai_client.ChatClient
-	openAIModel     string
-	reasoningEffort string
+	openAIClient openai_client.ChatClient
+	config       *config.Config
 }
 
 func New(
@@ -49,8 +49,7 @@ func New(
 	workoutRepository workoutRepository,
 	userPromptRepository userPromptRepository,
 	openAIClient openai_client.ChatClient,
-	openAIModel string,
-	reasoningEffort string,
+	config *config.Config,
 ) *Service {
 	return &Service{
 		toolsService:         toolsService,
@@ -58,6 +57,6 @@ func New(
 		workoutRepository:    workoutRepository,
 		userPromptRepository: userPromptRepository,
 		openAIClient:         openAIClient,
-		openAIModel:          openAIModel,
+		config:               config,
 	}
 }

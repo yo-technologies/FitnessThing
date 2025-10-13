@@ -39,6 +39,11 @@
 **/.env.*
 !**/.env.example
 
+# config files (keep templates only)
+**/config.yaml
+!**/config.*.yaml
+**/config.docker.yaml
+
 # IDE
 **/.idea
 **/.vscode

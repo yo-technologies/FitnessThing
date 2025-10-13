@@ -127,7 +127,7 @@ func (s *Service) SendChatMessageStream(ctx context.Context, userID domain.ID, r
 	)
 
 	for range maxChatCompletionLoops {
-		params := s.newChatCompletionParams(messages, toolDefs, s.openAIModel, s.reasoningEffort, true)
+		params := s.newChatCompletionParams(messages, toolDefs, s.config.GetOpenAIModel(), s.config.GetReasoningEffort(), true)
 
 		stream, err := s.openAIClient.CreateChatCompletionStream(ctx, params)
 		if err != nil {
