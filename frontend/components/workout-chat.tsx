@@ -651,6 +651,7 @@ export function WorkoutChatPanel({
           </div>
           <div className="flex items-center gap-2 border-t border-default-200 px-4 py-2 mb-4">
             <Textarea
+              autoFocus
               className="flex-1"
               classNames={{
                 inputWrapper: "bg-default-100",
