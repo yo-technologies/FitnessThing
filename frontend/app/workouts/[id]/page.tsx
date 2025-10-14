@@ -11,7 +11,7 @@ import {
   useDisclosure,
 } from "@nextui-org/modal";
 import { DropdownItem } from "@nextui-org/dropdown";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { use, useEffect, useState } from "react";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { toast } from "react-toastify";
@@ -184,6 +184,7 @@ export default function WorkoutDetailsPage({
   const { id } = use(params);
 
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const { isOpen, onOpen, onClose } = useDisclosure();
 
@@ -192,6 +193,18 @@ export default function WorkoutDetailsPage({
     onOpen: onChatOpen,
     onClose: onChatClose,
   } = useDisclosure();
+
+  // Открываем чат автоматически и предзаполняем инпут, если переданы параметры
+  const prefill = searchParams.get("prefill") ?? undefined;
+  const shouldOpenChat = searchParams.get("openChat") === "1";
+
+  useEffect(() => {
+    if (shouldOpenChat) {
+      onChatOpen();
+    }
+    // Открывать только при первом маунте
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // При закрытии панели чата обновляем данные тренировки (вдруг были изменения через инструменты)
   const handleChatClose = () => {
@@ -470,6 +483,7 @@ export default function WorkoutDetailsPage({
       <MainContent />
       <WorkoutChatPanel
         isOpen={isChatOpen}
+        prefill={prefill}
         workoutId={id}
         onClose={handleChatClose}
       />

@@ -168,7 +168,15 @@ export default function Home() {
         console.log(response.data);
         const workoutId = response.data.workout?.id;
 
-        router.push(`/workouts/${workoutId}`);
+        const aiPrefill = "Привет! Сгенерируй мне тренировку на сегодня.";
+
+        if (generate) {
+          router.push(
+            `/workouts/${workoutId}?openChat=1&prefill=${encodeURIComponent(aiPrefill)}`,
+          );
+        } else {
+          router.push(`/workouts/${workoutId}`);
+        }
       })
       .catch((error) => {
         console.log(error);

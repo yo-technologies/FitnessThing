@@ -37,6 +37,7 @@ type WorkoutChatPanelProps = {
   workoutId: string;
   isOpen: boolean;
   onClose: () => void;
+  prefill?: string;
 };
 
 type StreamState = {
@@ -197,6 +198,7 @@ export function WorkoutChatPanel({
   workoutId,
   isOpen,
   onClose,
+  prefill,
 }: WorkoutChatPanelProps) {
   const [chat, setChat] = useState<WorkoutChat | undefined>();
   const [messages, setMessages] = useState<WorkoutChatMessage[]>([]);
@@ -213,6 +215,7 @@ export function WorkoutChatPanel({
   // Ref на скроллируемый контейнер (overflow-y-auto)
   const scrollRef = useRef<HTMLDivElement>(null);
   const sessionRef = useRef<ChatSessionHandle>(null);
+  const prefillAppliedRef = useRef(false);
 
   const hasMessages =
     messages.length > 0 || streamingAssistantMessage.length > 0;
@@ -250,6 +253,19 @@ export function WorkoutChatPanel({
 
     void loadChat();
   }, [isOpen, loadChat]);
+
+  // Однократно подставляем текст в инпут при первом открытии, если передан prefill
+  useEffect(() => {
+    if (
+      isOpen &&
+      prefill &&
+      !prefillAppliedRef.current &&
+      inputValue.trim() === ""
+    ) {
+      setInputValue(prefill);
+      prefillAppliedRef.current = true;
+    }
+  }, [isOpen, prefill, inputValue]);
 
   useEffect(() => {
     if (!isOpen && sessionRef.current) {
