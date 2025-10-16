@@ -115,8 +115,6 @@ function parseStreamMessage(
     if (parsed && typeof parsed === "object" && "payload" in parsed) {
       const payload = (parsed as { payload: unknown }).payload;
 
-      console.log("Processing payload:", payload);
-
       if (isStreamResponse(payload)) {
         return payload;
       } else {
@@ -127,8 +125,6 @@ function parseStreamMessage(
     // Handle case where payload is capitalized (Payload instead of payload)
     if (parsed && typeof parsed === "object" && "Payload" in parsed) {
       const payload = (parsed as { Payload: unknown }).Payload;
-
-      console.log("Processing Payload:", payload);
 
       if (isStreamResponse(payload)) {
         return payload;
@@ -204,10 +200,7 @@ export function sendWorkoutChatMessageStream(
           return;
         }
 
-        console.log("Parsed stream message", parsed);
-
         if (parsed.messageDelta?.content) {
-          console.log("Parsed message delta:", parsed.messageDelta.content);
           callbacks.onMessageDelta?.(parsed.messageDelta.content);
         }
 
@@ -224,7 +217,6 @@ export function sendWorkoutChatMessageStream(
         }
 
         if (parsed.final) {
-          console.log("Received final response:", parsed.final);
           finalResponse = parsed.final;
           callbacks.onFinal?.(parsed.final);
           resolve(parsed.final);
