@@ -49,6 +49,32 @@ export function AssistantMarkdown({ content }: AssistantMarkdownProps) {
             {children}
           </h3>
         ),
+        table: (props) => (
+          <div className="max-w-full overflow-x-auto">
+            <table
+              className="my-2 border border-gray-300 dark:border-gray-600 rounded"
+              {...props}
+            />
+          </div>
+        ),
+        th: (props) => (
+          <th
+            className="border border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 font-semibold p-1 text-left"
+            {...props}
+          />
+        ),
+        td: (props) => (
+          <td
+            className="border border-gray-300 dark:border-gray-600 p-1 text-left align-top"
+            {...props}
+          />
+        ),
+        hr: (props) => (
+          <hr
+            className="my-4 border-t border-gray-300 dark:border-gray-600"
+            {...props}
+          />
+        ),
       }}
       remarkPlugins={[remarkGfm]}
     >
