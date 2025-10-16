@@ -160,7 +160,10 @@ function MessageBubble({
   }
 
   return (
-    <div className={`flex w-full flex-col gap-2 ${alignment}`}>
+    <div
+      className={`flex w-full flex-col gap-2 ${alignment}`}
+      data-message-id={message.id ?? undefined}
+    >
       {showHeader && (
         <span className="text-xs font-bold text-default-500">
           {roleLabel(message.role)}
@@ -173,7 +176,7 @@ function MessageBubble({
           }`}
         >
           <div
-            className={`rounded-large px-3 py-2 text-sm shadow-sm ${bubbleClasses} [&_p]:my-0 [&_ul]:my-0 [&_ol]:my-0 [&_pre]:my-0 [&_blockquote]:my-0 [&_h1]:mt-0 [&_h2]:mt-0 [&_h3]:mt-0 [&_h4]:mt-0`}
+            className={`max-w-full rounded-large px-3 py-2 text-sm shadow-sm ${bubbleClasses} [&_p]:my-0 [&_ul]:my-0 [&_ol]:my-0 [&_pre]:my-0 [&_blockquote]:my-0 [&_h1]:mt-0 [&_h2]:mt-0 [&_h3]:mt-0 [&_h4]:mt-0`}
           >
             <AssistantMarkdown content={message.content} />
             {isStreaming && <span className="ml-1 animate-pulse">▍</span>}
@@ -211,11 +214,14 @@ export function WorkoutChatPanel({
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingToolMessage, setStreamingToolMessage] =
     useState<WorkoutChatMessage | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   // Ref на скроллируемый контейнер (overflow-y-auto)
   const scrollRef = useRef<HTMLDivElement>(null);
   const sessionRef = useRef<ChatSessionHandle>(null);
   const prefillAppliedRef = useRef(false);
+  const latestUserMessageIdRef = useRef<string | null>(null);
+  const autoScrollOnOpenRef = useRef(false);
 
   const hasMessages =
     messages.length > 0 || streamingAssistantMessage.length > 0;
@@ -251,6 +257,8 @@ export function WorkoutChatPanel({
       return;
     }
 
+    autoScrollOnOpenRef.current = true;
+    latestUserMessageIdRef.current = null;
     void loadChat();
   }, [isOpen, loadChat]);
 
@@ -274,37 +282,54 @@ export function WorkoutChatPanel({
     }
   }, [isOpen]);
 
-  // Автоскролл сообщений (основной список)
   useEffect(() => {
+    if (!isOpen || !hasMessages) return;
+
     const el = scrollRef.current;
 
     if (!el) return;
 
-    // Используем requestAnimationFrame для гарантированного рендера DOM
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
+    const handleScroll = () => {
+      if (autoScrollOnOpenRef.current) {
+        autoScrollOnOpenRef.current = false;
         el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+
+        return;
+      }
+
+      const latestId = latestUserMessageIdRef.current;
+
+      if (!latestId) {
+        return;
+      }
+
+      const target = el.querySelector<HTMLElement>(
+        `[data-message-id="${latestId}"]`,
+      );
+
+      if (!target) {
+        latestUserMessageIdRef.current = null;
+
+        return;
+      }
+
+      const containerTop = el.getBoundingClientRect().top;
+      const targetTop = target.getBoundingClientRect().top;
+      const offset = targetTop - containerTop;
+      const paddingOffset = 12;
+
+      el.scrollTo({
+        top: Math.max(el.scrollTop + offset - paddingOffset, 0),
+        behavior: "smooth",
       });
+
+      latestUserMessageIdRef.current = null;
+    };
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(handleScroll);
     });
-  }, [messages]);
-
-  // Автоскролл для потоковой дельты
-  useEffect(() => {
-    if (!streamingAssistantMessage) return;
-    const el = scrollRef.current;
-
-    if (!el) return;
-    el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
-  }, [streamingAssistantMessage]);
-
-  // Автоскролл для streaming tool сообщений
-  useEffect(() => {
-    if (!streamingToolMessage) return;
-    const el = scrollRef.current;
-
-    if (!el) return;
-    el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
-  }, [streamingToolMessage]);
+  }, [messages, isOpen, hasMessages]);
 
   const sendMessage = useCallback(
     async (content: string) => {
@@ -322,11 +347,13 @@ export function WorkoutChatPanel({
         createdAt: new Date().toISOString(),
       };
 
+      latestUserMessageIdRef.current = userMessage.id ?? null;
       setMessages((prev) => [...prev, userMessage]);
       setInputValue("");
       setStreamingAssistantMessage("");
       setStreamState({ status: "assistant_thinking" });
       setIsStreaming(true);
+      setIsGenerating(true);
       setError(null);
 
       const request: WorkoutChatSendRequest = {
@@ -430,11 +457,13 @@ export function WorkoutChatPanel({
           setStreamingToolMessage(null);
           setStreamState({});
           setIsStreaming(false);
+          setIsGenerating(false);
         },
         onError: (err) => {
           console.error("Workout chat stream error", err);
           setError(err.message);
           setIsStreaming(false);
+          setIsGenerating(false);
           setStreamingAssistantMessage("");
           setStreamingToolMessage(null);
           // Перезагружаем чат, чтобы получить корректное состояние с сервера
@@ -453,6 +482,7 @@ export function WorkoutChatPanel({
         })
         .finally(() => {
           setIsStreaming(false);
+          setIsGenerating(false);
           setStreamingAssistantMessage("");
           setStreamState({});
           sessionRef.current = null;
@@ -554,7 +584,11 @@ export function WorkoutChatPanel({
     }
 
     return (
-      <div className="flex w-full flex-col gap-3 p-4">
+      <div
+        className={`flex w-full flex-col gap-3 px-4 ${
+          isGenerating ? "pb-[28rem] pt-6" : "p-4"
+        }`}
+      >
         {combinedMessages.map((message, idx, arr) => {
           // Пропускаем системные сообщения
           const isSystemMessage =
