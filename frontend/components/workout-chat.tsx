@@ -215,6 +215,9 @@ export function WorkoutChatPanel({
   const [streamingToolMessage, setStreamingToolMessage] =
     useState<WorkoutChatMessage | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  // Динамический нижний паддинг, чтобы можно было проскроллить так,
+  // чтобы последнее пользовательское сообщение оказалось у верхней границы
+  const [dynamicBottomPadding, setDynamicBottomPadding] = useState(0);
 
   // Ref на скроллируемый контейнер (overflow-y-auto)
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -316,20 +319,32 @@ export function WorkoutChatPanel({
       const containerTop = el.getBoundingClientRect().top;
       const targetTop = target.getBoundingClientRect().top;
       const offset = targetTop - containerTop;
-      const paddingOffset = 12;
+      const paddingOffset = 20;
+      const desiredTop = Math.max(el.scrollTop + offset - paddingOffset, 0);
+      const maxScrollTop = el.scrollHeight - el.clientHeight;
 
-      el.scrollTo({
-        top: Math.max(el.scrollTop + offset - paddingOffset, 0),
-        behavior: "smooth",
-      });
+      if (desiredTop <= maxScrollTop) {
+        // Можем проскроллить уже сейчас
+        el.scrollTo({ top: desiredTop, behavior: "smooth" });
+        latestUserMessageIdRef.current = null;
 
-      latestUserMessageIdRef.current = null;
+        return;
+      }
+
+      // Контента не хватает, чтобы поставить сообщение в самый верх.
+      // Увеличим нижний паддинг на недостающую величину, чтобы desiredTop стал достижимым.
+      const needPadding = Math.ceil(desiredTop - maxScrollTop);
+
+      if (needPadding > 0) {
+        setDynamicBottomPadding((prev) => Math.max(prev, needPadding));
+        // После применения паддинга эффект запустится ещё раз и выполнит прокрутку.
+      }
     };
 
     requestAnimationFrame(() => {
       requestAnimationFrame(handleScroll);
     });
-  }, [messages, isOpen, hasMessages]);
+  }, [messages, isOpen, hasMessages, dynamicBottomPadding]);
 
   const sendMessage = useCallback(
     async (content: string) => {
@@ -585,9 +600,10 @@ export function WorkoutChatPanel({
 
     return (
       <div
-        className={`flex w-full flex-col gap-3 px-4 ${
-          isGenerating ? "pb-[28rem] pt-6" : "p-4"
-        }`}
+        className={`flex w-full flex-col gap-3 px-4 ${isGenerating ? "pt-6" : "p-4"}`}
+        style={
+          isGenerating ? { paddingBottom: dynamicBottomPadding } : undefined
+        }
       >
         {combinedMessages.map((message, idx, arr) => {
           // Пропускаем системные сообщения
@@ -624,6 +640,8 @@ export function WorkoutChatPanel({
     loading,
     combinedMessages,
     streamingToolMessage,
+    isGenerating,
+    dynamicBottomPadding,
   ]);
 
   const canSend = inputValue.trim().length > 0 && !isStreaming;
