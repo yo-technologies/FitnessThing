@@ -691,22 +691,23 @@ export function WorkoutChatPanel({
               {/* Статус «Думает…» как оверлей поверх контента внизу */}
               {showThinking && (
                 <div className="absolute inset-x-0 bottom-0 z-20 px-4 pb-2 shadow-md">
-                  <p
+                  <div
                     aria-live="polite"
                     className="flex items-center gap-1 text-xs text-default-400"
+                    role="status"
                   >
                     <Spinner
                       classNames={{ wrapper: "w-3 h-3" }}
                       color="secondary"
                       size="sm"
                     />
-                    Думает…
+                    <span>Думает…</span>
                     {streamState.usageTokens ? (
                       <span className="ml-2 text-[10px] opacity-70">
                         Токенов: {streamState.usageTokens}
                       </span>
                     ) : null}
-                  </p>
+                  </div>
                 </div>
               )}
 
