@@ -225,6 +225,8 @@ export function WorkoutChatPanel({
   const prefillAppliedRef = useRef(false);
   const latestUserMessageIdRef = useRef<string | null>(null);
   const autoScrollOnOpenRef = useRef(false);
+  // Последовательный счётчик для генерации уникальных id стриминговых messages инструментов
+  const toolEventSeqRef = useRef(0);
 
   const hasMessages =
     messages.length > 0 || streamingAssistantMessage.length > 0;
@@ -423,8 +425,9 @@ export function WorkoutChatPanel({
                 return prev;
               }
 
+              // Стабильный id на время стрима конкретного инструмента
               return {
-                id: `streaming-tool-${Date.now()}`,
+                id: `streaming-tool-${toolName || "unknown"}-${toolEventSeqRef.current++}`,
                 chatId: chat?.id,
                 role: WorkoutChatMessageRole.CHAT_MESSAGE_ROLE_TOOL,
                 content: "",
@@ -622,9 +625,13 @@ export function WorkoutChatPanel({
             message.id === "streaming" ||
             streamingToolMessage?.id === message.id;
 
+          const reactKey = message.id
+            ? `${message.id}${isStreamingItem ? "-stream" : ""}`
+            : `${senderKey(message.role)}-${idx}${isStreamingItem ? "-stream" : ""}`;
+
           return (
             <MessageBubble
-              key={message.id}
+              key={reactKey}
               isStreaming={isStreamingItem}
               message={message}
               showHeader={showHeader}
