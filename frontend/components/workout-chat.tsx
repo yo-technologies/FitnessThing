@@ -280,6 +280,28 @@ export function WorkoutChatPanel({
     }
   }, [isOpen, prefill, inputValue]);
 
+  // После успешного применения префилла очищаем его из URL, чтобы не автозаполняло повторно
+  useEffect(() => {
+    if (!isOpen) return;
+    if (!prefillAppliedRef.current) return;
+
+    try {
+      const url = new URL(window.location.href);
+
+      if (!url.searchParams.has("prefill")) return;
+
+      url.searchParams.delete("prefill");
+
+      const newUrl = `${url.pathname}${url.search ? `?${url.searchParams.toString()}` : ""}${url.hash}`;
+
+      window.history.replaceState(null, "", newUrl);
+    } catch {
+      // no-op
+    }
+    // Один раз после применения
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, inputValue, prefill]);
+
   useEffect(() => {
     if (!isOpen && sessionRef.current) {
       sessionRef.current.close();
