@@ -8,11 +8,8 @@ import (
 
 	"fitness-trainer/internal/domain"
 	"fitness-trainer/internal/domain/dto"
+	"fitness-trainer/internal/llm"
 	"fitness-trainer/internal/utils"
-
-	openai_client "fitness-trainer/internal/clients/openai"
-
-	"github.com/openai/openai-go/v3"
 	"github.com/opentracing/opentracing-go"
 )
 
@@ -20,11 +17,10 @@ type agentToolHandler func(ctx context.Context, chatCtx domain.AgentChatContext,
 
 type agentTool struct {
 	name       string
-	definition openai.ChatCompletionToolUnionParam
 	handler    agentToolHandler
+	desc       string
+	params     map[string]any
 }
-
-var _ openai_client.ChatClient = (*openai_client.Client)(nil)
 
 type service interface {
 	// Workout methods
@@ -62,8 +58,17 @@ func New(
 	}
 }
 
-func (t *Tools) ChatAgentToolDefinitions() []openai.ChatCompletionToolUnionParam {
-	return t.chatToolDefinitions()
+func (t *Tools) ChatAgentToolDefinitions() []llm.ToolDefinition {
+	t.ensureChatTools()
+	defs := make([]llm.ToolDefinition, 0, len(t.chatTools))
+	for _, tool := range t.chatTools {
+		defs = append(defs, llm.ToolDefinition{
+			Name:           tool.name,
+			Description:    tool.desc,
+			Parameters:     tool.params,
+		})
+	}
+	return defs
 }
 
 func (t *Tools) ExecuteChatAgentTool(ctx context.Context, ctxData domain.AgentChatContext, name string, arguments string) (string, error) {
@@ -93,17 +98,6 @@ func (t *Tools) ensureChatTools() {
 			t.chatTools[tool.name] = tool
 		}
 	})
-}
-
-func (t *Tools) chatToolDefinitions() []openai.ChatCompletionToolUnionParam {
-	t.ensureChatTools()
-
-	defs := make([]openai.ChatCompletionToolUnionParam, 0, len(t.chatTools))
-	for _, tool := range t.chatTools {
-		defs = append(defs, tool.definition)
-	}
-
-	return defs
 }
 
 func (t *Tools) executeTool(ctx context.Context, chatCtx domain.AgentChatContext, name string, arguments string) (string, error) {

@@ -20,10 +20,6 @@ type LLMConfig struct {
 		APIKey  string `mapstructure:"api_key"`
 	} `mapstructure:"openai"`
 	ReasoningEffort string `mapstructure:"reasoning_effort"`
-	Gemini struct {
-		Model  string `mapstructure:"model"`
-		APIKey string `mapstructure:"api_key"`
-	} `mapstructure:"gemini"`
 }
 
 // PromptGenerationConfig holds prompt generation settings
@@ -93,9 +89,8 @@ func (c *Config) loadDefaults() {
 	defer c.mu.Unlock()
 
 	// LLM defaults
-	c.LLM.OpenAI.Model = "google/gemini-2.5-pro"
+	c.LLM.OpenAI.Model = "openai/gpt-5-mini"
 	c.LLM.ReasoningEffort = "medium"
-	c.LLM.Gemini.Model = "gemini-2.5-flash"
 
 	// Prompt generation defaults
 	c.PromptGeneration.Debounce = time.Second * 60
@@ -120,7 +115,6 @@ func (c *Config) reload() error {
 
 	// Expand environment variables in sensitive fields
 	c.LLM.OpenAI.APIKey = os.Expand(c.LLM.OpenAI.APIKey, os.Getenv)
-	c.LLM.Gemini.APIKey = os.Expand(c.LLM.Gemini.APIKey, os.Getenv)
 
 	logger.Info(fmt.Sprintf("Config updated - OpenAI Model: %s, Reasoning Effort: %s", 
 		c.LLM.OpenAI.Model, c.LLM.ReasoningEffort))
@@ -142,12 +136,6 @@ func (c *Config) GetReasoningEffort() string {
 	return c.LLM.ReasoningEffort
 }
 
-// GetGenAIModel returns the current Gemini model
-func (c *Config) GetGenAIModel() string {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	return c.LLM.Gemini.Model
-}
 
 // GetPromptGenerationDebounce returns the prompt generation debounce duration
 func (c *Config) GetPromptGenerationDebounce() time.Duration {

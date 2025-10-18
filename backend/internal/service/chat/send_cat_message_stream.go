@@ -9,15 +9,13 @@ import (
 	"strings"
 	"time"
 
-	openai_client "fitness-trainer/internal/clients/openai"
+	"fitness-trainer/internal/llm"
 	"fitness-trainer/internal/logger"
 
 	"fitness-trainer/internal/domain"
 	"fitness-trainer/internal/domain/dto"
 	"fitness-trainer/internal/utils"
 
-	"github.com/openai/openai-go/v3"
-	"github.com/openai/openai-go/v3/shared"
 	"github.com/opentracing/opentracing-go"
 )
 
@@ -76,8 +74,8 @@ const defaultChatSystemPrompt = `Ты — виртуальный фитнес‑
 
 type chatSession struct {
 	chat     domain.Chat
-	messages []openai.ChatCompletionMessageParamUnion
-	toolDefs []openai.ChatCompletionToolUnionParam
+	messages []llm.MessageParam
+	toolDefs []llm.ToolDefinition
 }
 
 func (s *Service) SendChatMessageStream(ctx context.Context, userID domain.ID, req dto.SendChatMessageRequest, callbacks dto.ChatStreamCallbacks) (dto.ChatCompletionDTO, error) {
@@ -89,7 +87,7 @@ func (s *Service) SendChatMessageStream(ctx context.Context, userID domain.ID, r
 		return dto.ChatCompletionDTO{}, err
 	}
 
-	messages := make([]openai.ChatCompletionMessageParamUnion, len(session.messages))
+	messages := make([]llm.MessageParam, len(session.messages))
 	copy(messages, session.messages)
 	toolDefs := session.toolDefs
 	chat := session.chat
@@ -127,9 +125,9 @@ func (s *Service) SendChatMessageStream(ctx context.Context, userID domain.ID, r
 	)
 
 	for range maxChatCompletionLoops {
-		params := s.newChatCompletionParams(messages, toolDefs, s.config.GetOpenAIModel(), s.config.GetReasoningEffort(), true)
+		params := llm.ChatParams{Messages: messages, Tools: toolDefs, IncludeUsage: true}
 
-		stream, err := s.openAIClient.CreateChatCompletionStream(ctx, params)
+		stream, err := s.llmClient.CreateCompletionStream(ctx, params)
 		if err != nil {
 			_, _ = s.handleAssistantFailure(ctx, chat.ID, err)
 			return dto.ChatCompletionDTO{}, err
@@ -244,11 +242,11 @@ func (s *Service) startChatSession(ctx context.Context, userID domain.ID, req dt
 		return chatSession{}, fmt.Errorf("failed to load chat history: %w", err)
 	}
 
-	messages := make([]openai.ChatCompletionMessageParamUnion, 0, len(systemMessages)+len(history)+4)
+	messages := make([]llm.MessageParam, 0, len(systemMessages)+len(history)+4)
 	messages = append(messages, systemMessages...)
 
 	for _, msg := range history {
-		param, err := s.chatMessageToOpenAIParam(msg)
+		param, err := s.chatMessageToLLMParam(msg)
 		if err != nil {
 			return chatSession{}, fmt.Errorf("failed to convert chat message to OpenAI param: %w", err)
 		}
@@ -263,9 +261,9 @@ func (s *Service) startChatSession(ctx context.Context, userID domain.ID, req dt
 }
 
 func (s *Service) runStreamingChatCompletion(
-	stream openai_client.ChatCompletionStream,
+	stream llm.ChatStream,
 	callbacks *dto.ChatStreamCallbacks,
-) (openai.ChatCompletionMessage, dto.ChatUsage, error) {
+) (llm.ChatMessage, dto.ChatUsage, error) {
 	defer stream.Close()
 
 	var (
@@ -280,7 +278,7 @@ func (s *Service) runStreamingChatCompletion(
 		arguments strings.Builder
 	}
 
-	toolCalls := make(map[int64]*toolCallAccumulator)
+	toolCalls := make(map[int]*toolCallAccumulator)
 
 	for stream.Next() {
 		chunk := stream.Chunk()
@@ -294,23 +292,16 @@ func (s *Service) runStreamingChatCompletion(
 			usageRecorded = true
 		}
 
-		if len(chunk.Choices) == 0 {
-			continue
-		}
-
-		choice := chunk.Choices[0]
-		delta := choice.Delta
-
-		if delta.Content != "" {
-			contentBuilder.WriteString(delta.Content)
+		if chunk.Content != "" {
+			contentBuilder.WriteString(chunk.Content)
 			if callbacks != nil && callbacks.OnContentDelta != nil {
-				if err := callbacks.OnContentDelta(delta.Content); err != nil {
-					return openai.ChatCompletionMessage{}, totalUsage, err
+				if err := callbacks.OnContentDelta(chunk.Content); err != nil {
+					return llm.ChatMessage{}, totalUsage, err
 				}
 			}
 		}
 
-		for _, toolCall := range delta.ToolCalls {
+		for _, toolCall := range chunk.ToolCalls {
 			acc := toolCalls[toolCall.Index]
 			if acc == nil {
 				acc = &toolCallAccumulator{}
@@ -319,42 +310,38 @@ func (s *Service) runStreamingChatCompletion(
 			if toolCall.ID != "" {
 				acc.id = toolCall.ID
 			}
-			if toolCall.Function.Name != "" {
-				acc.name = toolCall.Function.Name
+			if toolCall.Name != "" {
+				acc.name = toolCall.Name
 			}
-			if toolCall.Function.Arguments != "" {
-				acc.arguments.WriteString(toolCall.Function.Arguments)
+			if toolCall.Arguments != "" {
+				acc.arguments.WriteString(toolCall.Arguments)
 			}
 		}
 	}
 
 	if err := stream.Err(); err != nil {
-		return openai.ChatCompletionMessage{}, totalUsage, err
+		return llm.ChatMessage{}, totalUsage, err
 	}
 
-	finalMessage := openai.ChatCompletionMessage{
-		Role:    "assistant",
+	finalMessage := llm.ChatMessage{
+		Role:    llm.RoleAssistant,
 		Content: contentBuilder.String(),
 	}
 
 	if len(toolCalls) > 0 {
 		indices := make([]int, 0, len(toolCalls))
 		for idx := range toolCalls {
-			indices = append(indices, int(idx))
+			indices = append(indices, idx)
 		}
 		sort.Ints(indices)
 
-		finalCalls := make([]openai.ChatCompletionMessageToolCallUnion, 0, len(indices))
+		finalCalls := make([]llm.ToolCall, 0, len(indices))
 		for _, idx := range indices {
-			acc := toolCalls[int64(idx)]
-			finalCalls = append(finalCalls, openai.ChatCompletionMessageToolCallUnion{
-				// ID is shared across variants
-				ID: acc.id,
-				// Function variant payload
-				Function: openai.ChatCompletionMessageFunctionToolCallFunction{
-					Name:      acc.name,
-					Arguments: acc.arguments.String(),
-				},
+			acc := toolCalls[idx]
+			finalCalls = append(finalCalls, llm.ToolCall{
+				ID:        acc.id,
+				Name:      acc.name,
+				Arguments: acc.arguments.String(),
 			})
 		}
 		finalMessage.ToolCalls = finalCalls
@@ -421,82 +408,68 @@ func (s *Service) ensureChatForRequest(ctx context.Context, userID domain.ID, re
 	return createdChat, nil
 }
 
-func (s *Service) buildChatSystemMessages(ctx context.Context, userID domain.ID, chat domain.Chat) ([]openai.ChatCompletionMessageParamUnion, error) {
+func (s *Service) buildChatSystemMessages(ctx context.Context, userID domain.ID, chat domain.Chat) ([]llm.MessageParam, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "service.chat.buildChatSystemMessages")
 	defer span.Finish()
 
-	messages := []openai.ChatCompletionMessageParamUnion{openai.SystemMessage(defaultChatSystemPrompt)}
+	messages := []llm.MessageParam{{Role: llm.RoleSystem, Content: defaultChatSystemPrompt}}
 
 	prompt, err := s.userPromptRepository.GetLastPromptByUserID(ctx, userID)
 	if err == nil {
-		messages = append(messages, openai.SystemMessage(fmt.Sprintf("\n\nЛичные пожелания пользователя: %s", prompt.PromptText)))
+		messages = append(messages, llm.MessageParam{Role: llm.RoleSystem, Content: fmt.Sprintf("\n\nЛичные пожелания пользователя: %s", prompt.PromptText)})
 	}
 	if err != nil && !errors.Is(err, domain.ErrNotFound) {
 		return nil, fmt.Errorf("failed to load generation settings: %w", err)
 	}
 
 	if chat.WorkoutID.IsValid {
-		messages = append(messages, openai.SystemMessage("Этот чат привязан к конкретной тренировке. Используй инструменты для просмотра плана и внесения правок."))
+		messages = append(messages, llm.MessageParam{Role: llm.RoleSystem, Content: "Этот чат привязан к конкретной тренировке. Используй инструменты для просмотра плана и внесения правок."})
 	}
 
 	return messages, nil
 }
 
-func (s *Service) chatMessageToOpenAIParam(message domain.ChatMessage) (openai.ChatCompletionMessageParamUnion, error) {
+func (s *Service) chatMessageToLLMParam(message domain.ChatMessage) (llm.MessageParam, error) {
 	switch message.Role {
 	case domain.ChatMessageRoleUser:
-		return openai.UserMessage(message.Content), nil
+		return llm.MessageParam{Role: llm.RoleUser, Content: message.Content}, nil
 	case domain.ChatMessageRoleAssistant:
 		// Build assistant message with optional tool call
-		assistant := openai.ChatCompletionAssistantMessageParam{
-			Content: openai.ChatCompletionAssistantMessageParamContentUnion{
-				OfString: openai.String(message.Content),
-			},
-		}
+		assistant := llm.MessageParam{Role: llm.RoleAssistant, Content: message.Content}
 		if message.ToolCallID.IsValid && message.ToolName.IsValid {
 			argsJSON := "{}"
 			if len(message.ToolArguments) > 0 {
 				raw, err := json.Marshal(message.ToolArguments)
 				if err != nil {
-					return openai.ChatCompletionMessageParamUnion{}, fmt.Errorf("failed to marshal tool arguments: %w", err)
+					return llm.MessageParam{}, fmt.Errorf("failed to marshal tool arguments: %w", err)
 				}
 				argsJSON = string(raw)
 			}
-			assistant.ToolCalls = []openai.ChatCompletionMessageToolCallUnionParam{
-				{
-					OfFunction: &openai.ChatCompletionMessageFunctionToolCallParam{
-						ID: message.ToolCallID.V,
-						Function: openai.ChatCompletionMessageFunctionToolCallFunctionParam{
-							Name:      message.ToolName.V,
-							Arguments: argsJSON,
-						},
-					},
-				},
-			}
+			assistant.ToolCalls = []llm.ToolCall{{ID: message.ToolCallID.V, Name: message.ToolName.V, Arguments: argsJSON}}
 		}
-		return openai.ChatCompletionMessageParamUnion{OfAssistant: &assistant}, nil
+		return assistant, nil
 	case domain.ChatMessageRoleTool:
 		if !message.ToolCallID.IsValid {
-			return openai.ChatCompletionMessageParamUnion{}, fmt.Errorf("tool message missing tool call id")
+			return llm.MessageParam{}, fmt.Errorf("tool message missing tool call id")
 		}
 		content := message.Content
 		if strings.TrimSpace(content) == "" && message.Error.IsValid {
 			content = fmt.Sprintf("error: %s", message.Error.V)
 		}
-		return openai.ToolMessage(content, message.ToolCallID.V), nil
+		return llm.MessageParam{Role: llm.RoleTool, Content: content, ToolCallID: message.ToolCallID.V}, nil
 	case domain.ChatMessageRoleSystem:
-		return openai.SystemMessage(message.Content), nil
+		return llm.MessageParam{Role: llm.RoleSystem, Content: message.Content}, nil
 	default:
-		return openai.ChatCompletionMessageParamUnion{}, fmt.Errorf("unsupported chat message role: %s", message.Role)
+		return llm.MessageParam{}, fmt.Errorf("unsupported chat message role: %s", message.Role)
 	}
 }
 
 func (s *Service) handleAssistantToolCalls(
 	ctx context.Context,
 	chatID domain.ID,
-	messages *[]openai.ChatCompletionMessageParamUnion,
+	messages *[]llm.MessageParam,
 	chatCtx domain.AgentChatContext,
-	assistantMessage openai.ChatCompletionMessage,
+	assistantMessage llm.ChatMessage,
 	callbacks *dto.ChatStreamCallbacks,
 ) error {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "service.chat.handleAssistantToolCalls")
@@ -507,8 +480,8 @@ func (s *Service) handleAssistantToolCalls(
 	contentForFirst := assistantMessage.Content
 
 	for idx, toolCall := range assistantMessage.ToolCalls {
-		toolName := toolCall.Function.Name
-		toolArgsJSON := toolCall.Function.Arguments
+		toolName := toolCall.Name
+		toolArgsJSON := toolCall.Arguments
 
 		var toolArgs map[string]any
 		trimmedArgs := strings.TrimSpace(toolArgsJSON)
@@ -551,7 +524,7 @@ func (s *Service) handleAssistantToolCalls(
 			return fmt.Errorf("failed to persist assistant tool call: %w", err)
 		}
 
-		param, err := s.chatMessageToOpenAIParam(savedAssistant)
+		param, err := s.chatMessageToLLMParam(savedAssistant)
 		if err != nil {
 			return err
 		}
@@ -592,7 +565,7 @@ func (s *Service) handleAssistantToolCalls(
 				return fmt.Errorf("failed to persist tool error message: %w", perr)
 			}
 
-			toolParam, perr := s.chatMessageToOpenAIParam(savedTool)
+			toolParam, perr := s.chatMessageToLLMParam(savedTool)
 			if perr != nil {
 				return perr
 			}
@@ -639,7 +612,7 @@ func (s *Service) handleAssistantToolCalls(
 			return fmt.Errorf("failed to persist tool message: %w", err)
 		}
 
-		toolParam, err := s.chatMessageToOpenAIParam(savedTool)
+		toolParam, err := s.chatMessageToLLMParam(savedTool)
 		if err != nil {
 			return err
 		}
@@ -677,23 +650,4 @@ func (s *Service) handleAssistantFailure(ctx context.Context, chatID domain.ID, 
 	}
 
 	return dto.ChatCompletionDTO{}, errors.Join(domain.ErrInternal, originalErr)
-}
-
-func (s *Service) newChatCompletionParams(messages []openai.ChatCompletionMessageParamUnion, tools []openai.ChatCompletionToolUnionParam, model string, reasoningEffort string, stream bool) openai.ChatCompletionNewParams {
-	params := openai.ChatCompletionNewParams{
-		Model:           shared.ChatModel(model),
-		Messages:        messages,
-		ReasoningEffort: shared.ReasoningEffort(reasoningEffort),
-	}
-
-	if len(tools) > 0 {
-		params.Tools = tools
-		params.ToolChoice = openai.ChatCompletionToolChoiceOptionUnionParam{OfAuto: openai.String("auto")}
-	}
-
-	if stream {
-		params.StreamOptions = openai.ChatCompletionStreamOptionsParam{IncludeUsage: openai.Bool(true)}
-	}
-
-	return params
 }

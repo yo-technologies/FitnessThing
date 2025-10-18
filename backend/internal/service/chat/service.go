@@ -3,16 +3,12 @@ package chat
 import (
 	"context"
 
-	openai_client "fitness-trainer/internal/clients/openai"
-	"fitness-trainer/internal/config"
-
 	"fitness-trainer/internal/domain"
-
-	"github.com/openai/openai-go/v3"
+	"fitness-trainer/internal/llm"
 )
 
 type toolsService interface {
-	ChatAgentToolDefinitions() []openai.ChatCompletionToolUnionParam
+	ChatAgentToolDefinitions() []llm.ToolDefinition
 	ExecuteChatAgentTool(ctx context.Context, ctxData domain.AgentChatContext, name string, arguments string) (string, error)
 }
 
@@ -38,9 +34,7 @@ type Service struct {
 	chatRepository       chatRepository
 	workoutRepository    workoutRepository
 	userPromptRepository userPromptRepository
-
-	openAIClient openai_client.ChatClient
-	config       *config.Config
+	llmClient            llm.CompletionProvider
 }
 
 func New(
@@ -48,15 +42,13 @@ func New(
 	chatRepository chatRepository,
 	workoutRepository workoutRepository,
 	userPromptRepository userPromptRepository,
-	openAIClient openai_client.ChatClient,
-	config *config.Config,
+	llmClient llm.CompletionProvider,
 ) *Service {
 	return &Service{
 		toolsService:         toolsService,
 		chatRepository:       chatRepository,
 		workoutRepository:    workoutRepository,
 		userPromptRepository: userPromptRepository,
-		openAIClient:         openAIClient,
-		config:               config,
+		llmClient:            llmClient,
 	}
 }

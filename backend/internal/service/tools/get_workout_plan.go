@@ -5,13 +5,10 @@ import (
 	"encoding/json"
 	"fitness-trainer/internal/domain"
 	"fmt"
-
-	"github.com/openai/openai-go/v3"
-	"github.com/openai/openai-go/v3/shared"
 	"github.com/opentracing/opentracing-go"
 )
 
-var getWorkoutPlanSchema = shared.FunctionParameters{
+var getWorkoutPlanSchema = map[string]any{
 	"type":                 "object",
 	"additionalProperties": false,
 	"required":             []string{},
@@ -20,13 +17,9 @@ var getWorkoutPlanSchema = shared.FunctionParameters{
 
 func (t *Tools) newGetWorkoutPlanTool() agentTool {
 	return agentTool{
-		name: "get_workout_plan",
-		definition: openai.ChatCompletionFunctionTool(shared.FunctionDefinitionParam{
-			Name:        "get_workout_plan",
-			Description: openai.String("Return the current state of the workout including exercises, expected sets, and logged performance."),
-			Parameters:  getWorkoutPlanSchema,
-			Strict:      openai.Bool(true),
-		}),
+		name:    "get_workout_plan",
+		desc:    "Return the current state of the workout including exercises, expected sets, and logged performance.",
+		params:  getWorkoutPlanSchema,
 		handler: t.getWorkoutPlanToolHandler,
 	}
 }

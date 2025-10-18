@@ -6,25 +6,19 @@ import (
 	"fitness-trainer/internal/domain"
 	"fmt"
 
-	"github.com/openai/openai-go/v3"
-	"github.com/openai/openai-go/v3/shared"
 	"github.com/opentracing/opentracing-go"
 )
 
 func (t *Tools) newListMuscleGroupsTool() agentTool {
 	return agentTool{
 		name: "list_muscle_groups",
-		definition: openai.ChatCompletionFunctionTool(shared.FunctionDefinitionParam{
-			Name:        "list_muscle_groups",
-			Description: openai.String("Return the available muscle groups with their identifiers."),
-			Parameters: shared.FunctionParameters{
-				"type":                 "object",
-				"required":             []string{},
-				"properties":           map[string]any{},
-				"additionalProperties": false,
-			},
-			Strict: openai.Bool(true),
-		}),
+		desc: "Return the available muscle groups with their identifiers.",
+		params: map[string]any{
+			"type":                 "object",
+			"required":             []string{},
+			"properties":           map[string]any{},
+			"additionalProperties": false,
+		},
 		handler: t.listMuscleGroupsHandler,
 	}
 }

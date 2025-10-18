@@ -25,9 +25,8 @@ import (
 	"fitness-trainer/internal/telegram/token_parser"
 	"fitness-trainer/internal/tracer"
 
-	genai_client "fitness-trainer/internal/clients/gemini"
-	openai_client "fitness-trainer/internal/clients/openai"
 	s3_client "fitness-trainer/internal/clients/s3"
+	llm_openai "fitness-trainer/internal/llm/openai"
 	prompt_generator_service "fitness-trainer/internal/service/prompt_generator"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -35,15 +34,12 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/go-co-op/gocron/v2"
-	"github.com/google/generative-ai-go/genai"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 	"github.com/openai/openai-go/v3"
 	"github.com/openai/openai-go/v3/option"
 	"github.com/throttled/throttled/v2"
 	"github.com/throttled/throttled/v2/store/memstore"
-
-	apiOpts "google.golang.org/api/option"
 )
 
 func init() {
@@ -73,11 +69,11 @@ func Run() error {
 	if configPath == "" {
 		configPath = "config.yaml"
 	}
-	
+
 	if err := appconfig.Initialize(configPath); err != nil {
 		return fmt.Errorf("failed to initialize config: %w", err)
 	}
-	
+
 	cfg := appconfig.Get()
 
 	tracer.MustSetup(
@@ -111,13 +107,8 @@ func Run() error {
 
 	repo := repository.NewPGXRepository(contextManager)
 
-	genaiClient, err := newGeminiClient(ctx)
-	if err != nil {
-		return err
-	}
-
 	openAIClient := newOpenAIClient()
-	openAIClientWrapper := openai_client.New(openAIClient)
+	llmClientWrapper := llm_openai.New(openAIClient, cfg)
 
 	service := service.New(
 		contextManager,
@@ -134,8 +125,7 @@ func Run() error {
 		repo,
 		repo,
 		repo,
-		openAIClientWrapper,
-		cfg,
+		llmClientWrapper,
 	)
 
 	telegramTokenParser := newTelegramTokenParser()
@@ -163,14 +153,8 @@ func Run() error {
 
 	promptGenerationRateLimiterWrapper := ratelimiter.New(promptGenerationRateLimiter)
 
-	promptsClientWrapper := genai_client.New(
-		genaiClient,
-		cfg.GetGenAIModel(),
-		nil,
-	)
-
 	promptGenerationService := prompt_generator_service.New(
-		promptsClientWrapper,
+		llmClientWrapper,
 		repo,
 	)
 
@@ -258,8 +242,7 @@ func getAWSConfig(ctx context.Context) aws.Config {
 }
 
 type ProxyRoundTripper struct {
-	proxy  *url.URL
-	apiKey string
+	proxy *url.URL
 }
 
 func (t *ProxyRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
@@ -269,12 +252,7 @@ func (t *ProxyRoundTripper) RoundTrip(req *http.Request) (*http.Response, error)
 		transport.Proxy = http.ProxyURL(t.proxy)
 	}
 
-	newReq := req.Clone(req.Context())
-	q := newReq.URL.Query()
-	q.Add("key", t.apiKey)
-	newReq.URL.RawQuery = q.Encode()
-
-	return transport.RoundTrip(newReq)
+	return transport.RoundTrip(req)
 }
 
 func loadProxyData() *url.URL {
@@ -296,26 +274,6 @@ func loadProxyData() *url.URL {
 	}
 
 	return parsedURL
-}
-
-func newHTTPClient(proxyURL *url.URL, apiKey string) *http.Client {
-	return &http.Client{
-		Transport: &ProxyRoundTripper{
-			apiKey: apiKey,
-			proxy:  proxyURL,
-		},
-		Timeout: 30 * time.Second,
-	}
-}
-
-func newGeminiClient(ctx context.Context) (*genai.Client, error) {
-	proxy := loadProxyData()
-
-	return genai.NewClient(
-		ctx,
-		apiOpts.WithHTTPClient(newHTTPClient(proxy, os.Getenv("GENAI_API_KEY"))),
-		apiOpts.WithAPIKey(os.Getenv("GENAI_API_KEY")),
-	)
 }
 
 func newOpenAIClient() openai.Client {

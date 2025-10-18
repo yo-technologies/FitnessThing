@@ -5,13 +5,14 @@ import (
 	"encoding/json"
 	"fitness-trainer/internal/domain"
 	"fitness-trainer/internal/domain/dto"
+	"fitness-trainer/internal/llm"
 	"fmt"
 
 	"github.com/opentracing/opentracing-go"
 )
 
 type completionProvider interface {
-	CreateCompletion(ctx context.Context, userID domain.ID, systemPrompt, prompt string) (string, error)
+	CreateCompletion(ctx context.Context, llmParams llm.ChatParams) (string, error)
 }
 
 type muscleGroupRepository interface {
@@ -114,12 +115,12 @@ func (s *Service) GeneratePrompt(ctx context.Context, settings domain.Generation
 		return domain.Prompt{}, fmt.Errorf("failed to marshal generation settings: %w", err)
 	}
 
-	prompt, err := s.completionProvider.CreateCompletion(
-		ctx,
-		settings.UserID,
-		systemPrompt,
-		string(bytes),
-	)
+	prompt, err := s.completionProvider.CreateCompletion(ctx, llm.ChatParams{
+		Messages: []llm.MessageParam{
+			{Role: llm.RoleSystem, Content: systemPrompt},
+			{Role: llm.RoleUser, Content: string(bytes)},
+		},
+	})
 	if err != nil {
 		return domain.Prompt{}, err
 	}

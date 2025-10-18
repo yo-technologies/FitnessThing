@@ -5,14 +5,11 @@ import (
 	"encoding/json"
 	"fitness-trainer/internal/domain"
 	"fmt"
-
-	"github.com/openai/openai-go/v3"
-	"github.com/openai/openai-go/v3/shared"
 	"github.com/opentracing/opentracing-go"
 )
 
 func (t *Tools) newGetWorkoutHistoryTool() agentTool {
-	schema := shared.FunctionParameters{
+	schema := map[string]any{
 		"type":     "object",
 		"required": []string{"limit"},
 		"properties": map[string]any{
@@ -27,13 +24,9 @@ func (t *Tools) newGetWorkoutHistoryTool() agentTool {
 	}
 
 	return agentTool{
-		name: "get_workout_history",
-		definition: openai.ChatCompletionFunctionTool(shared.FunctionDefinitionParam{
-			Name:        "get_workout_history",
-			Description: openai.String("Return recent workouts for the current user including exercises."),
-			Parameters:  schema,
-			Strict:      openai.Bool(true),
-		}),
+		name:    "get_workout_history",
+		desc:    "Return recent workouts for the current user including exercises.",
+		params:  schema,
 		handler: t.getWorkoutHistoryHandler,
 	}
 }

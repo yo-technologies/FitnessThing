@@ -7,14 +7,11 @@ import (
 	"fitness-trainer/internal/domain/dto"
 	"fmt"
 	"time"
-
-	"github.com/openai/openai-go/v3"
-	"github.com/openai/openai-go/v3/shared"
 	"github.com/opentracing/opentracing-go"
 )
 
 func (t *Tools) newReplaceExpectedSetsTool() agentTool {
-	schema := shared.FunctionParameters{
+	schema := map[string]any{
 		"type":     "object",
 		"required": []string{"exercise_log_id", "sets"},
 		"properties": map[string]any{
@@ -54,13 +51,9 @@ func (t *Tools) newReplaceExpectedSetsTool() agentTool {
 	}
 
 	return agentTool{
-		name: "replace_expected_sets",
-		definition: openai.ChatCompletionFunctionTool(shared.FunctionDefinitionParam{
-			Name:        "replace_expected_sets",
-			Description: openai.String("Replace the planned sets for an exercise log in the current workout."),
-			Parameters:  schema,
-			Strict:      openai.Bool(true),
-		}),
+		name:    "replace_expected_sets",
+		desc:    "Replace the planned sets for an exercise log in the current workout.",
+		params:  schema,
 		handler: t.replaceExpectedSetsHandler,
 	}
 }

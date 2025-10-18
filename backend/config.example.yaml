@@ -2,14 +2,10 @@
 
 llm:
   openai:
-    model: "google/gemini-2.5-pro"
+    model: "anthropic/claude-haiku-4.5"
     base_url: "https://openrouter.ai/api/v1"
     api_key: "${OPENAI_API_KEY}"
   reasoning_effort: "low"  # low, medium, high
-
-  gemini:
-    model: "gemini-2.5-flash"
-    api_key: "${GENAI_API_KEY}"
 
 # Prompt Generation Settings
 prompt_generation:

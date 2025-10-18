@@ -6,28 +6,25 @@ import (
 	"fitness-trainer/internal/domain"
 	"fitness-trainer/internal/logger"
 	"fmt"
-
-	"github.com/openai/openai-go/v3"
-	"github.com/openai/openai-go/v3/shared"
 	"github.com/opentracing/opentracing-go"
 )
 
 func (t *Tools) newListExercisesTool() agentTool {
-	schema := shared.FunctionParameters{
+	schema := map[string]any{
 		"type":     "object",
 		"required": []string{"muscle_group_ids", "limit", "exclude_exercise_ids"},
 		"properties": map[string]any{
 			"muscle_group_ids": map[string]any{
-				"type":  "array",
+				"type": "array",
 				"items": map[string]any{
-					"type": "string",
+					"type":        "string",
 					"description": "UUID of the muscle group. Exercises matching any of the provided muscle groups will be returned.",
 				},
 			},
 			"exclude_exercise_ids": map[string]any{
-				"type":  "array",
+				"type": "array",
 				"items": map[string]any{
-					"type": "string",
+					"type":        "string",
 					"description": "UUID of exercises to exclude",
 				},
 			},
@@ -42,13 +39,9 @@ func (t *Tools) newListExercisesTool() agentTool {
 	}
 
 	return agentTool{
-		name: "list_exercises",
-		definition: openai.ChatCompletionFunctionTool(shared.FunctionDefinitionParam{
-			Name:        "list_exercises",
-			Description: openai.String("Fetch exercises optionally filtered by muscle group ids."),
-			Parameters:  schema,
-			Strict:      openai.Bool(true),
-		}),
+		name:    "list_exercises",
+		desc:    "Fetch exercises optionally filtered by muscle group ids.",
+		params:  schema,
 		handler: t.listExercisesHandler,
 	}
 }
