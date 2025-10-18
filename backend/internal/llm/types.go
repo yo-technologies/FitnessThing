@@ -6,7 +6,7 @@ import "context"
 // Implementations may call any LLM provider (OpenAI, etc.)
 type CompletionProvider interface {
 	// CreateCompletion generates a completion given system and user prompts.
-	CreateCompletion(ctx context.Context, params ChatParams) (string, error)
+	CreateCompletion(ctx context.Context, params ChatParams) (string, Usage, error)
 	// CreateCompletionStream initiates a streaming chat completion.
 	CreateCompletionStream(ctx context.Context, params ChatParams) (ChatStream, error)
 }

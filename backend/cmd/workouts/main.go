@@ -12,22 +12,22 @@ import (
 	"os"
 	"time"
 
-	"fitness-trainer/internal/app"
-	"fitness-trainer/internal/clients/ratelimiter"
+	s3_client "fitness-trainer/internal/clients/s3"
 	appconfig "fitness-trainer/internal/config"
+	llm_openai "fitness-trainer/internal/llm/openai"
+	prompt_generator_service "fitness-trainer/internal/service/prompt_generator"
+
+	"fitness-trainer/internal/app"
 	"fitness-trainer/internal/db"
 	"fitness-trainer/internal/logger"
 	"fitness-trainer/internal/repository"
 	"fitness-trainer/internal/service"
 	"fitness-trainer/internal/service/background"
 	"fitness-trainer/internal/service/chat"
+	"fitness-trainer/internal/service/quota"
 	"fitness-trainer/internal/service/tools"
 	"fitness-trainer/internal/telegram/token_parser"
 	"fitness-trainer/internal/tracer"
-
-	s3_client "fitness-trainer/internal/clients/s3"
-	llm_openai "fitness-trainer/internal/llm/openai"
-	prompt_generator_service "fitness-trainer/internal/service/prompt_generator"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -38,8 +38,6 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/openai/openai-go/v3"
 	"github.com/openai/openai-go/v3/option"
-	"github.com/throttled/throttled/v2"
-	"github.com/throttled/throttled/v2/store/memstore"
 )
 
 func init() {
@@ -120,12 +118,15 @@ func Run() error {
 		service,
 	)
 
+	quotaService := quota.New(repo, cfg, nil)
+
 	chatService := chat.New(
 		tools,
 		repo,
 		repo,
 		repo,
 		llmClientWrapper,
+		quotaService,
 	)
 
 	telegramTokenParser := newTelegramTokenParser()
@@ -133,29 +134,10 @@ func Run() error {
 	promptGenerationDebounce := cfg.GetPromptGenerationDebounce()
 	promptGenerationPeriod := cfg.GetPromptGenerationPeriod()
 
-	promptGenerationQuota := throttled.RateQuota{
-		MaxRate:  throttled.PerHour(cfg.GetPromptGenerationRatePerHour()),
-		MaxBurst: cfg.GetPromptGenerationRateBurst(),
-	}
-
-	promptGenerationInmemmoryStore, err := memstore.NewCtx(65536)
-	if err != nil {
-		return fmt.Errorf("failed to create in memory store: %w", err)
-	}
-
-	promptGenerationRateLimiter, err := throttled.NewGCRARateLimiterCtx(
-		promptGenerationInmemmoryStore,
-		promptGenerationQuota,
-	)
-	if err != nil {
-		return fmt.Errorf("failed to create rate limiter: %w", err)
-	}
-
-	promptGenerationRateLimiterWrapper := ratelimiter.New(promptGenerationRateLimiter)
-
 	promptGenerationService := prompt_generator_service.New(
 		llmClientWrapper,
 		repo,
+		quotaService,
 	)
 
 	backgroundService := background.New(
@@ -163,7 +145,6 @@ func Run() error {
 		repo,
 		repo,
 		promptGenerationService,
-		promptGenerationRateLimiterWrapper,
 	)
 
 	scheduler, err := gocron.NewScheduler(

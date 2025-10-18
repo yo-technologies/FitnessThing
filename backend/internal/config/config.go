@@ -20,6 +20,9 @@ type LLMConfig struct {
 		APIKey  string `mapstructure:"api_key"`
 	} `mapstructure:"openai"`
 	ReasoningEffort string `mapstructure:"reasoning_effort"`
+	Limits struct {
+		DailyTokenLimit int `mapstructure:"daily_token_limit"`
+	} `mapstructure:"limits"`
 }
 
 // PromptGenerationConfig holds prompt generation settings
@@ -91,6 +94,7 @@ func (c *Config) loadDefaults() {
 	// LLM defaults
 	c.LLM.OpenAI.Model = "openai/gpt-5-mini"
 	c.LLM.ReasoningEffort = "medium"
+	c.LLM.Limits.DailyTokenLimit = 50000
 
 	// Prompt generation defaults
 	c.PromptGeneration.Debounce = time.Second * 60
@@ -134,6 +138,16 @@ func (c *Config) GetReasoningEffort() string {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	return c.LLM.ReasoningEffort
+}
+
+// GetLLMDailyTokenLimit returns the daily token cap per user
+func (c *Config) GetLLMDailyTokenLimit() int {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	if c.LLM.Limits.DailyTokenLimit <= 0 {
+		return 0
+	}
+	return c.LLM.Limits.DailyTokenLimit
 }
 
 

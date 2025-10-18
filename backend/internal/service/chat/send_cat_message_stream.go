@@ -27,6 +27,9 @@ const (
 
 const defaultChatSystemPrompt = `Ты — виртуальный фитнес‑тренер и агент управления тренировками.
 
+БАЗОВЫЙ ПРИНЦИП: по умолчанию тренировки должны быть сбалансированными по мышечным группам и видам нагрузок.
+— Если пользователь указал приоритеты, интегрируй их бережно: не жертвуй базовым балансом и восстановлением.
+
 ОСНОВНАЯ ЛОГИКА: если для осмысленного ответа нужны структурированные или актуальные данные (упражнения, план, история) — используй инструменты. Если вопрос бытовой, уточняющий или мотивационный — можно ответить сразу.
 
 Твои задачи:
@@ -39,6 +42,7 @@ const defaultChatSystemPrompt = `Ты — виртуальный фитнес‑
 - После изменений объяснять что произошло и что дальше.
 - Напоминать о разминке и восстановлении в итоговых планах.
 - Активно используй инструмент истории тренировок для лучших рекомендаций.
+- Помни о недельном балансе: старайся распределять нагрузку так, чтобы не перегружать одну группу мышц.
 
 Когда МОЖНО ответить БЕЗ инструмента:
 - Приветствие, мотивация, небольшое пояснение принципа тренинга.
@@ -81,6 +85,15 @@ type chatSession struct {
 func (s *Service) SendChatMessageStream(ctx context.Context, userID domain.ID, req dto.SendChatMessageRequest, callbacks dto.ChatStreamCallbacks) (dto.ChatCompletionDTO, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "service.chat.SendChatMessageStream")
 	defer span.Finish()
+
+	// Reserve 1 token upfront for admission control
+	allowed, err := s.quotaService.Reserve(ctx, userID, 1)
+	if err != nil {
+		return dto.ChatCompletionDTO{}, err
+	}
+	if !allowed {
+		return dto.ChatCompletionDTO{}, domain.ErrTooManyRequests
+	}
 
 	session, err := s.startChatSession(ctx, userID, req)
 	if err != nil {
@@ -200,6 +213,12 @@ func (s *Service) SendChatMessageStream(ctx context.Context, userID domain.ID, r
 
 	if err := notifyStatus("assistant_completed"); err != nil {
 		return dto.ChatCompletionDTO{}, err
+	}
+
+	// Finalize usage: confirm with actual tokens
+	err = s.quotaService.Confirm(ctx, userID, 1, totalUsage.TotalTokens)
+	if err != nil {
+		return dto.ChatCompletionDTO{}, fmt.Errorf("error confirming quota: %w", err)
 	}
 
 	return finalResult, nil

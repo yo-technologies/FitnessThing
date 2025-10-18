@@ -12,11 +12,16 @@ import (
 )
 
 type completionProvider interface {
-	CreateCompletion(ctx context.Context, llmParams llm.ChatParams) (string, error)
+	CreateCompletion(ctx context.Context, llmParams llm.ChatParams) (string, llm.Usage, error)
 }
 
 type muscleGroupRepository interface {
 	GetMuscleGroupsByIDs(ctx context.Context, ids []domain.ID) ([]dto.MuscleGroupDTO, error)
+}
+
+type quotaService interface {
+	Reserve(ctx context.Context, userID domain.ID, n int) (bool, error)
+	Confirm(ctx context.Context, userID domain.ID, reserved int, actual int) error
 }
 
 const systemPrompt = `
@@ -40,12 +45,14 @@ const systemPrompt = `
 type Service struct {
 	completionProvider    completionProvider
 	muscleGroupRepository muscleGroupRepository
+	quotaService          quotaService
 }
 
-func New(completionProvider completionProvider, muscleGroupRepository muscleGroupRepository) *Service {
+func New(completionProvider completionProvider, muscleGroupRepository muscleGroupRepository, quotaSvc quotaService) *Service {
 	return &Service{
 		completionProvider:    completionProvider,
 		muscleGroupRepository: muscleGroupRepository,
+		quotaService:          quotaSvc,
 	}
 }
 
@@ -115,7 +122,16 @@ func (s *Service) GeneratePrompt(ctx context.Context, settings domain.Generation
 		return domain.Prompt{}, fmt.Errorf("failed to marshal generation settings: %w", err)
 	}
 
-	prompt, err := s.completionProvider.CreateCompletion(ctx, llm.ChatParams{
+	// Reserve 1 token upfront
+	allowed, err := s.quotaService.Reserve(ctx, settings.UserID, 1)
+	if err != nil {
+		return domain.Prompt{}, err
+	}
+	if !allowed {
+		return domain.Prompt{}, domain.ErrTooManyRequests
+	}
+
+	prompt, usage, err := s.completionProvider.CreateCompletion(ctx, llm.ChatParams{
 		Messages: []llm.MessageParam{
 			{Role: llm.RoleSystem, Content: systemPrompt},
 			{Role: llm.RoleUser, Content: string(bytes)},
@@ -123,6 +139,11 @@ func (s *Service) GeneratePrompt(ctx context.Context, settings domain.Generation
 	})
 	if err != nil {
 		return domain.Prompt{}, err
+	}
+
+	err = s.quotaService.Confirm(ctx, settings.UserID, 1, usage.TotalTokens)
+	if err != nil {
+		return domain.Prompt{}, fmt.Errorf("error confirming quota: %w", err)
 	}
 
 	return domain.NewPrompt(settings.UserID, prompt, settings.Hash), nil

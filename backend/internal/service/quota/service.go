@@ -1,0 +1,59 @@
+package quota
+
+import (
+	"context"
+	"time"
+
+	"fitness-trainer/internal/config"
+	"fitness-trainer/internal/domain"
+)
+
+// TokenLimitProvider allows customizing per-user token limits.
+// If nil, default from config is used.
+type TokenLimitProvider func(ctx context.Context, userID domain.ID) int
+
+type repo interface {
+	ReserveLLMTokens(ctx context.Context, userID domain.ID, day time.Time, n int, dailyLimit int) (bool, error)
+	ConfirmLLMTokenUsage(ctx context.Context, userID domain.ID, day time.Time, reserved int, actual int) error
+	GetLLMDailyUsage(ctx context.Context, userID domain.ID, day time.Time) (used int, reserved int, err error)
+}
+
+type Service struct {
+	repo      repo
+	cfg       *config.Config
+	limitProv TokenLimitProvider
+}
+
+func New(r repo, cfg *config.Config, lp TokenLimitProvider) *Service {
+	return &Service{repo: r, cfg: cfg, limitProv: lp}
+}
+
+func (s *Service) dailyLimit(ctx context.Context, userID domain.ID) int {
+	if s.limitProv != nil {
+		if lim := s.limitProv(ctx, userID); lim > 0 {
+			return lim
+		}
+	}
+	return s.cfg.GetLLMDailyTokenLimit()
+}
+
+func (s *Service) today() time.Time {
+	now := time.Now().UTC()
+	y, m, d := now.Date()
+	return time.Date(y, m, d, 0, 0, 0, 0, time.UTC)
+}
+
+// Reserve reserves n tokens if within daily limit. Returns true if allowed.
+func (s *Service) Reserve(ctx context.Context, userID domain.ID, n int) (bool, error) {
+	day := s.today()
+	limit := s.dailyLimit(ctx, userID)
+	return s.repo.ReserveLLMTokens(ctx, userID, day, n, limit)
+}
+
+// Confirm adjusts reserved and increments used by actual tokens consumed.
+// If actual < reserved, the remainder is released. We don't enforce limit here strictly
+// to avoid failing post-consumption; enforcement happens at Reserve time.
+func (s *Service) Confirm(ctx context.Context, userID domain.ID, reserved int, actual int) error {
+	day := s.today()
+	return s.repo.ConfirmLLMTokenUsage(ctx, userID, day, reserved, actual)
+}

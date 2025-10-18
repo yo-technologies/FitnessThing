@@ -6,6 +6,8 @@ llm:
     base_url: "https://openrouter.ai/api/v1"
     api_key: "${OPENAI_API_KEY}"
   reasoning_effort: "low"  # low, medium, high
+  limits:
+    daily_token_limit: 50000
 
 # Prompt Generation Settings
 prompt_generation:
