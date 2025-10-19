@@ -189,7 +189,7 @@ func (r *PGXRepository) GetChatByID(ctx context.Context, chatID domain.ID) (doma
 
 	var entity chatEntity
 	if err := pgxscan.Get(ctx, engine, &entity, query, uuidToPgtype(chatID)); err != nil {
-		if err == pgx.ErrNoRows {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return domain.Chat{}, domain.ErrNotFound
 		}
 		logger.Errorf("failed to get chat by id: %v", err)

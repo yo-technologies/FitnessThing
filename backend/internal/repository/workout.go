@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"fitness-trainer/internal/domain"
 	"fitness-trainer/internal/logger"
 	"fitness-trainer/internal/utils"
@@ -104,7 +105,7 @@ func (r *PGXRepository) GetWorkoutByID(ctx context.Context, id domain.ID) (domai
 
 	var workout workoutEntity
 	if err := pgxscan.Get(ctx, engine, &workout, query, uuidToPgtype(id)); err != nil {
-		if err == pgx.ErrNoRows {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return domain.Workout{}, domain.ErrNotFound
 		}
 		logger.Errorf("failed to get workout by id: %v", err)
@@ -176,7 +177,7 @@ func (r *PGXRepository) DeleteWorkout(ctx context.Context, id domain.ID) error {
 
 	var workout workoutEntity
 	if err := pgxscan.Get(ctx, engine, &workout, query, uuidToPgtype(id)); err != nil {
-		if err == pgx.ErrNoRows {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return domain.ErrNotFound
 		}
 		logger.Errorf("failed to delete workout: %v", err)
