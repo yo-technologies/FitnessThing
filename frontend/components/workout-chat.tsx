@@ -30,7 +30,7 @@ import {
   WorkoutChatStreamCallbacks,
   sendWorkoutChatMessageStream,
 } from "@/api/chat-stream";
-import { GearIcon, RightArrowIcon } from "@/config/icons";
+import { GearIcon, UpArrowIcon } from "@/config/icons";
 import { formatToolLabel } from "@/config/tools";
 
 type WorkoutChatPanelProps = {
@@ -218,9 +218,15 @@ export function WorkoutChatPanel({
   // Динамический нижний паддинг, чтобы можно было проскроллить так,
   // чтобы последнее пользовательское сообщение оказалось у верхней границы
   const [dynamicBottomPadding, setDynamicBottomPadding] = useState(0);
+  // Показывать кнопку быстро перейти вниз
+  const [showScrollToBottom, setShowScrollToBottom] = useState(false);
 
   // Ref на скроллируемый контейнер (overflow-y-auto)
   const scrollRef = useRef<HTMLDivElement>(null);
+  const scrollElementId = useMemo(
+    () => `workout-chat-scroll-${workoutId}`,
+    [workoutId],
+  );
   const sessionRef = useRef<ChatSessionHandle>(null);
   const prefillAppliedRef = useRef(false);
   const latestUserMessageIdRef = useRef<string | null>(null);
@@ -312,7 +318,9 @@ export function WorkoutChatPanel({
   useEffect(() => {
     if (!isOpen || !hasMessages) return;
 
-    const el = scrollRef.current;
+    const el = document.getElementById(
+      scrollElementId,
+    ) as HTMLDivElement | null;
 
     if (!el) return;
 
@@ -369,6 +377,42 @@ export function WorkoutChatPanel({
       requestAnimationFrame(handleScroll);
     });
   }, [messages, isOpen, hasMessages, dynamicBottomPadding]);
+
+  // Следим за скроллом контейнера и показываем кнопку «вниз», если пользователь отскроллил
+  useEffect(() => {
+    const el = document.getElementById(
+      scrollElementId,
+    ) as HTMLDivElement | null;
+
+    if (!isOpen || !el) {
+      setShowScrollToBottom(false);
+
+      return;
+    }
+
+    const threshold = 80; // px от низа, при которых считаем что не внизу
+
+    const handleScroll = () => {
+      try {
+        const atBottom =
+          el.scrollHeight - el.scrollTop - el.clientHeight <= threshold;
+
+        setShowScrollToBottom(!atBottom);
+      } catch {
+        // no-op
+      }
+    };
+
+    el.addEventListener("scroll", handleScroll, { passive: true });
+
+    // начальная проверка
+    handleScroll();
+
+    return () => {
+      el.removeEventListener("scroll", handleScroll);
+      setShowScrollToBottom(false);
+    };
+  }, [isOpen, messages]);
 
   const sendMessage = useCallback(
     async (content: string) => {
@@ -707,6 +751,7 @@ export function WorkoutChatPanel({
               <ScrollShadow
                 ref={scrollRef}
                 className="flex-1 overflow-y-auto h-full"
+                id={scrollElementId}
                 size={60}
               >
                 {/* Контент сообщений; добавляем нижний паддинг, чтобы оверлей не перекрывал последние сообщения */}
@@ -716,6 +761,31 @@ export function WorkoutChatPanel({
                   {content}
                 </div>
               </ScrollShadow>
+
+              {/* Кнопка быстро вниз */}
+              {showScrollToBottom && (
+                <div className="absolute right-4 bottom-2 z-30">
+                  <Button
+                    isIconOnly
+                    aria-label="Прокрутить вниз"
+                    color="secondary"
+                    radius="full"
+                    size="sm"
+                    variant="flat"
+                    onPress={() => {
+                      const el = document.getElementById(
+                        scrollElementId,
+                      ) as HTMLDivElement | null;
+
+                      if (!el) return;
+
+                      el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+                    }}
+                  >
+                    <UpArrowIcon className="h-4 w-4 rotate-180" />
+                  </Button>
+                </div>
+              )}
 
               {/* Статус «Думает…» как оверлей поверх контента внизу */}
               {showThinking && (
@@ -774,7 +844,7 @@ export function WorkoutChatPanel({
               radius="full"
               onPress={handleSend}
             >
-              <RightArrowIcon className="h-5 w-5" />
+              <UpArrowIcon className="h-6 w-6" />
             </Button>
           </div>
         </div>

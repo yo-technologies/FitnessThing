@@ -23,24 +23,24 @@ export function AssistantMarkdown({ content }: AssistantMarkdownProps) {
         p: (props) => <p className="my-1 leading-relaxed" {...props} />,
         ul: (props) => (
           <ul
-            className="list-disc list-outside ml-4 my-2 space-y-1"
+            className="list-disc list-outside ml-4 my-2 space-y-2"
             {...props}
           />
         ),
         ol: (props) => (
           <ol
-            className="list-decimal list-outside ml-4 my-2 space-y-1"
+            className="list-decimal list-outside ml-4 my-2 space-y-2"
             {...props}
           />
         ),
         li: (props) => <li className="my-0.5 [&>p]:m-0" {...props} />,
         h1: ({ children, ...props }) => (
-          <h1 className="mt-2 mb-1 font-semibold text-base" {...props}>
+          <h1 className="mt-4 mb-1 font-semibold text-base" {...props}>
             {children}
           </h1>
         ),
         h2: ({ children, ...props }) => (
-          <h2 className="mt-2 mb-1 font-semibold text-base" {...props}>
+          <h2 className="mt-3 mb-1 font-semibold text-base" {...props}>
             {children}
           </h2>
         ),
