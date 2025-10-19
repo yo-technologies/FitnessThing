@@ -198,12 +198,24 @@ export default function WorkoutDetailsPage({
   const prefill = searchParams.get("prefill") ?? undefined;
   const shouldOpenChat = searchParams.get("openChat") === "1";
 
+  // Автоматическое открытие чата при загрузке страницы
   useEffect(() => {
     if (shouldOpenChat) {
       onChatOpen();
+      try {
+        const url = new URL(window.location.href);
+
+        if (!url.searchParams.has("openChat")) return;
+
+        url.searchParams.delete("openChat");
+
+        const newUrl = `${url.pathname}${url.search ? `?${url.searchParams.toString()}` : ""}${url.hash}`;
+
+        window.history.replaceState(null, "", newUrl);
+      } catch {
+        // no-op
+      }
     }
-    // Открывать только при первом маунте
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // При закрытии панели чата обновляем данные тренировки (вдруг были изменения через инструменты)
