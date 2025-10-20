@@ -479,12 +479,13 @@ export default function WorkoutDetailsPage({
         <Button
           isIconOnly
           aria-label="Открыть чат с тренером"
-          className="fixed bottom-20 right-6 z-40 shadow-lg w-14 h-14"
+          className="fixed bottom-20 right-6 z-40 shadow-lg w-14 h-14 shadow-lg"
           color="secondary"
           radius="full"
+          variant="shadow"
           onPress={onChatOpen}
         >
-          <ChatBubbleIcon className="h-7 w-7" />
+          <ChatBubbleIcon className="h-8 w-8" />
         </Button>
       </>
     );

@@ -294,10 +294,15 @@ export function WorkoutChatPanel({
       return;
     }
 
-    autoScrollOnOpenRef.current = true;
     latestUserMessageIdRef.current = null;
     void loadChat();
     void loadLimits();
+
+    // Устанавливаем флаг автоскролла после небольшой задержки,
+    // чтобы он сработал после загрузки сообщений
+    requestAnimationFrame(() => {
+      autoScrollOnOpenRef.current = true;
+    });
   }, [isOpen, loadChat, loadLimits]);
 
   // Однократно подставляем текст в инпут при первом открытии, если передан prefill
@@ -335,6 +340,7 @@ export function WorkoutChatPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, inputValue, prefill]);
 
+  // Закрытие сессии при закрытии панели
   useEffect(() => {
     if (!isOpen && sessionRef.current) {
       sessionRef.current.close();
@@ -342,6 +348,7 @@ export function WorkoutChatPanel({
     }
   }, [isOpen]);
 
+  // Автоскролл при появлении новых сообщений или открытии панели
   useEffect(() => {
     if (!isOpen || !hasMessages) return;
 
@@ -352,6 +359,7 @@ export function WorkoutChatPanel({
     if (!el) return;
 
     const handleScroll = () => {
+      // Проверяем флаг автоскролла при открытии
       if (autoScrollOnOpenRef.current) {
         autoScrollOnOpenRef.current = false;
         el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
@@ -403,7 +411,7 @@ export function WorkoutChatPanel({
     requestAnimationFrame(() => {
       requestAnimationFrame(handleScroll);
     });
-  }, [messages, isOpen, hasMessages, dynamicBottomPadding]);
+  }, [messages, isOpen, hasMessages, dynamicBottomPadding, scrollElementId]);
 
   // Следим за скроллом контейнера и показываем кнопку «вниз», если пользователь отскроллил
   useEffect(() => {
