@@ -86,15 +86,6 @@ func (s *Service) SendChatMessageStream(ctx context.Context, userID domain.ID, r
 	span, ctx := opentracing.StartSpanFromContext(ctx, "service.chat.SendChatMessageStream")
 	defer span.Finish()
 
-	// Reserve 1 token upfront for admission control
-	allowed, err := s.quotaService.Reserve(ctx, userID, 1)
-	if err != nil {
-		return dto.ChatCompletionDTO{}, err
-	}
-	if !allowed {
-		return dto.ChatCompletionDTO{}, domain.ErrTooManyRequests
-	}
-
 	session, err := s.startChatSession(ctx, userID, req)
 	if err != nil {
 		return dto.ChatCompletionDTO{}, err
@@ -105,6 +96,22 @@ func (s *Service) SendChatMessageStream(ctx context.Context, userID domain.ID, r
 	toolDefs := session.toolDefs
 	chat := session.chat
 	agentCtx := domain.NewAgentChatContext(userID, chat.WorkoutID)
+
+	// Reserve 1 token upfront for admission control
+	allowed, err := s.quotaService.Reserve(ctx, userID, 1)
+	if err != nil {
+		return dto.ChatCompletionDTO{}, err
+	}
+	if !allowed {
+		// Return a typed quota-exceeded error and try to emit a structured error event
+		te := domain.QuotaExceededError(domain.ErrTooManyRequests)
+		if callbacks.OnError != nil {
+			_ = callbacks.OnError(te)
+		}
+
+		_, _ = s.handleAssistantFailure(ctx, chat.ID, te)
+		return dto.ChatCompletionDTO{}, te
+	}
 
 	notifyStatus := func(status string) error {
 		if callbacks.OnStatus != nil {
@@ -142,12 +149,19 @@ func (s *Service) SendChatMessageStream(ctx context.Context, userID domain.ID, r
 
 		stream, err := s.llmClient.CreateCompletionStream(ctx, params)
 		if err != nil {
+			// Try to send structured error event before persisting assistant error
+			if callbacks.OnError != nil {
+				_ = callbacks.OnError(err)
+			}
 			_, _ = s.handleAssistantFailure(ctx, chat.ID, err)
 			return dto.ChatCompletionDTO{}, err
 		}
 
 		assistantMessage, usage, err := s.runStreamingChatCompletion(stream, &callbacks)
 		if err != nil {
+			if callbacks.OnError != nil {
+				_ = callbacks.OnError(err)
+			}
 			_, handlerErr := s.handleAssistantFailure(ctx, chat.ID, err)
 			if handlerErr != nil {
 				logger.Errorf("error handling assistant failure: %v", handlerErr)

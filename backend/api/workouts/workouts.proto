@@ -1032,6 +1032,13 @@ service ChatService {
       body: "*"
     };
   }
+
+  // Получить состояние лимитов/квот LLM для текущего пользователя
+  rpc GetLLMLimits(google.protobuf.Empty) returns (GetLLMLimitsResponse) {
+    option (google.api.http) = {
+      get: "/v1/chats/llm_limits"
+    };
+  }
 }
 
 message Chat {
@@ -1097,6 +1104,7 @@ message SendChatMessageStreamResponse {
     string status = 3;
     SendChatMessageResponse final = 4;
     ToolEvent tool_event = 5;
+    ChatError error = 6; // Структурированная ошибка для корректного UI-рендеринга
   }
 }
 
@@ -1116,6 +1124,18 @@ message ToolEvent {
   optional string error = 5;
 }
 
+// Структурированная ошибка в потоке чата
+message ChatError {
+  // Короткий машинный тип ошибки, например: "rate_limit", "quota_exceeded", "provider_unavailable"
+  string type = 1;
+  // Текст для пользователя
+  string message = 2;
+  // Рекомендуемая задержка до повтора (секунды), если применимо
+  optional int32 retry_after_seconds = 3;
+  // Опциональный код провайдера/HTTP
+  optional string code = 4;
+}
+
 message GetChatRequest {
   optional string workout_id = 1;
   optional string chat_id = 2;
@@ -1124,4 +1144,12 @@ message GetChatRequest {
 message GetChatResponse {
   Chat chat = 1;
   repeated ChatMessage messages = 2;
+}
+
+// Состояние лимитов LLM для текущего пользователя
+message GetLLMLimitsResponse {
+  int32 daily_limit = 1;     // Дневной лимит токенов
+  int32 used = 2;            // Использованные токены за день
+  int32 reserved = 3;        // Зарезервированные токены (в процессе)
+  int32 remaining = 4;       // Остаток = max(daily_limit - used - reserved, 0)
 }

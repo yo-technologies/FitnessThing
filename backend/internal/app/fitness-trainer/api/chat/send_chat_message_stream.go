@@ -16,7 +16,7 @@ import (
 
 func (i *Implementation) SendChatMessageStream(in *desc.SendChatMessageRequest, stream desc.ChatService_SendChatMessageStreamServer) error {
 	ctx := stream.Context()
-	span, ctx := opentracing.StartSpanFromContext(ctx, "api.SendChatMessageStream")
+	span, ctx := opentracing.StartSpanFromContext(ctx, "api.chat.SendChatMessageStream")
 	defer span.Finish()
 
 	if in == nil {
@@ -113,6 +113,31 @@ func (i *Implementation) SendChatMessageStream(in *desc.SendChatMessageRequest, 
 					State:      state,
 					Error:      errPtr,
 				}},
+			})
+		},
+		OnError: func(err error) error {
+			// Map error to ChatError payload
+			var (
+				typ               = domain.ErrorTypeInternal
+				code              string
+				retryAfterSeconds int32
+			)
+			if te, ok := err.(*domain.TypedError); ok {
+				typ = te.Type
+				code = te.Code
+				if te.RetryAfter != nil {
+					retryAfterSeconds = int32(te.RetryAfter.Seconds())
+				}
+			}
+			return send(&desc.SendChatMessageStreamResponse{
+				Payload: &desc.SendChatMessageStreamResponse_Error{
+					Error: &desc.ChatError{
+						Type:              string(typ),
+						Message:           err.Error(),
+						RetryAfterSeconds: &retryAfterSeconds,
+						Code:              &code,
+					},
+				},
 			})
 		},
 		OnFinalResponse: func(result dto.ChatCompletionDTO) error {

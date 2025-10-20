@@ -2,6 +2,7 @@ package chat
 
 import (
 	"context"
+	"time"
 
 	"fitness-trainer/internal/domain"
 	"fitness-trainer/internal/llm"
@@ -32,6 +33,8 @@ type userPromptRepository interface {
 type quotaService interface {
 	Reserve(ctx context.Context, userID domain.ID, n int) (bool, error)
 	Confirm(ctx context.Context, userID domain.ID, reserved int, actual int) error
+	GetLLMDailyUsage(ctx context.Context, userID domain.ID, day time.Time) (used int, reserved int, err error)
+	DailyLimit(ctx context.Context, userID domain.ID) int
 }
 
 type Service struct {

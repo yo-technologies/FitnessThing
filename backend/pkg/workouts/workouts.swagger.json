@@ -37,6 +37,29 @@
     "application/json"
   ],
   "paths": {
+    "/v1/chats/llm_limits": {
+      "get": {
+        "summary": "Получить состояние лимитов/квот LLM для текущего пользователя",
+        "operationId": "ChatService_GetLLMLimits",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/workoutGetLLMLimitsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "ChatService"
+        ]
+      }
+    },
     "/v1/chats/search": {
       "post": {
         "summary": "Получить полный чат с сообщениями",
@@ -1861,6 +1884,29 @@
         }
       }
     },
+    "workoutChatError": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "title": "Короткий машинный тип ошибки, например: \"rate_limit\", \"quota_exceeded\", \"provider_unavailable\""
+        },
+        "message": {
+          "type": "string",
+          "title": "Текст для пользователя"
+        },
+        "retryAfterSeconds": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Рекомендуемая задержка до повтора (секунды), если применимо"
+        },
+        "code": {
+          "type": "string",
+          "title": "Опциональный код провайдера/HTTP"
+        }
+      },
+      "title": "Структурированная ошибка в потоке чата"
+    },
     "workoutChatMessage": {
       "type": "object",
       "properties": {
@@ -2235,6 +2281,32 @@
         }
       }
     },
+    "workoutGetLLMLimitsResponse": {
+      "type": "object",
+      "properties": {
+        "dailyLimit": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Дневной лимит токенов"
+        },
+        "used": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Использованные токены за день"
+        },
+        "reserved": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Зарезервированные токены (в процессе)"
+        },
+        "remaining": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Остаток = max(daily_limit - used - reserved, 0)"
+        }
+      },
+      "title": "Состояние лимитов LLM для текущего пользователя"
+    },
     "workoutGetMuscleGroupsResponse": {
       "type": "object",
       "properties": {
@@ -2431,6 +2503,10 @@
         },
         "toolEvent": {
           "$ref": "#/definitions/workoutToolEvent"
+        },
+        "error": {
+          "$ref": "#/definitions/workoutChatError",
+          "title": "Структурированная ошибка для корректного UI-рендеринга"
         }
       }
     },

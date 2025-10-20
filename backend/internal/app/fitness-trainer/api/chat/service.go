@@ -11,6 +11,7 @@ import (
 type Service interface {
 	SendChatMessageStream(ctx context.Context, userID domain.ID, req dto.SendChatMessageRequest, callbacks dto.ChatStreamCallbacks) (dto.ChatCompletionDTO, error)
 	GetChat(ctx context.Context, userID domain.ID, req dto.GetChatRequest) (dto.GetChatDTO, error)
+	GetLLMLimits(ctx context.Context, userID domain.ID) (domain.LLMLimits, error)
 }
 
 type Implementation struct {

@@ -12,6 +12,28 @@ import (
 )
 
 func mapDomainErrorToGRPCStatus(err error, method string) error {
+	// If it is a typed error, map by type first
+	var te *domain.TypedError
+	if errors.As(err, &te) {
+		switch te.Type {
+		case domain.ErrorTypeRateLimit, domain.ErrorTypeQuotaExceeded:
+			// ResourceExhausted with message including optional retry-after
+			if te.RetryAfter != nil {
+				return status.Errorf(codes.ResourceExhausted, "%s (retry_after=%s)", err.Error(), te.RetryAfter.String())
+			}
+			return status.Errorf(codes.ResourceExhausted, "%s", err.Error())
+		case domain.ErrorTypeProviderUnavailable:
+			return status.Errorf(codes.Unavailable, "%s", err.Error())
+		case domain.ErrorTypeInternal:
+			logger.Errorf("[interceptor.Error] method: %s; typed-internal: %s", method, err.Error())
+			return status.Error(codes.Internal, "internal server error")
+		default:
+			// unknown type -> internal
+			logger.Errorf("[interceptor.Error] method: %s; typed-unknown(%s): %s", method, te.Type, err.Error())
+			return status.Error(codes.Internal, "internal server error")
+		}
+	}
+
 	if errors.Is(err, domain.ErrNotFound) {
 		return status.Errorf(codes.NotFound, "%s", err.Error())
 	}

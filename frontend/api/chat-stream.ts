@@ -89,6 +89,23 @@ function buildWebSocketUrl(): string {
   }
 }
 
+export class ChatStreamError extends Error {
+  readonly type?: string;
+  readonly code?: string;
+  readonly retryAfterSeconds?: number;
+
+  constructor(
+    message: string,
+    opts?: { type?: string; code?: string; retryAfterSeconds?: number },
+  ) {
+    super(message);
+    this.name = "ChatStreamError";
+    this.type = opts?.type;
+    this.code = opts?.code;
+    this.retryAfterSeconds = opts?.retryAfterSeconds;
+  }
+}
+
 function isStreamResponse(
   payload: unknown,
 ): payload is WorkoutSendChatMessageStreamResponse {
@@ -190,8 +207,8 @@ export function sendWorkoutChatMessageStream(
           return;
         }
 
-        if ("error" in parsed) {
-          const error = new Error(parsed.error);
+        if ("error" in parsed && typeof (parsed as any).error === "string") {
+          const error = new Error((parsed as any).error);
 
           callbacks.onError?.(error);
           reject(error);
@@ -200,26 +217,44 @@ export function sendWorkoutChatMessageStream(
           return;
         }
 
-        if (parsed.messageDelta?.content) {
-          callbacks.onMessageDelta?.(parsed.messageDelta.content);
+        const payload = parsed as WorkoutSendChatMessageStreamResponse;
+
+        // Structured error payload from server stream
+        if (payload.error) {
+          const msg = payload.error.message || "Ошибка в чате";
+          const error = new ChatStreamError(msg, {
+            type: payload.error.type,
+            code: payload.error.code,
+            retryAfterSeconds: payload.error.retryAfterSeconds,
+          });
+
+          callbacks.onError?.(error);
+          reject(error);
+          close();
+
+          return;
         }
 
-        if (parsed.usage) {
-          callbacks.onUsage?.(parsed.usage);
+        if (payload.messageDelta?.content) {
+          callbacks.onMessageDelta?.(payload.messageDelta.content);
         }
 
-        if (parsed.status) {
-          callbacks.onStatus?.(parsed.status);
+        if (payload.usage) {
+          callbacks.onUsage?.(payload.usage);
         }
 
-        if (parsed.toolEvent) {
-          callbacks.onToolEvent?.(parsed.toolEvent);
+        if (payload.status) {
+          callbacks.onStatus?.(payload.status);
         }
 
-        if (parsed.final) {
-          finalResponse = parsed.final;
-          callbacks.onFinal?.(parsed.final);
-          resolve(parsed.final);
+        if (payload.toolEvent) {
+          callbacks.onToolEvent?.(payload.toolEvent);
+        }
+
+        if (payload.final) {
+          finalResponse = payload.final;
+          callbacks.onFinal?.(payload.final);
+          resolve(payload.final);
           close();
         }
       });

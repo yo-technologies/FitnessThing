@@ -29,6 +29,8 @@ type ChatStreamCallbacks struct {
 	OnStatus        func(string) error
 	OnToolEvent     func(ToolEvent) error
 	OnFinalResponse func(ChatCompletionDTO) error
+	// OnError — структурированная ошибка для UI (будет транслироваться как ChatError в поток)
+	OnError        func(error) error
 }
 
 type GetChatDTO struct {

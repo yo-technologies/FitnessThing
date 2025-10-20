@@ -16,7 +16,7 @@ import (
 )
 
 func (i *Implementation) GetChat(ctx context.Context, in *desc.GetChatRequest) (*desc.GetChatResponse, error) {
-	span, ctx := opentracing.StartSpanFromContext(ctx, "api.GetChat")
+	span, ctx := opentracing.StartSpanFromContext(ctx, "api.chat.GetChat")
 	defer span.Finish()
 
 	if in == nil {

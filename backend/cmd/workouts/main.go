@@ -19,6 +19,7 @@ import (
 
 	"fitness-trainer/internal/app"
 	"fitness-trainer/internal/db"
+	"fitness-trainer/internal/domain"
 	"fitness-trainer/internal/logger"
 	"fitness-trainer/internal/repository"
 	"fitness-trainer/internal/service"
@@ -118,7 +119,9 @@ func Run() error {
 		service,
 	)
 
-	quotaService := quota.New(repo, cfg, nil)
+	quotaService := quota.New(repo, cfg, func(_ context.Context, _ domain.ID) int {
+		return cfg.GetLLMDailyTokenLimit()
+	})
 
 	chatService := chat.New(
 		tools,

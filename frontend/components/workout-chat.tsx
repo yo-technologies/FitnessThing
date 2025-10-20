@@ -23,12 +23,14 @@ import {
   WorkoutChat,
   WorkoutChatMessage,
   WorkoutChatMessageRole,
+  WorkoutGetLLMLimitsResponse,
 } from "@/api/api.generated";
 import { authApi } from "@/api/api";
 import {
   WorkoutChatSendRequest,
   WorkoutChatStreamCallbacks,
   sendWorkoutChatMessageStream,
+  ChatStreamError,
 } from "@/api/chat-stream";
 import { GearIcon, UpArrowIcon } from "@/config/icons";
 import { formatToolLabel } from "@/config/tools";
@@ -43,6 +45,13 @@ type WorkoutChatPanelProps = {
 type StreamState = {
   status?: string;
   usageTokens?: number;
+};
+
+type LimitsState = {
+  loading: boolean;
+  data?: WorkoutGetLLMLimitsResponse;
+  error?: string | null;
+  cooldownUntil?: number; // epoch ms until retry allowed
 };
 
 type ChatSessionHandle = ReturnType<typeof sendWorkoutChatMessageStream> | null;
@@ -215,6 +224,7 @@ export function WorkoutChatPanel({
   const [streamingToolMessage, setStreamingToolMessage] =
     useState<WorkoutChatMessage | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [limits, setLimits] = useState<LimitsState>({ loading: false });
   // Динамический нижний паддинг, чтобы можно было проскроллить так,
   // чтобы последнее пользовательское сообщение оказалось у верхней границы
   const [dynamicBottomPadding, setDynamicBottomPadding] = useState(0);
@@ -263,6 +273,22 @@ export function WorkoutChatPanel({
     }
   }, [workoutId]);
 
+  const loadLimits = useCallback(async () => {
+    setLimits((prev) => ({ ...prev, loading: true, error: null }));
+    try {
+      const response = await authApi.v1.chatServiceGetLlmLimits();
+
+      setLimits({ loading: false, data: response.data });
+    } catch (err) {
+      console.error("Failed to load LLM limits", err);
+      setLimits((prev) => ({
+        ...prev,
+        loading: false,
+        error: "Не удалось получить лимиты",
+      }));
+    }
+  }, []);
+
   useEffect(() => {
     if (!isOpen) {
       return;
@@ -271,7 +297,8 @@ export function WorkoutChatPanel({
     autoScrollOnOpenRef.current = true;
     latestUserMessageIdRef.current = null;
     void loadChat();
-  }, [isOpen, loadChat]);
+    void loadLimits();
+  }, [isOpen, loadChat, loadLimits]);
 
   // Однократно подставляем текст в инпут при первом открытии, если передан prefill
   useEffect(() => {
@@ -545,13 +572,33 @@ export function WorkoutChatPanel({
         },
         onError: (err) => {
           console.error("Workout chat stream error", err);
-          setError(err.message);
+          if (err instanceof ChatStreamError) {
+            if (err.type === "rate_limit" || err.code === "429") {
+              const retryAfterSec = err.retryAfterSeconds ?? 0;
+              const until = Date.now() + Math.max(retryAfterSec, 0) * 1000;
+
+              setLimits((prev) => ({ ...prev, cooldownUntil: until }));
+
+              setError(
+                retryAfterSec > 0
+                  ? `Превышен лимит запросов. Попробуйте через ${retryAfterSec} сек.`
+                  : "Превышен лимит запросов. Попробуйте позже.",
+              );
+            } else if (err.type === "quota_exceeded") {
+              setError("Исчерпан дневной лимит токенов. Попробуйте завтра.");
+            } else {
+              setError(err.message);
+            }
+          } else {
+            setError(err.message);
+          }
           setIsStreaming(false);
           setIsGenerating(false);
           setStreamingAssistantMessage("");
           setStreamingToolMessage(null);
           // Перезагружаем чат, чтобы получить корректное состояние с сервера
           void loadChat();
+          void loadLimits();
         },
       };
 
@@ -572,7 +619,7 @@ export function WorkoutChatPanel({
           sessionRef.current = null;
         });
     },
-    [chat?.id, isStreaming, workoutId],
+    [chat?.id, isStreaming, workoutId, loadChat, loadLimits],
   );
 
   const handleSend = useCallback(() => {
@@ -670,9 +717,7 @@ export function WorkoutChatPanel({
     return (
       <div
         className={`flex w-full flex-col gap-3 px-4 ${isGenerating ? "pt-6" : "p-4"}`}
-        style={
-          isGenerating ? { paddingBottom: dynamicBottomPadding } : undefined
-        }
+        style={{ paddingBottom: dynamicBottomPadding }}
       >
         {combinedMessages.map((message, idx, arr) => {
           // Пропускаем системные сообщения
@@ -717,7 +762,23 @@ export function WorkoutChatPanel({
     dynamicBottomPadding,
   ]);
 
-  const canSend = inputValue.trim().length > 0 && !isStreaming;
+  const now = Date.now();
+  const inCooldown = Boolean(
+    limits.cooldownUntil && now < (limits.cooldownUntil ?? 0),
+  );
+  const outOfQuota = Boolean(
+    limits.data &&
+      typeof limits.data.remaining === "number" &&
+      (limits.data.remaining ?? 0) <= 0,
+  );
+  const canSend =
+    inputValue.trim().length > 0 && !isStreaming && !inCooldown && !outOfQuota;
+
+  const sendTooltip = inCooldown
+    ? "Подождите окончания кулдауна"
+    : outOfQuota
+      ? "Исчерпан дневной лимит"
+      : undefined;
   const showThinking = streamState.status === "assistant_thinking";
 
   return (
@@ -755,11 +816,7 @@ export function WorkoutChatPanel({
                 size={60}
               >
                 {/* Контент сообщений; добавляем нижний паддинг, чтобы оверлей не перекрывал последние сообщения */}
-                <div
-                  className={`flex min-h-full min-w-full ${showThinking ? "pb-4" : ""}`}
-                >
-                  {content}
-                </div>
+                <div className="flex min-h-full min-w-full pb-4">{content}</div>
               </ScrollShadow>
 
               {/* Кнопка быстро вниз */}
@@ -787,39 +844,40 @@ export function WorkoutChatPanel({
                 </div>
               )}
 
-              {/* Статус «Думает…» как оверлей поверх контента внизу */}
-              {showThinking && (
-                <div className="absolute inset-x-0 bottom-0 z-20 px-4 pb-2 shadow-md">
-                  <div
-                    aria-live="polite"
-                    className="flex items-center gap-1 text-xs text-default-400"
-                    role="status"
-                  >
-                    <Spinner
-                      classNames={{ wrapper: "w-3 h-3" }}
-                      color="secondary"
-                      size="sm"
-                    />
-                    <span>Думает…</span>
-                    {streamState.usageTokens ? (
-                      <span className="ml-2 text-[10px] opacity-70">
-                        Токенов: {streamState.usageTokens}
-                      </span>
-                    ) : null}
-                  </div>
-                </div>
-              )}
-
-              {error && hasMessages && (
-                <div className="absolute inset-x-0 bottom-0 z-20 px-4 pb-2 text-xs text-danger">
-                  {error}
+              {(error || inCooldown || outOfQuota || showThinking) && (
+                <div className="absolute inset-x-0 bottom-0 z-20 px-4 pb-2 text-xs shadow-md">
+                  {showThinking && (
+                    <div
+                      aria-live="polite"
+                      className="flex items-center gap-1 text-xs text-default-400"
+                      role="status"
+                    >
+                      <Spinner
+                        classNames={{ wrapper: "w-3 h-3" }}
+                        color="secondary"
+                        size="sm"
+                      />
+                      <span>Думает…</span>
+                    </div>
+                  )}
+                  {error && <div className="text-danger mb-1">{error}</div>}
+                  {inCooldown && (
+                    <div className="text-warning">
+                      {"Слишком часто. Подождите немного перед следующим "}
+                      {"запросом."}
+                    </div>
+                  )}
+                  {outOfQuota && (
+                    <div className="text-warning">
+                      Исчерпан дневной лимит. Продолжите завтра.
+                    </div>
+                  )}
                 </div>
               )}
             </div>
           </div>
           <div className="flex items-center gap-2 border-t border-default-200 px-4 py-2 mb-4">
             <Textarea
-              autoFocus
               className="flex-1"
               classNames={{
                 inputWrapper: "bg-default-100",
@@ -842,6 +900,7 @@ export function WorkoutChatPanel({
               isDisabled={!canSend}
               isLoading={isStreaming}
               radius="full"
+              title={sendTooltip}
               onPress={handleSend}
             >
               <UpArrowIcon className="h-6 w-6" />

@@ -20,21 +20,11 @@ type repo interface {
 
 type Service struct {
 	repo      repo
-	cfg       *config.Config
 	limitProv TokenLimitProvider
 }
 
 func New(r repo, cfg *config.Config, lp TokenLimitProvider) *Service {
-	return &Service{repo: r, cfg: cfg, limitProv: lp}
-}
-
-func (s *Service) dailyLimit(ctx context.Context, userID domain.ID) int {
-	if s.limitProv != nil {
-		if lim := s.limitProv(ctx, userID); lim > 0 {
-			return lim
-		}
-	}
-	return s.cfg.GetLLMDailyTokenLimit()
+	return &Service{repo: r, limitProv: lp}
 }
 
 func (s *Service) today() time.Time {
@@ -46,7 +36,7 @@ func (s *Service) today() time.Time {
 // Reserve reserves n tokens if within daily limit. Returns true if allowed.
 func (s *Service) Reserve(ctx context.Context, userID domain.ID, n int) (bool, error) {
 	day := s.today()
-	limit := s.dailyLimit(ctx, userID)
+	limit := s.limitProv(ctx, userID)
 	return s.repo.ReserveLLMTokens(ctx, userID, day, n, limit)
 }
 
@@ -56,4 +46,16 @@ func (s *Service) Reserve(ctx context.Context, userID domain.ID, n int) (bool, e
 func (s *Service) Confirm(ctx context.Context, userID domain.ID, reserved int, actual int) error {
 	day := s.today()
 	return s.repo.ConfirmLLMTokenUsage(ctx, userID, day, reserved, actual)
+}
+
+// GetLLMDailyUsage возвращает использованные и зарезервированные токены на выбранный день
+func (s *Service) GetLLMDailyUsage(ctx context.Context, userID domain.ID, day time.Time) (used int, reserved int, err error) {
+	// нормализуем день к полуночи UTC
+	d := time.Date(day.Year(), day.Month(), day.Day(), 0, 0, 0, 0, time.UTC)
+	return s.repo.GetLLMDailyUsage(ctx, userID, d)
+}
+
+// DailyLimit сообщает актуальный дневной лимит токенов для пользователя
+func (s *Service) DailyLimit(ctx context.Context, userID domain.ID) int {
+	return s.limitProv(ctx, userID)
 }

@@ -144,6 +144,21 @@ export interface WorkoutChat {
   updatedAt?: string;
 }
 
+/** Структурированная ошибка в потоке чата */
+export interface WorkoutChatError {
+  /** Короткий машинный тип ошибки, например: "rate_limit", "quota_exceeded", "provider_unavailable" */
+  type?: string;
+  /** Текст для пользователя */
+  message?: string;
+  /**
+   * Рекомендуемая задержка до повтора (секунды), если применимо
+   * @format int32
+   */
+  retryAfterSeconds?: number;
+  /** Опциональный код провайдера/HTTP */
+  code?: string;
+}
+
 export interface WorkoutChatMessage {
   id?: string;
   chatId?: string;
@@ -304,6 +319,30 @@ export interface WorkoutGetExercisesResponse {
   exercises?: WorkoutExercise[];
 }
 
+/** Состояние лимитов LLM для текущего пользователя */
+export interface WorkoutGetLLMLimitsResponse {
+  /**
+   * Дневной лимит токенов
+   * @format int32
+   */
+  dailyLimit?: number;
+  /**
+   * Использованные токены за день
+   * @format int32
+   */
+  used?: number;
+  /**
+   * Зарезервированные токены (в процессе)
+   * @format int32
+   */
+  reserved?: number;
+  /**
+   * Остаток = max(daily_limit - used - reserved, 0)
+   * @format int32
+   */
+  remaining?: number;
+}
+
 export interface WorkoutGetMuscleGroupsResponse {
   muscleGroups?: WorkoutMuscleGroup[];
 }
@@ -385,6 +424,8 @@ export interface WorkoutSendChatMessageStreamResponse {
   status?: string;
   final?: WorkoutSendChatMessageResponse;
   toolEvent?: WorkoutToolEvent;
+  /** Структурированная ошибка для корректного UI-рендеринга */
+  error?: WorkoutChatError;
 }
 
 /** Структура сета (подхода) */
@@ -711,6 +752,24 @@ export class HttpClient<SecurityDataType = unknown> {
  */
 export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDataType> {
   v1 = {
+    /**
+     * No description
+     *
+     * @tags ChatService
+     * @name ChatServiceGetLlmLimits
+     * @summary Получить состояние лимитов/квот LLM для текущего пользователя
+     * @request GET:/v1/chats/llm_limits
+     * @secure
+     */
+    chatServiceGetLlmLimits: (params: RequestParams = {}) =>
+      this.request<WorkoutGetLLMLimitsResponse, RpcStatus>({
+        path: `/v1/chats/llm_limits`,
+        method: "GET",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
     /**
      * No description
      *
