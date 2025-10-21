@@ -157,7 +157,7 @@ func (s *Service) SendChatMessageStream(ctx context.Context, userID domain.ID, r
 			return dto.ChatCompletionDTO{}, err
 		}
 
-		assistantMessage, usage, err := s.runStreamingChatCompletion(stream, &callbacks)
+		assistantMessage, usage, err := s.runStreamingChatCompletion(ctx, stream, &callbacks)
 		if err != nil {
 			if callbacks.OnError != nil {
 				_ = callbacks.OnError(err)
@@ -294,9 +294,13 @@ func (s *Service) startChatSession(ctx context.Context, userID domain.ID, req dt
 }
 
 func (s *Service) runStreamingChatCompletion(
+	ctx context.Context,
 	stream llm.ChatStream,
 	callbacks *dto.ChatStreamCallbacks,
 ) (llm.ChatMessage, dto.ChatUsage, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "service.chat.runStreamingChatCompletion")
+	defer span.Finish()
+
 	defer stream.Close()
 
 	var (

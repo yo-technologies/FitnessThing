@@ -10,11 +10,15 @@ import (
 
 	"github.com/georgysavva/scany/v2/pgxscan"
 	"github.com/jackc/pgx/v5"
+	"github.com/opentracing/opentracing-go"
 )
 
 // ReserveLLMTokens tries to reserve n tokens for (user, day) under a daily limit.
 // Returns true if reservation was applied. No transaction is started here; caller controls it.
 func (r *PGXRepository) ReserveLLMTokens(ctx context.Context, userID domain.ID, day time.Time, n int, dailyLimit int) (bool, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "repository.ReserveLLMTokens")
+	defer span.Finish()
+
 	engine := r.contextManager.GetEngineFromContext(ctx)
 
 	// Single statement: attempt insert when within limit, or update existing row when within limit.
@@ -40,6 +44,9 @@ func (r *PGXRepository) ReserveLLMTokens(ctx context.Context, userID domain.ID, 
 // ConfirmLLMTokenUsage applies actual usage and releases any unused reservation.
 // This function is safe to call without prior reservation; it ensures the row exists.
 func (r *PGXRepository) ConfirmLLMTokenUsage(ctx context.Context, userID domain.ID, day time.Time, reserved int, actual int) error {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "repository.ConfirmLLMTokenUsage")
+	defer span.Finish()
+
 	engine := r.contextManager.GetEngineFromContext(ctx)
 
 	query := `
@@ -61,6 +68,9 @@ func (r *PGXRepository) ConfirmLLMTokenUsage(ctx context.Context, userID domain.
 
 // GetLLMDailyUsage returns current used and reserved tokens for the day. If no row, returns zeros.
 func (r *PGXRepository) GetLLMDailyUsage(ctx context.Context, userID domain.ID, day time.Time) (used int, reserved int, err error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "repository.GetLLMDailyUsage")
+	defer span.Finish()
+
 	engine := r.contextManager.GetEngineFromContext(ctx)
 
 	query := `

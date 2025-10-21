@@ -18,7 +18,6 @@ require (
 	github.com/samber/lo v1.51.0
 	github.com/swaggest/swgui v1.8.2
 	github.com/telegram-mini-apps/init-data-golang v1.5.0
-	github.com/throttled/throttled/v2 v2.13.0
 	github.com/uber/jaeger-lib v2.4.1+incompatible
 	go.uber.org/zap v1.27.0
 	golang.org/x/crypto v0.40.0
