@@ -14,7 +14,10 @@ services:
         env_file:
             - ./backend/.env.docker
         volumes:
-            - ./backend/config.docker.yaml:/config.yaml:ro
+            - type: bind
+              source: ./backend/config.docker.yaml
+              target: /config.yaml
+              read_only: true
         expose:
             - "8080"
         depends_on:
