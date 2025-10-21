@@ -130,10 +130,12 @@ function MessageBubble({
   message,
   isStreaming,
   showHeader,
+  ref,
 }: {
   message: WorkoutChatMessage;
   isStreaming?: boolean;
   showHeader?: boolean;
+  ref?: React.Ref<HTMLDivElement>;
 }) {
   const isUser = message.role === WorkoutChatMessageRole.CHAT_MESSAGE_ROLE_USER;
   const isTool = message.role === WorkoutChatMessageRole.CHAT_MESSAGE_ROLE_TOOL;
@@ -141,8 +143,8 @@ function MessageBubble({
     message.role === WorkoutChatMessageRole.CHAT_MESSAGE_ROLE_SYSTEM;
   const alignment = isUser ? "items-end" : "items-start";
   const bubbleClasses = isUser
-    ? "bg-primary text-primary-foreground"
-    : "bg-default-200 text-default-800";
+    ? "bg-primary text-primary-foreground max-w-[90%] px-3 py-2"
+    : "text-default-800";
 
   // Отображение system сообщения
   if (isSystem) {
@@ -170,6 +172,7 @@ function MessageBubble({
 
   return (
     <div
+      ref={ref}
       className={`flex w-full flex-col gap-2 ${alignment}`}
       data-message-id={message.id ?? undefined}
     >
@@ -180,17 +183,17 @@ function MessageBubble({
       )}
       {message.content && (
         <div
-          className={`flex max-w-[90%] items-end gap-2 ${
+          className={`flex items-end gap-2 ${
             isUser ? "self-end" : "self-start"
           }`}
         >
           <div
-            className={`max-w-full rounded-large px-3 py-2 text-sm shadow-sm ${bubbleClasses} [&_p]:my-0 [&_ul]:my-0 [&_ol]:my-0 [&_pre]:my-0 [&_blockquote]:my-0 [&_h1]:mt-0 [&_h2]:mt-0 [&_h3]:mt-0 [&_h4]:mt-0`}
+            className={`max-w-full rounded-large text-sm shadow-sm ${bubbleClasses}`}
           >
             <AssistantMarkdown content={message.content} />
             {isStreaming && <span className="ml-1 animate-pulse">▍</span>}
           </div>
-          {message.createdAt && (
+          {message.createdAt && isUser && (
             <span className="text-[10px] font-light leading-none text-default-500 whitespace-nowrap">
               {formatTime(message.createdAt)}
             </span>
@@ -225,11 +228,12 @@ export function WorkoutChatPanel({
     useState<WorkoutChatMessage | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [limits, setLimits] = useState<LimitsState>({ loading: false });
-  // Динамический нижний паддинг, чтобы можно было проскроллить так,
-  // чтобы последнее пользовательское сообщение оказалось у верхней границы
-  const [dynamicBottomPadding, setDynamicBottomPadding] = useState(0);
   // Показывать кнопку быстро перейти вниз
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
+  // Применять ли нижний паддинг к контейнеру сообщений (при стриминге)
+  const [shouldApplyPadding, setShouldApplyPadding] = useState(false);
+  // Размер паддинга в px (будет пересчитываться на основе размера контейнера)
+  const [paddingSize, setPaddingSize] = useState(0);
 
   // Ref на скроллируемый контейнер (overflow-y-auto)
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -239,10 +243,10 @@ export function WorkoutChatPanel({
   );
   const sessionRef = useRef<ChatSessionHandle>(null);
   const prefillAppliedRef = useRef(false);
-  const latestUserMessageIdRef = useRef<string | null>(null);
-  const autoScrollOnOpenRef = useRef(false);
   // Последовательный счётчик для генерации уникальных id стриминговых messages инструментов
   const toolEventSeqRef = useRef(0);
+  // Ref на последнее сообщение пользователя для скролла к нему
+  const lastUserMessageRef = useRef<HTMLDivElement>(null);
 
   const hasMessages =
     messages.length > 0 || streamingAssistantMessage.length > 0;
@@ -294,15 +298,8 @@ export function WorkoutChatPanel({
       return;
     }
 
-    latestUserMessageIdRef.current = null;
     void loadChat();
     void loadLimits();
-
-    // Устанавливаем флаг автоскролла после небольшой задержки,
-    // чтобы он сработал после загрузки сообщений
-    requestAnimationFrame(() => {
-      autoScrollOnOpenRef.current = true;
-    });
   }, [isOpen, loadChat, loadLimits]);
 
   // Однократно подставляем текст в инпут при первом открытии, если передан prefill
@@ -348,71 +345,6 @@ export function WorkoutChatPanel({
     }
   }, [isOpen]);
 
-  // Автоскролл при появлении новых сообщений или открытии панели
-  useEffect(() => {
-    if (!isOpen || !hasMessages) return;
-
-    const el = document.getElementById(
-      scrollElementId,
-    ) as HTMLDivElement | null;
-
-    if (!el) return;
-
-    const handleScroll = () => {
-      // Проверяем флаг автоскролла при открытии
-      if (autoScrollOnOpenRef.current) {
-        autoScrollOnOpenRef.current = false;
-        el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
-
-        return;
-      }
-
-      const latestId = latestUserMessageIdRef.current;
-
-      if (!latestId) {
-        return;
-      }
-
-      const target = el.querySelector<HTMLElement>(
-        `[data-message-id="${latestId}"]`,
-      );
-
-      if (!target) {
-        latestUserMessageIdRef.current = null;
-
-        return;
-      }
-
-      const containerTop = el.getBoundingClientRect().top;
-      const targetTop = target.getBoundingClientRect().top;
-      const offset = targetTop - containerTop;
-      const paddingOffset = 20;
-      const desiredTop = Math.max(el.scrollTop + offset - paddingOffset, 0);
-      const maxScrollTop = el.scrollHeight - el.clientHeight;
-
-      if (desiredTop <= maxScrollTop) {
-        // Можем проскроллить уже сейчас
-        el.scrollTo({ top: desiredTop, behavior: "smooth" });
-        latestUserMessageIdRef.current = null;
-
-        return;
-      }
-
-      // Контента не хватает, чтобы поставить сообщение в самый верх.
-      // Увеличим нижний паддинг на недостающую величину, чтобы desiredTop стал достижимым.
-      const needPadding = Math.ceil(desiredTop - maxScrollTop);
-
-      if (needPadding > 0) {
-        setDynamicBottomPadding((prev) => Math.max(prev, needPadding));
-        // После применения паддинга эффект запустится ещё раз и выполнит прокрутку.
-      }
-    };
-
-    requestAnimationFrame(() => {
-      requestAnimationFrame(handleScroll);
-    });
-  }, [messages, isOpen, hasMessages, dynamicBottomPadding, scrollElementId]);
-
   // Следим за скроллом контейнера и показываем кнопку «вниз», если пользователь отскроллил
   useEffect(() => {
     const el = document.getElementById(
@@ -449,6 +381,116 @@ export function WorkoutChatPanel({
     };
   }, [isOpen, messages]);
 
+  // Прокручиваем к концу при загрузке чата (один раз)
+  useEffect(() => {
+    if (!isOpen || loading) {
+      return;
+    }
+
+    // Даём браузеру время на рендер
+    const timer = setTimeout(() => {
+      const el = document.getElementById(
+        scrollElementId,
+      ) as HTMLDivElement | null;
+
+      if (!el) return;
+
+      el.scrollTo({ top: el.scrollHeight, behavior: "instant" });
+    }, 0);
+
+    return () => clearTimeout(timer);
+  }, [isOpen, loading, scrollElementId]);
+
+  // Скролл к последнему сообщению пользователя один раз при начале стриминга
+  useEffect(() => {
+    if (!shouldApplyPadding || !isOpen || !lastUserMessageRef.current) {
+      return;
+    }
+
+    // Даём React время на рендер нового сообщения в DOM
+    const timer = requestAnimationFrame(() => {
+      if (lastUserMessageRef.current) {
+        lastUserMessageRef.current.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      }
+    });
+
+    return () => {
+      if (typeof timer === "number") {
+        cancelAnimationFrame(timer);
+      }
+    };
+  }, [shouldApplyPadding, isOpen]);
+
+  // Динамический паддинг во время генерации
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    const containerEl = document.getElementById(
+      scrollElementId,
+    ) as HTMLDivElement | null;
+
+    if (!containerEl || !lastUserMessageRef.current) return;
+
+    const updatePadding = () => {
+      const containerHeight = containerEl.clientHeight;
+      const userMessageEl = lastUserMessageRef.current;
+
+      if (!userMessageEl) return;
+
+      // Если паддинг должен быть применён, вычисляем его на основе сообщений
+      if (shouldApplyPadding) {
+        // Считаем высоту всех сообщений после пользовательского
+        let contentHeightAfterUserMsg = 0;
+        let foundUserMsg = false;
+
+        const messageElements =
+          containerEl.querySelectorAll("[data-message-id]");
+
+        messageElements.forEach((el) => {
+          if (foundUserMsg) {
+            contentHeightAfterUserMsg += (el as HTMLElement).offsetHeight;
+          }
+
+          // Проверяем, это ли наше пользовательское сообщение
+          if (el === userMessageEl) {
+            foundUserMsg = true;
+          }
+        });
+
+        // Паддинг = оставшееся место в контейнере - высота содержимого после пользовательского сообщения
+        const availableSpace =
+          containerHeight - (userMessageEl.offsetHeight + 12); // 12px - gap между сообщениями
+        const newPadding = Math.max(
+          availableSpace - contentHeightAfterUserMsg - 30, // дополнительный gap
+          0,
+        );
+
+        setPaddingSize(newPadding);
+      }
+    };
+
+    // Первое вычисление сразу
+    updatePadding();
+
+    // Слушаем изменения размера и обновляем паддинг во время генерации
+    const observer = new MutationObserver(updatePadding);
+
+    observer.observe(containerEl, {
+      childList: true,
+      subtree: true,
+      characterData: true,
+    });
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [shouldApplyPadding, isOpen, scrollElementId]);
+
   const sendMessage = useCallback(
     async (content: string) => {
       const trimmed = content.trim();
@@ -465,13 +507,13 @@ export function WorkoutChatPanel({
         createdAt: new Date().toISOString(),
       };
 
-      latestUserMessageIdRef.current = userMessage.id ?? null;
       setMessages((prev) => [...prev, userMessage]);
       setInputValue("");
       setStreamingAssistantMessage("");
       setStreamState({ status: "assistant_thinking" });
       setIsStreaming(true);
       setIsGenerating(true);
+      setShouldApplyPadding(true);
       setError(null);
 
       const request: WorkoutChatSendRequest = {
@@ -725,7 +767,9 @@ export function WorkoutChatPanel({
     return (
       <div
         className={`flex w-full flex-col gap-3 px-4 ${isGenerating ? "pt-6" : "p-4"}`}
-        style={{ paddingBottom: dynamicBottomPadding }}
+        style={{
+          paddingBottom: shouldApplyPadding ? `${paddingSize}px` : undefined,
+        }}
       >
         {combinedMessages.map((message, idx, arr) => {
           // Пропускаем системные сообщения
@@ -748,9 +792,25 @@ export function WorkoutChatPanel({
             ? `${message.id}${isStreamingItem ? "-stream" : ""}`
             : `${senderKey(message.role)}-${idx}${isStreamingItem ? "-stream" : ""}`;
 
+          // Проверяем, является ли это последним сообщением пользователя
+          const isUser =
+            message.role === WorkoutChatMessageRole.CHAT_MESSAGE_ROLE_USER;
+          const isLastUserMessage =
+            isUser &&
+            idx ===
+              arr.reduceRight((lastIdx, msg, i) => {
+                if (lastIdx !== -1) return lastIdx;
+
+                return msg.role ===
+                  WorkoutChatMessageRole.CHAT_MESSAGE_ROLE_USER
+                  ? i
+                  : -1;
+              }, -1);
+
           return (
             <MessageBubble
               key={reactKey}
+              ref={isLastUserMessage ? lastUserMessageRef : undefined}
               isStreaming={isStreamingItem}
               message={message}
               showHeader={showHeader}
@@ -767,7 +827,8 @@ export function WorkoutChatPanel({
     combinedMessages,
     streamingToolMessage,
     isGenerating,
-    dynamicBottomPadding,
+    shouldApplyPadding,
+    paddingSize,
   ]);
 
   const now = Date.now();
