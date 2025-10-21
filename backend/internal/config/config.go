@@ -20,7 +20,7 @@ type LLMConfig struct {
 		APIKey  string `mapstructure:"api_key"`
 	} `mapstructure:"openai"`
 	ReasoningEffort string `mapstructure:"reasoning_effort"`
-	Limits struct {
+	Limits          struct {
 		DailyTokenLimit int `mapstructure:"daily_token_limit"`
 	} `mapstructure:"limits"`
 }
@@ -62,7 +62,7 @@ func Initialize(configPath string) error {
 	cfg := Get()
 
 	viper.SetConfigFile(configPath)
-	
+
 	// Enable environment variable substitution
 	viper.AutomaticEnv()
 	viper.SetEnvPrefix("")
@@ -120,7 +120,7 @@ func (c *Config) reload() error {
 	// Expand environment variables in sensitive fields
 	c.LLM.OpenAI.APIKey = os.Expand(c.LLM.OpenAI.APIKey, os.Getenv)
 
-	logger.Info(fmt.Sprintf("Config updated - OpenAI Model: %s, Reasoning Effort: %s", 
+	logger.Info(fmt.Sprintf("Config updated - OpenAI Model: %s, Reasoning Effort: %s",
 		c.LLM.OpenAI.Model, c.LLM.ReasoningEffort))
 
 	return nil
@@ -149,7 +149,6 @@ func (c *Config) GetLLMDailyTokenLimit() int {
 	}
 	return c.LLM.Limits.DailyTokenLimit
 }
-
 
 // GetPromptGenerationDebounce returns the prompt generation debounce duration
 func (c *Config) GetPromptGenerationDebounce() time.Duration {
