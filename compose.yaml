@@ -14,9 +14,7 @@ services:
         env_file:
             - ./backend/.env.docker
         volumes:
-            - type: bind
-              source: ./backend/config.docker.yaml
-              target: /config.yaml
+            - ${PWD}/backend/config.docker.yaml:/config.yaml:ro
         expose:
             - "8080"
         depends_on:
