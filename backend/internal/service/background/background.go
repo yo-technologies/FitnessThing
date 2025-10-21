@@ -21,17 +21,12 @@ type promptGenerator interface {
 	GeneratePrompt(ctx context.Context, settings domain.GenerationSettings) (domain.Prompt, error)
 }
 
-type rateLimiter interface {
-	Allow(ctx context.Context, userID domain.ID) (bool, error)
-}
-
 // Service is responsible for generating prompts based on generation settings.
 type Service struct {
 	debounceTime                 time.Duration
 	generationSettingsRepository generationSettingsRepository
 	promptRepository             promptRepository
 	promptGenerator              promptGenerator
-	rateLimiter                  rateLimiter
 }
 
 // New creates a new instance of the prompt generator service.
@@ -40,14 +35,12 @@ func New(
 	generationSettingsRepository generationSettingsRepository,
 	promptRepository promptRepository,
 	promptGenerator promptGenerator,
-	rateLimiter rateLimiter,
 ) *Service {
 	return &Service{
 		debounceTime:                 debounceTime,
 		generationSettingsRepository: generationSettingsRepository,
 		promptRepository:             promptRepository,
 		promptGenerator:              promptGenerator,
-		rateLimiter:                  rateLimiter,
 	}
 }
 
@@ -71,16 +64,6 @@ func (s *Service) GeneratePrompts() {
 
 	for _, settings := range settingsList {
 		logger.Debugf("processing generation settings for user %s", settings.UserID)
-
-		allow, err := s.rateLimiter.Allow(ctx, settings.UserID)
-		if err != nil {
-			logger.Errorf("failed to check rate limit for user %s: %v", settings.UserID, err)
-			continue
-		}
-		if !allow {
-			logger.Warnf("rate limit exceeded for user %s, skipping prompt generation", settings.UserID)
-			continue
-		}
 
 		logger.Debugf("generating prompt for settings %s", settings.ID)
 

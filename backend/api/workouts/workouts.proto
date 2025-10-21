@@ -6,6 +6,7 @@ option go_package = "fitness-trainer/internal/pb/fitness-trainer/api/workout;wor
 
 import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
+import "google/protobuf/struct.proto";
 import "google/protobuf/duration.proto";
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
@@ -117,8 +118,6 @@ message Workout {
   int32 rating = 6;
   google.protobuf.Timestamp finished_at = 7;
   google.protobuf.Timestamp updated_at = 8;
-  bool is_ai_generated = 9;
-  string reasoning = 10;
 }
 
 // Лог выполнения упражнения
@@ -670,8 +669,6 @@ service WorkoutService {
 
 message StartWorkoutRequest {
   optional string routine_id = 2;
-  optional bool generate_workout = 3;
-  optional string user_prompt = 4;
 }
 
 message GetWorkoutRequest {
@@ -1022,4 +1019,137 @@ message PresignUploadRequest {
 message PresignUploadResponse {
   string upload_url = 1;
   string get_url = 2;
+}
+
+service ChatService {
+  // Отправить сообщение в чат и получить поток ответов
+  rpc SendChatMessageStream(SendChatMessageRequest) returns (stream SendChatMessageStreamResponse) {}
+
+  // Получить полный чат с сообщениями
+  rpc GetChat(GetChatRequest) returns (GetChatResponse) {
+    option (google.api.http) = {
+      post: "/v1/chats/search"
+      body: "*"
+    };
+  }
+
+  // Получить состояние лимитов/квот LLM для текущего пользователя
+  rpc GetLLMLimits(google.protobuf.Empty) returns (GetLLMLimitsResponse) {
+    option (google.api.http) = {
+      get: "/v1/chats/llm_limits"
+    };
+  }
+}
+
+message Chat {
+  string id = 1;
+  string user_id = 2;
+  optional string workout_id = 3;
+  string title = 4;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp updated_at = 6;
+}
+
+enum ChatMessageRole {
+  CHAT_MESSAGE_ROLE_UNSPECIFIED = 0;
+  CHAT_MESSAGE_ROLE_USER = 1;
+  CHAT_MESSAGE_ROLE_ASSISTANT = 2;
+  CHAT_MESSAGE_ROLE_TOOL = 3;
+  CHAT_MESSAGE_ROLE_SYSTEM = 4;
+}
+
+message ChatMessage {
+  string id = 1;
+  string chat_id = 2;
+  ChatMessageRole role = 3;
+  string content = 4;
+  optional string tool_name = 5;
+  optional string tool_call_id = 6;
+  google.protobuf.Struct tool_arguments = 7;
+  optional int32 token_usage = 8;
+  optional string error = 9;
+  google.protobuf.Timestamp created_at = 10;
+  google.protobuf.Timestamp updated_at = 11;
+}
+
+message ChatUsage {
+  int32 prompt_tokens = 1;
+  int32 completion_tokens = 2;
+  int32 total_tokens = 3;
+}
+
+message SendChatMessageRequest {
+  optional string chat_id = 1;
+  optional string workout_id = 2;
+  string content = 3 [
+    (google.api.field_behavior) = REQUIRED,
+    (validate.rules).string = { min_len: 1 }
+  ];
+}
+
+message SendChatMessageResponse {
+  Chat chat = 1;
+  repeated ChatMessage messages = 2;
+  optional ChatUsage usage = 3;
+}
+
+message ChatMessageDelta {
+  string content = 1;
+}
+
+message SendChatMessageStreamResponse {
+  oneof payload {
+    ChatMessageDelta message_delta = 1;
+    ChatUsage usage = 2;
+    string status = 3;
+    SendChatMessageResponse final = 4;
+    ToolEvent tool_event = 5;
+    ChatError error = 6; // Структурированная ошибка для корректного UI-рендеринга
+  }
+}
+
+// Structured tool invocation event for streaming UI updates
+message ToolEvent {
+  string tool_name = 1;
+  string tool_call_id = 2;
+  string args_json = 3;
+
+  enum State {
+    STATE_UNSPECIFIED = 0;
+    INVOKING = 1;
+    COMPLETED = 2;
+    ERROR = 3;
+  }
+  State state = 4;
+  optional string error = 5;
+}
+
+// Структурированная ошибка в потоке чата
+message ChatError {
+  // Короткий машинный тип ошибки, например: "rate_limit", "quota_exceeded", "provider_unavailable"
+  string type = 1;
+  // Текст для пользователя
+  string message = 2;
+  // Рекомендуемая задержка до повтора (секунды), если применимо
+  optional int32 retry_after_seconds = 3;
+  // Опциональный код провайдера/HTTP
+  optional string code = 4;
+}
+
+message GetChatRequest {
+  optional string workout_id = 1;
+  optional string chat_id = 2;
+}
+
+message GetChatResponse {
+  Chat chat = 1;
+  repeated ChatMessage messages = 2;
+}
+
+// Состояние лимитов LLM для текущего пользователя
+message GetLLMLimitsResponse {
+  int32 daily_limit = 1;     // Дневной лимит токенов
+  int32 used = 2;            // Использованные токены за день
+  int32 reserved = 3;        // Зарезервированные токены (в процессе)
+  int32 remaining = 4;       // Остаток = max(daily_limit - used - reserved, 0)
 }

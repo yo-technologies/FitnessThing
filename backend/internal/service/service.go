@@ -7,10 +7,6 @@ import (
 	"fitness-trainer/internal/domain/dto"
 )
 
-type workoutGenerator interface {
-	GenerateWorkout(ctx context.Context, options *dto.GenerateWorkoutOptions) (dto.GeneratedWorkoutDTO, error)
-}
-
 type userRepository interface {
 	GetUserByID(ctx context.Context, id domain.ID) (domain.User, error)
 	GetOrCreateUser(ctx context.Context, user domain.User) (domain.User, error)
@@ -81,6 +77,7 @@ type setRepository interface {
 type expectedSetRepository interface {
 	GetExpectedSetsByExerciseLogID(ctx context.Context, exerciseLogID domain.ID) ([]domain.ExpectedSet, error)
 	CreateExpectedSet(ctx context.Context, set domain.ExpectedSet) (domain.ExpectedSet, error)
+	DeleteExpectedSetsByExerciseLogID(ctx context.Context, exerciseLogID domain.ID) error
 }
 
 type generationSettingsRepository interface {
@@ -90,6 +87,14 @@ type generationSettingsRepository interface {
 
 type promptRepository interface {
 	GetLastPromptByUserID(ctx context.Context, userID domain.ID) (domain.Prompt, error)
+}
+
+type chatRepository interface {
+	CreateChat(ctx context.Context, chat domain.Chat) (domain.Chat, error)
+	GetChatByWorkoutID(ctx context.Context, workoutID domain.ID) (domain.Chat, error)
+	GetChatByID(ctx context.Context, chatID domain.ID) (domain.Chat, error)
+	CreateChatMessage(ctx context.Context, message domain.ChatMessage) (domain.ChatMessage, error)
+	ListChatMessages(ctx context.Context, chatID domain.ID, limit, offset int) ([]domain.ChatMessage, error)
 }
 
 type repository interface {
@@ -105,6 +110,7 @@ type repository interface {
 	expectedSetRepository
 	generationSettingsRepository
 	promptRepository
+	chatRepository
 }
 
 type unitOfWork interface {
@@ -118,30 +124,20 @@ type s3Client interface {
 	GeneratePutPresignedURL(ctx context.Context, key string) (string, error)
 }
 
-type generateWorkoutLimiter interface {
-	Allow(ctx context.Context, userID domain.ID) (bool, error)
-}
-
 type Service struct {
-	s3Client               s3Client
-	workoutGenerator       workoutGenerator
-	generateWorkoutLimiter generateWorkoutLimiter
-	unitOfWork             unitOfWork
-	repository             repository
+	s3Client   s3Client
+	unitOfWork unitOfWork
+	repository repository
 }
 
 func New(
 	unitOfWork unitOfWork,
 	s3Client s3Client,
-	workoutGenerator workoutGenerator,
-	generateWorkoutLimiter generateWorkoutLimiter,
 	repository repository,
 ) *Service {
 	return &Service{
-		unitOfWork:             unitOfWork,
-		workoutGenerator:       workoutGenerator,
-		s3Client:               s3Client,
-		generateWorkoutLimiter: generateWorkoutLimiter,
-		repository:             repository,
+		unitOfWork: unitOfWork,
+		s3Client:   s3Client,
+		repository: repository,
 	}
 }

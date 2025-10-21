@@ -89,7 +89,7 @@ func (r *PGXRepository) GetUserByID(ctx context.Context, id domain.ID) (domain.U
 
 	err := pgxscan.Get(ctx, engine, &user, query, id)
 	if err != nil {
-		if err == pgx.ErrNoRows {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return domain.User{}, domain.ErrNotFound
 		}
 		logger.Errorf("error getting user by id: %v", err)

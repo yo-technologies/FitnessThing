@@ -13,12 +13,16 @@ func timeToPgtype(t time.Time) pgtype.Timestamptz {
 	return pgtype.Timestamptz{Time: t, Valid: !t.IsZero()}
 }
 
-func floatToPgtype(f float32) pgtype.Float4 {
-	return pgtype.Float4{Float32: f, Valid: f != 0}
-}
-
 func uuidToPgtype(id domain.ID) pgtype.UUID {
 	return pgtype.UUID{Bytes: uuid.UUID(id), Valid: id != domain.ID{}}
+}
+
+func nullableIDToPgtype(id utils.Nullable[domain.ID]) pgtype.UUID {
+	if !id.IsValid {
+		return pgtype.UUID{Valid: false}
+	}
+
+	return pgtype.UUID{Bytes: uuid.UUID(id.V), Valid: true}
 }
 
 func durationFromPgtype(d pgtype.Interval) time.Duration {

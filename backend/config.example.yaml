@@ -1,0 +1,50 @@
+# Example Configuration
+
+llm:
+  openai:
+    model: "anthropic/claude-haiku-4.5"
+    base_url: "https://openrouter.ai/api/v1"
+    api_key: "${OPENAI_API_KEY}"
+  reasoning_effort: "low"  # low, medium, high
+  limits:
+    daily_token_limit: 50000
+
+# Prompt Generation Settings
+prompt_generation:
+  debounce: "60s"
+  period: "10s"
+  rate_limit:
+    per_hour: 5
+    burst: 5
+
+# Database Configuration (from env)
+database:
+  host: "${POSTGRES_HOST}"
+  port: "${POSTGRES_PORT}"
+  user: "${POSTGRES_USER}"
+  password: "${POSTGRES_PASSWORD}"
+  database: "${POSTGRES_DATABASE}"
+  ssl_mode: "${POSTGRES_SSL_MODE}"
+
+# Telegram Bot
+telegram:
+  bot_token: "${TELEGRAM_BOT_TOKEN}"
+  token_expire_in: "${TELEGRAM_TOKEN_EXPIRE_IN}"
+
+# AWS S3
+aws:
+  endpoint: "${AWS_ENDPOINT}"
+  access_key_id: "${AWS_ACCESS_KEY_ID}"
+  secret_access_key: "${AWS_SECRET_ACCESS_KEY}"
+  s3_bucket: "${AWS_S3_BUCKET}"
+  region: "${AWS_REGION}"
+
+# Tracing
+jaeger:
+  collector_endpoint: "${JAEGER_COLLECTOR_ENDPOINT}"
+
+# Proxy (optional)
+proxy:
+  url: "${PROXY_URL}"
+  user: "${PROXY_USER}"
+  password: "${PROXY_PASSWORD}"

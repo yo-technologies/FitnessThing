@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -19,41 +18,34 @@ func (s *Service) StartWorkout(ctx context.Context, userID domain.ID, opts domai
 	span, ctx := opentracing.StartSpanFromContext(ctx, "service.StartWorkout")
 	defer span.Finish()
 
-	ctx, err := s.unitOfWork.Begin(ctx)
+	txCtx, err := s.unitOfWork.Begin(ctx)
 	if err != nil {
 		return domain.Workout{}, err
 	}
-	defer s.unitOfWork.Rollback(ctx)
+	defer s.unitOfWork.Rollback(txCtx)
 
 	if opts.RoutineID.IsValid {
-		_, err := s.repository.GetRoutineByID(ctx, opts.RoutineID.V)
+		_, err := s.repository.GetRoutineByID(txCtx, opts.RoutineID.V)
 		if err != nil {
 			return domain.Workout{}, fmt.Errorf("%w: %w", domain.ErrInvalidArgument, err)
 		}
 	}
 
-	workout := domain.NewWorkout(userID, opts.RoutineID, opts.GenerateWorkout)
+	workout := domain.NewWorkout(userID, opts.RoutineID)
 
-	workout, err = s.repository.CreateWorkout(ctx, workout)
+	workout, err = s.repository.CreateWorkout(txCtx, workout)
 	if err != nil {
 		return domain.Workout{}, err
 	}
 
 	if opts.RoutineID.IsValid {
-		err = s.enrichWorkoutFromRoutine(ctx, userID, workout.ID, opts.RoutineID.V)
+		err = s.enrichWorkoutFromRoutine(txCtx, userID, workout.ID, opts.RoutineID.V)
 		if err != nil {
 			return domain.Workout{}, err
 		}
 	}
 
-	if opts.GenerateWorkout {
-		err = s.enrichWorkoutByGenerating(ctx, userID, workout.ID, opts.UserPrompt)
-		if err != nil {
-			return domain.Workout{}, err
-		}
-	}
-
-	err = s.unitOfWork.Commit(ctx)
+	err = s.unitOfWork.Commit(txCtx)
 	if err != nil {
 		return domain.Workout{}, err
 	}
@@ -100,113 +92,6 @@ func (s *Service) enrichWorkoutFromRoutine(ctx context.Context, userID, workoutI
 				return err
 			}
 		}
-	}
-
-	return nil
-}
-
-func (s *Service) generateWorkout(ctx context.Context, userID domain.ID, _ string) (dto.GeneratedWorkoutDTO, error) {
-	span, ctx := opentracing.StartSpanFromContext(ctx, "service.generateWorkout")
-	defer span.Finish()
-
-	userWorkouts, err := s.repository.GetWorkouts(ctx, userID, workoutsCount, 0)
-	if err != nil {
-		return dto.GeneratedWorkoutDTO{}, err
-	}
-
-	userWorkoutsDTO := make([]dto.SlimWorkoutDTO, 0, len(userWorkouts))
-	for _, workout := range userWorkouts {
-		exerciseLogs, err := s.repository.GetExerciseLogsByWorkoutID(ctx, workout.ID)
-		if err != nil {
-			return dto.GeneratedWorkoutDTO{}, err
-		}
-
-		exerciseIDs := make([]domain.ID, 0, len(exerciseLogs))
-		for _, exerciseLog := range exerciseLogs {
-			exerciseIDs = append(exerciseIDs, exerciseLog.ExerciseID)
-		}
-
-		exerciseNames := make([]string, 0, len(exerciseIDs))
-		for _, exerciseLog := range exerciseLogs {
-			exercise, err := s.repository.GetExerciseByID(ctx, exerciseLog.ExerciseID)
-			if err != nil {
-				return dto.GeneratedWorkoutDTO{}, nil
-			}
-
-			exerciseNames = append(exerciseNames, exercise.Name)
-		}
-
-		userWorkoutsDTO = append(userWorkoutsDTO, dto.SlimWorkoutDTO{
-			ID:            workout.ID,
-			CreatedAt:     workout.CreatedAt,
-			ExerciseNames: exerciseNames,
-		})
-	}
-
-	exercises, err := s.repository.GetExercises(ctx, []domain.ID{}, []domain.ID{})
-	if err != nil {
-		return dto.GeneratedWorkoutDTO{}, fmt.Errorf("failed to get exercises: %w", err)
-	}
-
-	exerciseDTOs := make([]dto.SlimExerciseDTO, 0, len(exercises))
-	for _, exercise := range exercises {
-		exerciseDTOs = append(exerciseDTOs, dto.SlimExerciseDTO{
-			ID:                 exercise.ID,
-			Name:               exercise.Name,
-			TargetMuscleGroups: exercise.TargetMuscleGroups,
-		})
-	}
-
-	prompt, err := s.repository.GetLastPromptByUserID(ctx, userID)
-	if err != nil && !errors.Is(err, domain.ErrNotFound) {
-		return dto.GeneratedWorkoutDTO{}, fmt.Errorf("failed to get last prompt: %w", err)
-	}
-
-	opts := &dto.GenerateWorkoutOptions{
-		UserID:     userID,
-		Exercises:  exerciseDTOs,
-		Workouts:   userWorkoutsDTO,
-		UserPrompt: prompt.PromptText,
-	}
-
-	return s.workoutGenerator.GenerateWorkout(ctx, opts)
-}
-
-func (s *Service) enrichWorkoutByGenerating(ctx context.Context, userID, workoutID domain.ID, userPrompt string) error {
-	span, ctx := opentracing.StartSpanFromContext(ctx, "service.enrichWorkoutByGenerating")
-	defer span.Finish()
-
-	allowed, err := s.generateWorkoutLimiter.Allow(ctx, userID)
-	if err != nil {
-		return err
-	}
-
-	if !allowed {
-		return fmt.Errorf("generate workout limit exceeded: %w", domain.ErrTooManyRequests)
-	}
-
-	generatedWorkout, err := s.generateWorkout(ctx, userID, userPrompt)
-	if err != nil {
-		return err
-	}
-
-	for _, exerciseID := range generatedWorkout.ExerciseIDs {
-		_, err := s.LogExercise(ctx, userID, workoutID, exerciseID)
-		if err != nil {
-			return err
-		}
-	}
-
-	workout, err := s.repository.GetWorkoutByID(ctx, workoutID)
-	if err != nil {
-		return err
-	}
-
-	workout.Reasoning = generatedWorkout.Reasoning
-
-	_, err = s.repository.UpdateWorkout(ctx, workoutID, workout)
-	if err != nil {
-		return err
 	}
 
 	return nil
@@ -362,6 +247,13 @@ func (s *Service) GetExerciseLog(ctx context.Context, userID, exerciseLogID doma
 		SetLogs:      setLogs,
 		ExpectedSets: expectedSets,
 	}, nil
+}
+
+func (s *Service) GetExerciseLogByID(ctx context.Context, id domain.ID) (domain.ExerciseLog, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "service.GetExerciseLogByID")
+	defer span.Finish()
+
+	return s.repository.GetExerciseLogByID(ctx, id)
 }
 
 func (s *Service) LogExercise(ctx context.Context, userID, workoutID, exerciseID domain.ID) (domain.ExerciseLog, error) {
@@ -540,6 +432,59 @@ func (s *Service) DeleteExerciseLog(ctx context.Context, userID, workoutID, exer
 	}
 
 	return nil
+}
+
+func (s *Service) ReplaceExpectedSets(
+	ctx context.Context,
+	userID, workoutID, exerciseLogID domain.ID,
+	sets []dto.ExpectedSetInput,
+) error {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "service.ReplaceExpectedSets")
+	defer span.Finish()
+
+	workout, err := s.repository.GetWorkoutByID(ctx, workoutID)
+	if err != nil {
+		return err
+	}
+
+	if workout.UserID != userID {
+		return domain.ErrNotFound
+	}
+
+	if !workout.FinishedAt.IsZero() {
+		return fmt.Errorf("%w: workout %s is already finished", domain.ErrInvalidArgument, workoutID)
+	}
+
+	exerciseLog, err := s.repository.GetExerciseLogByID(ctx, exerciseLogID)
+	if err != nil {
+		return err
+	}
+
+	if exerciseLog.WorkoutID != workoutID {
+		return domain.ErrNotFound
+	}
+
+	return s.unitOfWork.InTransaction(ctx, func(txCtx context.Context) error {
+		if err := s.repository.DeleteExpectedSetsByExerciseLogID(txCtx, exerciseLogID); err != nil {
+			return err
+		}
+
+		for _, set := range sets {
+			domainSet := domain.NewExpectedSet(
+				exerciseLogID,
+				set.SetType,
+				set.Reps,
+				set.Weight,
+				set.Time,
+			)
+
+			if _, err := s.repository.CreateExpectedSet(txCtx, domainSet); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
 }
 
 func (s *Service) DeleteSetLog(ctx context.Context, userID, workoutID, exerciseLogID domain.ID, setLogID domain.ID) error {

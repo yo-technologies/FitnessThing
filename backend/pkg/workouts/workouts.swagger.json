@@ -20,6 +20,9 @@
     },
     {
       "name": "FileService"
+    },
+    {
+      "name": "ChatService"
     }
   ],
   "basePath": "/api",
@@ -34,6 +37,62 @@
     "application/json"
   ],
   "paths": {
+    "/v1/chats/llm_limits": {
+      "get": {
+        "summary": "Получить состояние лимитов/квот LLM для текущего пользователя",
+        "operationId": "ChatService_GetLLMLimits",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/workoutGetLLMLimitsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "ChatService"
+        ]
+      }
+    },
+    "/v1/chats/search": {
+      "post": {
+        "summary": "Получить полный чат с сообщениями",
+        "operationId": "ChatService_GetChat",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/workoutGetChatResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/workoutGetChatRequest"
+            }
+          }
+        ],
+        "tags": [
+          "ChatService"
+        ]
+      }
+    },
     "/v1/exercises": {
       "get": {
         "summary": "Метод для получения списка всех упражнений",
@@ -1640,6 +1699,16 @@
         "setType"
       ]
     },
+    "ToolEventState": {
+      "type": "string",
+      "enum": [
+        "STATE_UNSPECIFIED",
+        "INVOKING",
+        "COMPLETED",
+        "ERROR"
+      ],
+      "default": "STATE_UNSPECIFIED"
+    },
     "WorkoutReportResponseAdditionalInfo": {
       "type": "object",
       "properties": {
@@ -1763,6 +1832,14 @@
       },
       "additionalProperties": {}
     },
+    "protobufNullValue": {
+      "type": "string",
+      "enum": [
+        "NULL_VALUE"
+      ],
+      "default": "NULL_VALUE",
+      "description": "`NullValue` is a singleton enumeration to represent the null value for the\n`Value` type union.\n\nThe JSON representation for `NullValue` is JSON `null`.\n\n - NULL_VALUE: Null value."
+    },
     "rpcStatus": {
       "type": "object",
       "properties": {
@@ -1779,6 +1856,131 @@
             "type": "object",
             "$ref": "#/definitions/protobufAny"
           }
+        }
+      }
+    },
+    "workoutChat": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "userId": {
+          "type": "string"
+        },
+        "workoutId": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "workoutChatError": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "title": "Короткий машинный тип ошибки, например: \"rate_limit\", \"quota_exceeded\", \"provider_unavailable\""
+        },
+        "message": {
+          "type": "string",
+          "title": "Текст для пользователя"
+        },
+        "retryAfterSeconds": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Рекомендуемая задержка до повтора (секунды), если применимо"
+        },
+        "code": {
+          "type": "string",
+          "title": "Опциональный код провайдера/HTTP"
+        }
+      },
+      "title": "Структурированная ошибка в потоке чата"
+    },
+    "workoutChatMessage": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "chatId": {
+          "type": "string"
+        },
+        "role": {
+          "$ref": "#/definitions/workoutChatMessageRole"
+        },
+        "content": {
+          "type": "string"
+        },
+        "toolName": {
+          "type": "string"
+        },
+        "toolCallId": {
+          "type": "string"
+        },
+        "toolArguments": {
+          "type": "object"
+        },
+        "tokenUsage": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "error": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "workoutChatMessageDelta": {
+      "type": "object",
+      "properties": {
+        "content": {
+          "type": "string"
+        }
+      }
+    },
+    "workoutChatMessageRole": {
+      "type": "string",
+      "enum": [
+        "CHAT_MESSAGE_ROLE_UNSPECIFIED",
+        "CHAT_MESSAGE_ROLE_USER",
+        "CHAT_MESSAGE_ROLE_ASSISTANT",
+        "CHAT_MESSAGE_ROLE_TOOL",
+        "CHAT_MESSAGE_ROLE_SYSTEM"
+      ],
+      "default": "CHAT_MESSAGE_ROLE_UNSPECIFIED"
+    },
+    "workoutChatUsage": {
+      "type": "object",
+      "properties": {
+        "promptTokens": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "completionTokens": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "totalTokens": {
+          "type": "integer",
+          "format": "int32"
         }
       }
     },
@@ -2021,6 +2223,32 @@
       ],
       "default": "EXPERIENCE_LEVEL_UNSPECIFIED"
     },
+    "workoutGetChatRequest": {
+      "type": "object",
+      "properties": {
+        "workoutId": {
+          "type": "string"
+        },
+        "chatId": {
+          "type": "string"
+        }
+      }
+    },
+    "workoutGetChatResponse": {
+      "type": "object",
+      "properties": {
+        "chat": {
+          "$ref": "#/definitions/workoutChat"
+        },
+        "messages": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/workoutChatMessage"
+          }
+        }
+      }
+    },
     "workoutGetExerciseAlternativesResponse": {
       "type": "object",
       "properties": {
@@ -2052,6 +2280,32 @@
           }
         }
       }
+    },
+    "workoutGetLLMLimitsResponse": {
+      "type": "object",
+      "properties": {
+        "dailyLimit": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Дневной лимит токенов"
+        },
+        "used": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Использованные токены за день"
+        },
+        "reserved": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Зарезервированные токены (в процессе)"
+        },
+        "remaining": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Остаток = max(daily_limit - used - reserved, 0)"
+        }
+      },
+      "title": "Состояние лимитов LLM для текущего пользователя"
     },
     "workoutGetMuscleGroupsResponse": {
       "type": "object",
@@ -2214,6 +2468,48 @@
         }
       }
     },
+    "workoutSendChatMessageResponse": {
+      "type": "object",
+      "properties": {
+        "chat": {
+          "$ref": "#/definitions/workoutChat"
+        },
+        "messages": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/workoutChatMessage"
+          }
+        },
+        "usage": {
+          "$ref": "#/definitions/workoutChatUsage"
+        }
+      }
+    },
+    "workoutSendChatMessageStreamResponse": {
+      "type": "object",
+      "properties": {
+        "messageDelta": {
+          "$ref": "#/definitions/workoutChatMessageDelta"
+        },
+        "usage": {
+          "$ref": "#/definitions/workoutChatUsage"
+        },
+        "status": {
+          "type": "string"
+        },
+        "final": {
+          "$ref": "#/definitions/workoutSendChatMessageResponse"
+        },
+        "toolEvent": {
+          "$ref": "#/definitions/workoutToolEvent"
+        },
+        "error": {
+          "$ref": "#/definitions/workoutChatError",
+          "title": "Структурированная ошибка для корректного UI-рендеринга"
+        }
+      }
+    },
     "workoutSet": {
       "type": "object",
       "properties": {
@@ -2311,14 +2607,29 @@
       "properties": {
         "routineId": {
           "type": "string"
-        },
-        "generateWorkout": {
-          "type": "boolean"
-        },
-        "userPrompt": {
-          "type": "string"
         }
       }
+    },
+    "workoutToolEvent": {
+      "type": "object",
+      "properties": {
+        "toolName": {
+          "type": "string"
+        },
+        "toolCallId": {
+          "type": "string"
+        },
+        "argsJson": {
+          "type": "string"
+        },
+        "state": {
+          "$ref": "#/definitions/ToolEventState"
+        },
+        "error": {
+          "type": "string"
+        }
+      },
+      "title": "Structured tool invocation event for streaming UI updates"
     },
     "workoutUpdateUserRequest": {
       "type": "object",
@@ -2476,12 +2787,6 @@
         "updatedAt": {
           "type": "string",
           "format": "date-time"
-        },
-        "isAiGenerated": {
-          "type": "boolean"
-        },
-        "reasoning": {
-          "type": "string"
         }
       },
       "title": "Структура тренировки"

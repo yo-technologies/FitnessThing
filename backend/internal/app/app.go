@@ -11,6 +11,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"fitness-trainer/internal/app/fitness-trainer/api/chat"
 	"fitness-trainer/internal/app/fitness-trainer/api/exercise"
 	"fitness-trainer/internal/app/fitness-trainer/api/file"
 	"fitness-trainer/internal/app/fitness-trainer/api/routine"
@@ -18,10 +19,10 @@ import (
 	"fitness-trainer/internal/app/fitness-trainer/api/workout"
 	"fitness-trainer/internal/app/interceptors"
 	"fitness-trainer/internal/logger"
+	"fitness-trainer/internal/websocket"
 	desc "fitness-trainer/pkg/workouts"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/recovery"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/cors"
@@ -118,6 +119,7 @@ type service interface {
 
 type App struct {
 	service             service
+	chatService         chat.Service
 	telegramTokenParser interceptors.TelegramTokenParser
 
 	options *Options
@@ -125,6 +127,7 @@ type App struct {
 
 func New(
 	service service,
+	chatService chat.Service,
 	telegramTokenParser interceptors.TelegramTokenParser,
 	options ...OptionsFunc,
 ) *App {
@@ -134,6 +137,7 @@ func New(
 	}
 	return &App{
 		service:             service,
+		chatService:         chatService,
 		telegramTokenParser: telegramTokenParser,
 		options:             opts,
 	}
@@ -151,7 +155,10 @@ func (a *App) Run(ctx context.Context) error {
 			interceptors.TelegramAuthInterceptor(a.service, a.telegramTokenParser),
 		),
 		grpc.ChainStreamInterceptor(
-			recovery.StreamServerInterceptor(),
+			interceptors.TracingStreamInterceptor,
+			interceptors.RecoveryStreamInterceptor,
+			interceptors.ErrCodesStreamInterceptor,
+			interceptors.TelegramAuthStreamInterceptor(a.service, a.telegramTokenParser),
 		),
 	)
 
@@ -160,6 +167,7 @@ func (a *App) Run(ctx context.Context) error {
 	routineService := routine.New(a.service)
 	userServiceServer := user.New(a.service)
 	fileServiceServer := file.New(a.service)
+	chatService := chat.New(a.chatService)
 
 	// Register the service
 	desc.RegisterWorkoutServiceServer(srv, workoutService)
@@ -167,6 +175,7 @@ func (a *App) Run(ctx context.Context) error {
 	desc.RegisterRoutineServiceServer(srv, routineService)
 	desc.RegisterUserServiceServer(srv, userServiceServer)
 	desc.RegisterFileServiceServer(srv, fileServiceServer)
+	desc.RegisterChatServiceServer(srv, chatService)
 
 	// Reflect the service
 	if a.options.enableReflection {
@@ -181,6 +190,15 @@ func (a *App) Run(ctx context.Context) error {
 	if err := registerGateway(ctx, gatewayMux, grpcEndpoint); err != nil {
 		return err
 	}
+
+	// Create gRPC client connection for websocket handlers
+	grpcConn, err := grpc.NewClient(grpcEndpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		return fmt.Errorf("failed to dial gRPC: %w", err)
+	}
+
+	// Create websocket handlers
+	chatWSHandler := websocket.NewChatHandler(grpcConn)
 
 	var corsHandler *cors.Cors
 	if a.options.bypassCors {
@@ -203,6 +221,8 @@ func (a *App) Run(ctx context.Context) error {
 		fmt.Sprintf("%s/swagger", a.options.httpPathPrefix),
 		fmt.Sprintf("%s/docs/", a.options.httpPathPrefix),
 	))
+
+	httpMux.HandleFunc("/ws/chat", chatWSHandler.HandleChat)
 
 	httpMux.Handle("/metrics", promhttp.Handler())
 
@@ -291,6 +311,11 @@ func registerGateway(ctx context.Context, mux *runtime.ServeMux, grpcEndpoint st
 	}
 
 	err = desc.RegisterFileServiceHandlerFromEndpoint(ctx, mux, grpcEndpoint, opts)
+	if err != nil {
+		return err
+	}
+
+	err = desc.RegisterChatServiceHandlerFromEndpoint(ctx, mux, grpcEndpoint, opts)
 	if err != nil {
 		return err
 	}

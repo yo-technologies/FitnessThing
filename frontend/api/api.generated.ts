@@ -45,6 +45,14 @@ export interface RoutineServiceUpdateSetInExerciseInstanceBody {
   time?: string;
 }
 
+/** @default "STATE_UNSPECIFIED" */
+export enum ToolEventState {
+  STATE_UNSPECIFIED = "STATE_UNSPECIFIED",
+  INVOKING = "INVOKING",
+  COMPLETED = "COMPLETED",
+  ERROR = "ERROR",
+}
+
 export interface WorkoutReportResponseAdditionalInfo {
   /** @format int32 */
   totalSets?: number;
@@ -105,11 +113,89 @@ export interface ProtobufAny {
   [key: string]: any;
 }
 
+/**
+ * `NullValue` is a singleton enumeration to represent the null value for the
+ * `Value` type union.
+ *
+ * The JSON representation for `NullValue` is JSON `null`.
+ *
+ *  - NULL_VALUE: Null value.
+ * @default "NULL_VALUE"
+ */
+export enum ProtobufNullValue {
+  NULL_VALUE = "NULL_VALUE",
+}
+
 export interface RpcStatus {
   /** @format int32 */
   code?: number;
   message?: string;
   details?: ProtobufAny[];
+}
+
+export interface WorkoutChat {
+  id?: string;
+  userId?: string;
+  workoutId?: string;
+  title?: string;
+  /** @format date-time */
+  createdAt?: string;
+  /** @format date-time */
+  updatedAt?: string;
+}
+
+/** Структурированная ошибка в потоке чата */
+export interface WorkoutChatError {
+  /** Короткий машинный тип ошибки, например: "rate_limit", "quota_exceeded", "provider_unavailable" */
+  type?: string;
+  /** Текст для пользователя */
+  message?: string;
+  /**
+   * Рекомендуемая задержка до повтора (секунды), если применимо
+   * @format int32
+   */
+  retryAfterSeconds?: number;
+  /** Опциональный код провайдера/HTTP */
+  code?: string;
+}
+
+export interface WorkoutChatMessage {
+  id?: string;
+  chatId?: string;
+  role?: WorkoutChatMessageRole;
+  content?: string;
+  toolName?: string;
+  toolCallId?: string;
+  toolArguments?: object;
+  /** @format int32 */
+  tokenUsage?: number;
+  error?: string;
+  /** @format date-time */
+  createdAt?: string;
+  /** @format date-time */
+  updatedAt?: string;
+}
+
+export interface WorkoutChatMessageDelta {
+  content?: string;
+}
+
+/** @default "CHAT_MESSAGE_ROLE_UNSPECIFIED" */
+export enum WorkoutChatMessageRole {
+  CHAT_MESSAGE_ROLE_UNSPECIFIED = "CHAT_MESSAGE_ROLE_UNSPECIFIED",
+  CHAT_MESSAGE_ROLE_USER = "CHAT_MESSAGE_ROLE_USER",
+  CHAT_MESSAGE_ROLE_ASSISTANT = "CHAT_MESSAGE_ROLE_ASSISTANT",
+  CHAT_MESSAGE_ROLE_TOOL = "CHAT_MESSAGE_ROLE_TOOL",
+  CHAT_MESSAGE_ROLE_SYSTEM = "CHAT_MESSAGE_ROLE_SYSTEM",
+}
+
+export interface WorkoutChatUsage {
+  /** @format int32 */
+  promptTokens?: number;
+  /** @format int32 */
+  completionTokens?: number;
+  /** @format int32 */
+  totalTokens?: number;
 }
 
 export interface WorkoutCreateExerciseRequest {
@@ -211,6 +297,16 @@ export enum WorkoutExperienceLevel {
   EXPERIENCE_LEVEL_ADVANCED = "EXPERIENCE_LEVEL_ADVANCED",
 }
 
+export interface WorkoutGetChatRequest {
+  workoutId?: string;
+  chatId?: string;
+}
+
+export interface WorkoutGetChatResponse {
+  chat?: WorkoutChat;
+  messages?: WorkoutChatMessage[];
+}
+
 export interface WorkoutGetExerciseAlternativesResponse {
   alternatives?: WorkoutExercise[];
 }
@@ -221,6 +317,30 @@ export interface WorkoutGetExerciseInstanceDetailsResponse {
 
 export interface WorkoutGetExercisesResponse {
   exercises?: WorkoutExercise[];
+}
+
+/** Состояние лимитов LLM для текущего пользователя */
+export interface WorkoutGetLLMLimitsResponse {
+  /**
+   * Дневной лимит токенов
+   * @format int32
+   */
+  dailyLimit?: number;
+  /**
+   * Использованные токены за день
+   * @format int32
+   */
+  used?: number;
+  /**
+   * Зарезервированные токены (в процессе)
+   * @format int32
+   */
+  reserved?: number;
+  /**
+   * Остаток = max(daily_limit - used - reserved, 0)
+   * @format int32
+   */
+  remaining?: number;
 }
 
 export interface WorkoutGetMuscleGroupsResponse {
@@ -292,6 +412,22 @@ export interface WorkoutRoutineResponse {
   routine?: WorkoutRoutine;
 }
 
+export interface WorkoutSendChatMessageResponse {
+  chat?: WorkoutChat;
+  messages?: WorkoutChatMessage[];
+  usage?: WorkoutChatUsage;
+}
+
+export interface WorkoutSendChatMessageStreamResponse {
+  messageDelta?: WorkoutChatMessageDelta;
+  usage?: WorkoutChatUsage;
+  status?: string;
+  final?: WorkoutSendChatMessageResponse;
+  toolEvent?: WorkoutToolEvent;
+  /** Структурированная ошибка для корректного UI-рендеринга */
+  error?: WorkoutChatError;
+}
+
 /** Структура сета (подхода) */
 export interface WorkoutSet {
   id?: string;
@@ -344,8 +480,15 @@ export enum WorkoutSetType {
 
 export interface WorkoutStartWorkoutRequest {
   routineId?: string;
-  generateWorkout?: boolean;
-  userPrompt?: string;
+}
+
+/** Structured tool invocation event for streaming UI updates */
+export interface WorkoutToolEvent {
+  toolName?: string;
+  toolCallId?: string;
+  argsJson?: string;
+  state?: ToolEventState;
+  error?: string;
 }
 
 export interface WorkoutUpdateUserRequest {
@@ -422,8 +565,6 @@ export interface WorkoutWorkout {
   finishedAt?: string;
   /** @format date-time */
   updatedAt?: string;
-  isAiGenerated?: boolean;
-  reasoning?: string;
 }
 
 /** Настройки генерации тренировок */
@@ -611,6 +752,44 @@ export class HttpClient<SecurityDataType = unknown> {
  */
 export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDataType> {
   v1 = {
+    /**
+     * No description
+     *
+     * @tags ChatService
+     * @name ChatServiceGetLlmLimits
+     * @summary Получить состояние лимитов/квот LLM для текущего пользователя
+     * @request GET:/v1/chats/llm_limits
+     * @secure
+     */
+    chatServiceGetLlmLimits: (params: RequestParams = {}) =>
+      this.request<WorkoutGetLLMLimitsResponse, RpcStatus>({
+        path: `/v1/chats/llm_limits`,
+        method: "GET",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags ChatService
+     * @name ChatServiceGetChat
+     * @summary Получить полный чат с сообщениями
+     * @request POST:/v1/chats/search
+     * @secure
+     */
+    chatServiceGetChat: (body: WorkoutGetChatRequest, params: RequestParams = {}) =>
+      this.request<WorkoutGetChatResponse, RpcStatus>({
+        path: `/v1/chats/search`,
+        method: "POST",
+        body: body,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
     /**
      * No description
      *

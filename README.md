@@ -4,7 +4,7 @@ FitnessThing - это веб-приложение для фитнеса с ИИ-
 
 ### ✨ Ключевые особенности
 
-- 🤖 **ИИ-генерация тренировок**: Персонализированные программы тренировок с использованием OpenAI и Google Gemini
+- 🤖 **ИИ-генерация тренировок**: Персонализированные программы тренировок с использованием OpenAI
 - 📊 **Отслеживание прогресса**: Детальное логирование упражнений, подходов и повторений
 - 🎯 **Управление рутинами**: Создание и управление программами тренировок
 - 💪 **База упражнений**: Обширная база данных упражнений с группировкой по мышечным группам
@@ -26,7 +26,7 @@ FitnessThing - это веб-приложение для фитнеса с ИИ-
 - **Трассировка**: Jaeger + OpenTracing
 - **Брокер сообщений**: Apache Kafka
 - **Хранилище файлов**: AWS S3 (или совместимое)
-- **ИИ**: OpenAI GPT + Google Gemini API
+- **ИИ**: OpenAI API
 
 #### Frontend
 - **Framework**: Next.js 14 с TypeScript
@@ -113,6 +113,48 @@ FitnessTrainer/
    - Jaeger UI: http://localhost:16686
    - Dozzle (логи): http://localhost:9999
 
+## ⚙️ Конфигурация
+
+Проект использует гибридный подход к управлению конфигурацией:
+
+### 🔐 Секреты (Environment Variables)
+- API ключи (OpenAI, Telegram, AWS)
+- Пароли баз данных
+- Sensitive данные
+
+### ⚙️ Настройки (YAML файлы)
+- Модели LLM и reasoning effort
+- Rate limits и таймауты
+- Конфигурация сервисов
+
+### Локальная разработка
+```bash
+# Секреты
+cp backend/.env.example backend/.env
+
+# Настройки (runtime-configurable)
+cp backend/config.example.yaml backend/config.yaml
+```
+
+### Docker
+```bash
+# Секреты
+cp backend/.env.example backend/.env.docker
+
+# Настройки (runtime-configurable)
+cp backend/config.example.yaml backend/config.docker.yaml
+```
+
+### Runtime изменения
+Изменяйте `config.yaml` или `config.docker.yaml` без перезапуска:
+
+```yaml
+llm:
+  openai:
+    model: "anthropic/claude-3.5-sonnet"
+  reasoning_effort: "high"
+```
+
 ## 📚 API Документация
 
 Полная [документация API в виде Swagger UI](./backend/pkg/workouts/workouts.swagger.json) доступна по адресу `/api/docs/` после запуска приложения.
@@ -123,7 +165,7 @@ FitnessTrainer/
 
 Система использует два ИИ-провайдера для создания персонализированных тренировок:
 
-1. **Google Gemini 2.0 Flash** (основной)
+1. **OpenAI/совместимые модели через OpenRouter** (основной)
 2. **OpenAI GPT** (альтернативный)
 
 ### Принцип работы

@@ -12,35 +12,33 @@ import (
 	"os"
 	"time"
 
+	s3_client "fitness-trainer/internal/clients/s3"
+	appconfig "fitness-trainer/internal/config"
+	llm_openai "fitness-trainer/internal/llm/openai"
+	prompt_generator_service "fitness-trainer/internal/service/prompt_generator"
+
 	"fitness-trainer/internal/app"
-	"fitness-trainer/internal/clients/ratelimiter"
 	"fitness-trainer/internal/db"
+	"fitness-trainer/internal/domain"
 	"fitness-trainer/internal/logger"
 	"fitness-trainer/internal/repository"
 	"fitness-trainer/internal/service"
+	"fitness-trainer/internal/service/background"
+	"fitness-trainer/internal/service/chat"
+	"fitness-trainer/internal/service/quota"
+	"fitness-trainer/internal/service/tools"
 	"fitness-trainer/internal/telegram/token_parser"
 	"fitness-trainer/internal/tracer"
-
-	genai_client "fitness-trainer/internal/clients/gemini"
-	s3_client "fitness-trainer/internal/clients/s3"
-	"fitness-trainer/internal/service/background"
-	prompt_generator_service "fitness-trainer/internal/service/prompt_generator"
-	workout_generator_service "fitness-trainer/internal/service/workout_generator"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/go-co-op/gocron/v2"
-	"github.com/google/generative-ai-go/genai"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
-	"github.com/openai/openai-go"
-	"github.com/openai/openai-go/option"
-	"github.com/throttled/throttled/v2"
-	"github.com/throttled/throttled/v2/store/memstore"
-
-	apiOpts "google.golang.org/api/option"
+	"github.com/openai/openai-go/v3"
+	"github.com/openai/openai-go/v3/option"
 )
 
 func init() {
@@ -64,6 +62,18 @@ func loadPostgresURL() string {
 func Run() error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+
+	// Initialize config
+	configPath := os.Getenv("CONFIG_PATH")
+	if configPath == "" {
+		configPath = "config.yaml"
+	}
+
+	if err := appconfig.Initialize(configPath); err != nil {
+		return fmt.Errorf("failed to initialize config: %w", err)
+	}
+
+	cfg := appconfig.Get()
 
 	tracer.MustSetup(
 		ctx,
@@ -96,85 +106,41 @@ func Run() error {
 
 	repo := repository.NewPGXRepository(contextManager)
 
-	genaiClient, err := newGeminiClient(ctx)
-	if err != nil {
-		return err
-	}
-
-	clientWrapper := genai_client.New(
-		genaiClient,
-		os.Getenv("GENAI_MODEL_NAME"),
-		genai_client.WorkoutResponseSchema,
-	)
-
-	// openaiClient := newOpenAIClient()
-
-	// clientWrapper := openai_client.New(openaiClient, os.Getenv("OPENAI_ASS_ID"))
-
-	workoutGenerator := workout_generator_service.New(clientWrapper)
-
-	workoutGenerationQuota := throttled.RateQuota{
-		MaxRate:  throttled.PerDay(5),
-		MaxBurst: 5,
-	}
-
-	workoutGenerationStore, err := memstore.NewCtx(65536)
-	if err != nil {
-		return fmt.Errorf("failed to create in memory store: %w", err)
-	}
-
-	workoutGenerationRateLimiter, err := throttled.NewGCRARateLimiterCtx(
-		workoutGenerationStore,
-		workoutGenerationQuota,
-	)
-	if err != nil {
-		return fmt.Errorf("failed to create rate limiter: %w", err)
-	}
-
-	workoutGenerationRateLimiterWrapper := ratelimiter.New(workoutGenerationRateLimiter)
+	openAIClient := newOpenAIClient()
+	llmClientWrapper := llm_openai.New(openAIClient, cfg)
 
 	service := service.New(
 		contextManager,
 		s3ClientWrapper,
-		workoutGenerator,
-		workoutGenerationRateLimiterWrapper,
 		repo,
+	)
+
+	tools := tools.New(
+		service,
+	)
+
+	quotaService := quota.New(repo, cfg, func(_ context.Context, _ domain.ID) int {
+		return cfg.GetLLMDailyTokenLimit()
+	})
+
+	chatService := chat.New(
+		tools,
+		repo,
+		repo,
+		repo,
+		llmClientWrapper,
+		quotaService,
 	)
 
 	telegramTokenParser := newTelegramTokenParser()
 
-	promptGenerationDebounce := time.Second * 60
-	promptGenerationPeriod := time.Second * 10
-
-	promptGenerationQuota := throttled.RateQuota{
-		MaxRate:  throttled.PerHour(5),
-		MaxBurst: 5,
-	}
-
-	promptGenerationInmemmoryStore, err := memstore.NewCtx(65536)
-	if err != nil {
-		return fmt.Errorf("failed to create in memory store: %w", err)
-	}
-
-	promptGenerationRateLimiter, err := throttled.NewGCRARateLimiterCtx(
-		promptGenerationInmemmoryStore,
-		promptGenerationQuota,
-	)
-	if err != nil {
-		return fmt.Errorf("failed to create rate limiter: %w", err)
-	}
-
-	promptGenerationRateLimiterWrapper := ratelimiter.New(promptGenerationRateLimiter)
-
-	promptsClientWrapper := genai_client.New(
-		genaiClient,
-		os.Getenv("GENAI_MODEL_NAME"),
-		nil,
-	)
+	promptGenerationDebounce := cfg.GetPromptGenerationDebounce()
+	promptGenerationPeriod := cfg.GetPromptGenerationPeriod()
 
 	promptGenerationService := prompt_generator_service.New(
-		promptsClientWrapper,
+		llmClientWrapper,
 		repo,
+		quotaService,
 	)
 
 	backgroundService := background.New(
@@ -182,7 +148,6 @@ func Run() error {
 		repo,
 		repo,
 		promptGenerationService,
-		promptGenerationRateLimiterWrapper,
 	)
 
 	scheduler, err := gocron.NewScheduler(
@@ -203,6 +168,7 @@ func Run() error {
 
 	app := app.New(
 		service,
+		chatService,
 		telegramTokenParser,
 		app.WithHTTPPathPrefix("/api"),
 	)
@@ -260,8 +226,7 @@ func getAWSConfig(ctx context.Context) aws.Config {
 }
 
 type ProxyRoundTripper struct {
-	proxy  *url.URL
-	apiKey string
+	proxy *url.URL
 }
 
 func (t *ProxyRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
@@ -271,12 +236,7 @@ func (t *ProxyRoundTripper) RoundTrip(req *http.Request) (*http.Response, error)
 		transport.Proxy = http.ProxyURL(t.proxy)
 	}
 
-	newReq := req.Clone(req.Context())
-	q := newReq.URL.Query()
-	q.Add("key", t.apiKey)
-	newReq.URL.RawQuery = q.Encode()
-
-	return transport.RoundTrip(newReq)
+	return transport.RoundTrip(req)
 }
 
 func loadProxyData() *url.URL {
@@ -300,37 +260,27 @@ func loadProxyData() *url.URL {
 	return parsedURL
 }
 
-func newHTTPClient(proxyURL *url.URL, apiKey string) *http.Client {
-	return &http.Client{
-		Transport: &ProxyRoundTripper{
-			apiKey: apiKey,
-			proxy:  proxyURL,
-		},
-		Timeout: 30 * time.Second,
-	}
-}
-
-func newGeminiClient(ctx context.Context) (*genai.Client, error) {
-	proxy := loadProxyData()
-
-	return genai.NewClient(
-		ctx,
-		apiOpts.WithHTTPClient(newHTTPClient(proxy, os.Getenv("GENAI_API_KEY"))),
-		apiOpts.WithAPIKey(os.Getenv("GENAI_API_KEY")),
-	)
-}
-
-func newOpenAIClient() *openai.Client {
+func newOpenAIClient() openai.Client {
 	proxyURL := loadProxyData()
+	apiKey := os.Getenv("OPENAI_API_KEY")
+	if apiKey == "" {
+		logger.Fatal("OPENAI_API_KEY environment variable is not set")
+	}
 
-	return openai.NewClient(
-		option.WithAPIKey(os.Getenv("OPENAI_API_KEY")),
-		option.WithHeader("OpenAI-Beta", "assistants=v2"),
+	baseURL := os.Getenv("OPENAI_BASE_URL")
+
+	options := []option.RequestOption{
+		option.WithAPIKey(apiKey),
 		option.WithHTTPClient(&http.Client{
 			Transport: &ProxyRoundTripper{
 				proxy: proxyURL,
 			},
-			Timeout: 30 * time.Second,
 		}),
-	)
+	}
+
+	if baseURL != "" {
+		options = append(options, option.WithBaseURL(baseURL))
+	}
+
+	return openai.NewClient(options...)
 }

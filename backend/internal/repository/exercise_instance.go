@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 
 	"fitness-trainer/internal/domain"
 	"fitness-trainer/internal/logger"
@@ -58,7 +59,7 @@ func (r *PGXRepository) GetExerciseInstanceByID(ctx context.Context, id domain.I
 	err := pgxscan.Get(ctx, engine, &exerciseInstance, query, uuidToPgtype(id))
 	if err != nil {
 		logger.Errorf("failed to get exercise instance by id: %v", err)
-		if err == pgx.ErrNoRows {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return domain.ExerciseInstance{}, domain.ErrNotFound
 		}
 		return domain.ExerciseInstance{}, err
@@ -84,7 +85,7 @@ func (r *PGXRepository) GetExerciseInstancesByRoutineID(ctx context.Context, rou
 	err := pgxscan.Select(ctx, engine, &exerciseInstances, query, uuidToPgtype(routineID))
 	if err != nil {
 		logger.Errorf("failed to get exercise instances by routine id: %v", err)
-		if err == pgx.ErrNoRows {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, domain.ErrNotFound
 		}
 		return nil, err

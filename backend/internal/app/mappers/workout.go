@@ -27,26 +27,24 @@ func WorkoutToProto(workout domain.Workout) *desc.Workout {
 		routineID = &routineIDValue
 	}
 	return &desc.Workout{
-		Id:            workout.ID.String(),
-		RoutineId:     routineID,
-		UserId:        workout.UserID.String(),
-		CreatedAt:     timestamppb.New(workout.CreatedAt),
-		Notes:         workout.Notes,
-		Rating:        int32(workout.Rating),
-		FinishedAt:    timestamppb.New(workout.FinishedAt),
-		UpdatedAt:     timestamppb.New(workout.UpdatedAt),
-		Reasoning:     workout.Reasoning,
-		IsAiGenerated: workout.IsAIGenerated,
+		Id:               workout.ID.String(),
+		RoutineId:        routineID,
+		UserId:           workout.UserID.String(),
+		CreatedAt:        timestamppb.New(workout.CreatedAt),
+		Notes:            workout.Notes,
+		Rating:           int32(workout.Rating),
+		FinishedAt:       timestamppb.New(workout.FinishedAt),
+		UpdatedAt:        timestamppb.New(workout.UpdatedAt),
 	}
 }
 
 func SetLogToProto(setLog domain.ExerciseSetLog) *desc.SetLog {
 	return &desc.SetLog{
-		Id:         setLog.ID.String(),
-		Reps:       int32(setLog.Reps),
-		Weight:     setLog.Weight,
-		CreatedAt:  timestamppb.New(setLog.CreatedAt),
-		UpdatedAt:  timestamppb.New(setLog.UpdatedAt),
+		Id:        setLog.ID.String(),
+		Reps:      int32(setLog.Reps),
+		Weight:    setLog.Weight,
+		CreatedAt: timestamppb.New(setLog.CreatedAt),
+		UpdatedAt: timestamppb.New(setLog.UpdatedAt),
 	}
 }
 

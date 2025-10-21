@@ -30,55 +30,29 @@ type TelegramTokenParser interface {
 func TelegramAuthInterceptor(
 	userService UserService,
 	tokenParser TelegramTokenParser,
-) func(context.Context, interface{}, *grpc.UnaryServerInfo, grpc.UnaryHandler) (interface{}, error) {
-	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-		span, ctx := opentracing.StartSpanFromContext(ctx, "interceptors.Auth")
-		defer span.Finish()
-
-		md, ok := metadata.FromIncomingContext(ctx)
-		if !ok {
-			logger.Errorf("metadata is not provided")
-			return nil, fmt.Errorf("metadata is not provided: %w", domain.ErrUnauthorized)
-		}
-
-		tokens, ok := md["authorization"]
-		if !ok {
-			logger.Errorf("authorization token is not provided")
-			return nil, fmt.Errorf("authorization token is not provided: %w", domain.ErrUnauthorized)
-		}
-
-		if len(tokens) != 1 {
-			logger.Errorf("invalid token format")
-			return nil, fmt.Errorf("invalid token format: %w", domain.ErrUnauthorized)
-		}
-
-		token := strings.TrimSpace(strings.TrimPrefix(tokens[0], "tma "))
-
-		parsedData, err := tokenParser.Parse(token)
+) func(context.Context, any, *grpc.UnaryServerInfo, grpc.UnaryHandler) (any, error) {
+	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+		ctx, err := authenticateFromMetadata(ctx, userService, tokenParser, info.FullMethod)
 		if err != nil {
-			logger.Errorf("failed to parse token: %v", err)
-			return nil, fmt.Errorf("failed to parse token: %w", domain.ErrUnauthorized)
+			return nil, err
 		}
-
-		var dto dto.CreateUserDTO
-		{
-			dto.TelegramID = parsedData.User.ID
-			dto.TelegramUsername = utils.NewNullable(parsedData.User.Username, parsedData.User.Username != "")
-			dto.FirstName = utils.NewNullable(parsedData.User.FirstName, parsedData.User.FirstName != "")
-			dto.LastName = utils.NewNullable(parsedData.User.LastName, parsedData.User.LastName != "")
-			dto.ProfilePicURL = utils.NewNullable(parsedData.User.PhotoURL, parsedData.User.PhotoURL != "")
-		}
-
-		user, err := userService.GetOrCreateUser(ctx, dto)
-		if err != nil {
-			logger.Errorf("failed to get or create user: %v", err)
-			return nil, fmt.Errorf("failed to get or create user: %w", domain.ErrInternal)
-		}
-
-		ctx = context.WithValue(ctx, userIDKey, user.ID)
-		span.SetTag("user_id", user.ID.String())
 
 		return handler(ctx, req)
+	}
+}
+
+func TelegramAuthStreamInterceptor(
+	userService UserService,
+	tokenParser TelegramTokenParser,
+) func(any, grpc.ServerStream, *grpc.StreamServerInfo, grpc.StreamHandler) error {
+	return func(srv any, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+		ctx, err := authenticateFromMetadata(ss.Context(), userService, tokenParser, info.FullMethod)
+		if err != nil {
+			return err
+		}
+
+		wrapped := &wrappedServerStream{ServerStream: ss, ctx: ctx}
+		return handler(srv, wrapped)
 	}
 }
 
@@ -89,4 +63,59 @@ func EnrichContextWithUserID(ctx context.Context, userID domain.ID) context.Cont
 func GetUserID(ctx context.Context) (domain.ID, bool) {
 	value, ok := ctx.Value(userIDKey).(domain.ID)
 	return value, ok
+}
+
+func authenticateFromMetadata(
+	ctx context.Context,
+	userService UserService,
+	tokenParser TelegramTokenParser,
+	_ string,
+) (context.Context, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "interceptors.Auth")
+	defer span.Finish()
+
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		logger.Errorf("metadata is not provided")
+		return ctx, fmt.Errorf("metadata is not provided: %w", domain.ErrUnauthorized)
+	}
+
+	tokens, ok := md["authorization"]
+	if !ok {
+		logger.Errorf("authorization token is not provided")
+		return ctx, fmt.Errorf("authorization token is not provided: %w", domain.ErrUnauthorized)
+	}
+
+	if len(tokens) != 1 {
+		logger.Errorf("invalid token format")
+		return ctx, fmt.Errorf("invalid token format: %w", domain.ErrUnauthorized)
+	}
+
+	token := strings.TrimSpace(strings.TrimPrefix(tokens[0], "tma "))
+
+	parsedData, err := tokenParser.Parse(token)
+	if err != nil {
+		logger.Errorf("failed to parse token: %v", err)
+		return ctx, fmt.Errorf("failed to parse token: %w", domain.ErrUnauthorized)
+	}
+
+	var dto dto.CreateUserDTO
+	{
+		dto.TelegramID = parsedData.User.ID
+		dto.TelegramUsername = utils.NewNullable(parsedData.User.Username, parsedData.User.Username != "")
+		dto.FirstName = utils.NewNullable(parsedData.User.FirstName, parsedData.User.FirstName != "")
+		dto.LastName = utils.NewNullable(parsedData.User.LastName, parsedData.User.LastName != "")
+		dto.ProfilePicURL = utils.NewNullable(parsedData.User.PhotoURL, parsedData.User.PhotoURL != "")
+	}
+
+	user, err := userService.GetOrCreateUser(ctx, dto)
+	if err != nil {
+		logger.Errorf("failed to get or create user: %v", err)
+		return ctx, fmt.Errorf("failed to get or create user: %w", domain.ErrInternal)
+	}
+
+	ctx = context.WithValue(ctx, userIDKey, user.ID)
+	span.SetTag("user_id", user.ID.String())
+
+	return ctx, nil
 }

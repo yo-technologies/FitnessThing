@@ -10,17 +10,22 @@ import {
   ModalHeader,
   useDisclosure,
 } from "@nextui-org/modal";
-import { Accordion, AccordionItem } from "@nextui-org/accordion";
 import { DropdownItem } from "@nextui-org/dropdown";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { use, useEffect, useState } from "react";
+import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { toast } from "react-toastify";
-import ReactMarkdown from "react-markdown";
 
-import { BoltIcon, ChevronRightIcon, PlusIcon } from "@/config/icons";
+import {
+  BoltIcon,
+  ChatBubbleIcon,
+  ChevronRightIcon,
+  PlusIcon,
+} from "@/config/icons";
 import { ModalSelectExercise } from "@/components/pick-exercises-modal";
 import { PageHeader } from "@/components/page-header";
 import { Loading } from "@/components/loading";
+import { WorkoutChatPanel } from "@/components/workout-chat";
 import {
   WorkoutExerciseLogDetails,
   WorkoutGetWorkoutResponse,
@@ -179,21 +184,58 @@ export default function WorkoutDetailsPage({
   const { id } = use(params);
 
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const { isOpen, onOpen, onClose } = useDisclosure();
 
+  const {
+    isOpen: isChatOpen,
+    onOpen: onChatOpen,
+    onClose: onChatClose,
+  } = useDisclosure();
+
+  // Открываем чат автоматически и предзаполняем инпут, если переданы параметры
+  const prefill = searchParams.get("prefill") ?? undefined;
+  const shouldOpenChat = searchParams.get("openChat") === "1";
+
+  // Автоматическое открытие чата при загрузке страницы
+  useEffect(() => {
+    if (shouldOpenChat) {
+      onChatOpen();
+      try {
+        const url = new URL(window.location.href);
+
+        if (!url.searchParams.has("openChat")) return;
+
+        url.searchParams.delete("openChat");
+
+        const newUrl = `${url.pathname}${url.search ? `?${url.searchParams.toString()}` : ""}${url.hash}`;
+
+        window.history.replaceState(null, "", newUrl);
+      } catch {
+        // no-op
+      }
+    }
+  }, []);
+
+  // При закрытии панели чата обновляем данные тренировки (вдруг были изменения через инструменты)
+  const handleChatClose = () => {
+    onChatClose();
+    // Лёгкий рефреш без изменения глобального isLoading, чтобы не мигал весь экран
+    fetchWorkoutDetails().catch((e) => {
+      console.warn("Failed to refresh workout after chat close", e);
+    });
+  };
+
   async function fetchWorkoutDetails() {
-    await authApi.v1
-      .workoutServiceGetWorkout(id)
-      .then((response) => {
-        console.log("Workout details response:", response.data);
-        console.log("Workout createdAt:", response.data?.workout?.createdAt);
-        setWorkoutDetails(response.data!);
-      })
-      .catch((error) => {
-        console.log(error);
-        throw error;
-      });
+    try {
+      const response = await authApi.v1.workoutServiceGetWorkout(id);
+
+      setWorkoutDetails(response.data!);
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
   }
 
   async function fetchData() {
@@ -278,6 +320,23 @@ export default function WorkoutDetailsPage({
     onClose: onFinishModalClose,
   } = useDisclosure();
 
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  if (isLoading) {
+    return <Loading />;
+  }
+
+  if (isError) {
+    return (
+      <div className="p-4">
+        <h2 className="text-lg text-red-500">Ошибка при загрузке данных</h2>
+        <p>Проверьте соединение с сервером или обновите страницу.</p>
+      </div>
+    );
+  }
+
   function FinishWorkoutModal() {
     const [loading, setLoading] = useState(false);
 
@@ -320,63 +379,26 @@ export default function WorkoutDetailsPage({
     );
   }
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  function WorkoutSections({
+    workoutDetails,
+    id,
+    onOpen,
+    onFinishModalOpen,
+  }: {
+    workoutDetails: WorkoutGetWorkoutResponse;
+    id: string;
+    onOpen: () => void;
+    onFinishModalOpen: () => void;
+  }) {
+    const [exerciseListParent] = useAutoAnimate({ duration: 250 });
 
-  if (isLoading) {
-    return <Loading />;
-  }
-
-  if (isError) {
     return (
-      <div className="p-4">
-        <h2 className="text-lg text-red-500">Ошибка при загрузке данных</h2>
-        <p>Проверьте соединение с сервером или обновите страницу.</p>
-      </div>
-    );
-  }
-
-  return (
-    <>
-      <div className="py-4 flex flex-col h-full flex-grow max-w-full basis-full gap-4">
-        <PageHeader
-          enableBackButton={true}
-          inner={
-            <div className="flex flex-row items-end justify-start w-full h-full">
-              <WorkoutTimer startTime={workoutDetails.workout!.createdAt} />
-            </div>
-          }
-          title={"Тренировка"}
-        >
-          <DropdownItem
-            key="delete"
-            className="text-danger"
-            color="danger"
-            onPress={onDelete}
+      <>
+        <section className="flex flex-col gap-4 flex-grow">
+          <div
+            ref={exerciseListParent}
+            className="flex flex-col gap-4 px-4 flex-grow"
           >
-            Удалить
-          </DropdownItem>
-        </PageHeader>
-        <section className="flex flex-col gap-4 ">
-          {workoutDetails.workout?.isAiGenerated && (
-            <Accordion className="px-4" title="Сгенерировано ИИ">
-              <AccordionItem
-                className="flex flex-col p-0"
-                classNames={{
-                  trigger: "p-0",
-                  content: "p-0 mt-2",
-                  title: "text-xs font-semibold text-default-400",
-                }}
-                title="Записка от ИИ"
-              >
-                <ReactMarkdown className="text-xs/4 text-default-400">
-                  {workoutDetails.workout?.reasoning}
-                </ReactMarkdown>
-              </AccordionItem>
-            </Accordion>
-          )}
-          <div className="flex flex-col gap-4 px-4">
             {workoutDetails.exerciseLogs?.map((exerciseLogDetails, index) => (
               <ExerciseLogCard
                 key={index}
@@ -386,7 +408,7 @@ export default function WorkoutDetailsPage({
             ))}
             <Card className="p-2">
               <Button
-                className="w-full"
+                fullWidth
                 onPress={() => {
                   onOpen();
                 }}
@@ -396,26 +418,88 @@ export default function WorkoutDetailsPage({
               </Button>
             </Card>
           </div>
+          <div className="px-4">
+            <Button fullWidth color="primary" onPress={onFinishModalOpen}>
+              Завершить тренировку
+            </Button>
+          </div>
         </section>
-        <section className="w-full px-4">
-          <Button
-            className="w-full"
-            color="primary"
-            onPress={onFinishModalOpen}
+      </>
+    );
+  }
+
+  function MainContent() {
+    const [switchParent] = useAutoAnimate({
+      duration: 220,
+      easing: "ease-in-out",
+    });
+
+    return (
+      <>
+        <div className="py-4 flex flex-col h-full flex-grow max-w-full basis-full gap-4">
+          <PageHeader
+            enableBackButton
+            inner={
+              <div className="flex h-full w-full items-center justify-start">
+                <WorkoutTimer startTime={workoutDetails.workout?.createdAt} />
+              </div>
+            }
+            title={"Тренировка"}
           >
-            Завершить тренировку
-          </Button>
-        </section>
-      </div>
-      <ModalSelectExercise
-        excludeExerciseIds={workoutDetails.exerciseLogs!.map(
-          (exerciseLog) => exerciseLog.exerciseLog!.exerciseId!,
-        )}
-        isOpen={isOpen}
-        onClose={onClose}
-        onSubmit={addExercisesToWorkout}
+            <DropdownItem
+              key="delete"
+              className="text-danger"
+              color="danger"
+              onPress={onDelete}
+            >
+              Удалить
+            </DropdownItem>
+          </PageHeader>
+          <div
+            ref={switchParent}
+            className="min-h-[160px] flex flex-col flex-grow"
+          >
+            <WorkoutSections
+              id={id}
+              workoutDetails={workoutDetails}
+              onFinishModalOpen={onFinishModalOpen}
+              onOpen={onOpen}
+            />
+          </div>
+        </div>
+        <ModalSelectExercise
+          excludeExerciseIds={workoutDetails.exerciseLogs!.map(
+            (exerciseLog) => exerciseLog.exerciseLog!.exerciseId!,
+          )}
+          isOpen={isOpen}
+          onClose={onClose}
+          onSubmit={addExercisesToWorkout}
+        />
+        <FinishWorkoutModal />
+        <Button
+          isIconOnly
+          aria-label="Открыть чат с тренером"
+          className="fixed bottom-20 right-6 z-40 shadow-lg w-14 h-14 shadow-lg"
+          color="secondary"
+          radius="full"
+          variant="shadow"
+          onPress={onChatOpen}
+        >
+          <ChatBubbleIcon className="h-8 w-8" />
+        </Button>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <MainContent />
+      <WorkoutChatPanel
+        isOpen={isChatOpen}
+        prefill={prefill}
+        workoutId={id}
+        onClose={handleChatClose}
       />
-      <FinishWorkoutModal />
     </>
   );
 }
