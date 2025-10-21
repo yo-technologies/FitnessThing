@@ -141,9 +141,10 @@ function MessageBubble({
   const isTool = message.role === WorkoutChatMessageRole.CHAT_MESSAGE_ROLE_TOOL;
   const isSystem =
     message.role === WorkoutChatMessageRole.CHAT_MESSAGE_ROLE_SYSTEM;
+  const bubbleWidth = isUser ? "max-w-[90%]" : "max-w-full";
   const alignment = isUser ? "items-end" : "items-start";
   const bubbleClasses = isUser
-    ? "bg-primary text-primary-foreground max-w-[90%] px-3 py-2"
+    ? "bg-primary text-primary-foreground px-3 py-2"
     : "text-default-800";
 
   // Отображение system сообщения
@@ -182,11 +183,7 @@ function MessageBubble({
         </span>
       )}
       {message.content && (
-        <div
-          className={`flex items-end gap-2 ${
-            isUser ? "self-end" : "self-start"
-          }`}
-        >
+        <div className={`flex items-end gap-2 ${bubbleWidth}`}>
           <div
             className={`max-w-full rounded-large text-sm shadow-sm ${bubbleClasses}`}
           >
@@ -226,6 +223,10 @@ export function WorkoutChatPanel({
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingToolMessage, setStreamingToolMessage] =
     useState<WorkoutChatMessage | null>(null);
+  // Список завершённых tool-сообщений, которые были созданы во время стриминга
+  const [streamingCompletedTools, setStreamingCompletedTools] = useState<
+    WorkoutChatMessage[]
+  >([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [limits, setLimits] = useState<LimitsState>({ loading: false });
   // Показывать кнопку быстро перейти вниз
@@ -466,7 +467,7 @@ export function WorkoutChatPanel({
         const availableSpace =
           containerHeight - (userMessageEl.offsetHeight + 12); // 12px - gap между сообщениями
         const newPadding = Math.max(
-          availableSpace - contentHeightAfterUserMsg - 30, // дополнительный gap
+          availableSpace - contentHeightAfterUserMsg - 25, // дополнительный gap
           0,
         );
 
@@ -510,6 +511,8 @@ export function WorkoutChatPanel({
       setMessages((prev) => [...prev, userMessage]);
       setInputValue("");
       setStreamingAssistantMessage("");
+      setStreamingToolMessage(null);
+      setStreamingCompletedTools([]); // Очищаем предыдущие временные tool-сообщения
       setStreamState({ status: "assistant_thinking" });
       setIsStreaming(true);
       setIsGenerating(true);
@@ -560,8 +563,8 @@ export function WorkoutChatPanel({
             // Создаём стриминговый чип инструмента как TOOL-сообщение с toolName
             setStreamingToolMessage((prev) => {
               if (prev && prev.toolName && prev.toolName !== toolName) {
-                // Завершаем предыдущее
-                setMessages((msgs) => [...msgs, prev]);
+                // Завершаем предыдущее, добавляем в список завершённых
+                setStreamingCompletedTools((tools) => [...tools, prev]);
               }
 
               if (prev && prev.toolName === toolName) {
@@ -594,7 +597,8 @@ export function WorkoutChatPanel({
                     ? { ...prev, error: prev.error ?? "error" }
                     : prev;
 
-                setMessages((msgs) => [...msgs, finalized]);
+                // Добавляем в список завершённых tool-сообщений, НЕ в основной messages
+                setStreamingCompletedTools((tools) => [...tools, finalized]);
 
                 return null;
               }
@@ -616,6 +620,7 @@ export function WorkoutChatPanel({
           setMessages(final.messages ?? []);
           setStreamingAssistantMessage("");
           setStreamingToolMessage(null);
+          setStreamingCompletedTools([]); // Очищаем временные tool-сообщения
           setStreamState({});
           setIsStreaming(false);
           setIsGenerating(false);
@@ -646,6 +651,7 @@ export function WorkoutChatPanel({
           setIsGenerating(false);
           setStreamingAssistantMessage("");
           setStreamingToolMessage(null);
+          setStreamingCompletedTools([]); // Очищаем временные tool-сообщения
           // Перезагружаем чат, чтобы получить корректное состояние с сервера
           void loadChat();
           void loadLimits();
@@ -665,6 +671,8 @@ export function WorkoutChatPanel({
           setIsStreaming(false);
           setIsGenerating(false);
           setStreamingAssistantMessage("");
+          setStreamingToolMessage(null);
+          setStreamingCompletedTools([]); // Очищаем временные tool-сообщения
           setStreamState({});
           sessionRef.current = null;
         });
@@ -704,6 +712,11 @@ export function WorkoutChatPanel({
     // Объединяем обычные и стриминговые сообщения, сохраняя порядок
     const list: WorkoutChatMessage[] = [...messages];
 
+    // Добавляем завершённые tool-сообщения из стриминга
+    streamingCompletedTools.forEach((tool) => {
+      list.push(tool);
+    });
+
     if (streamingToolMessage) {
       list.push(streamingToolMessage);
     }
@@ -713,7 +726,12 @@ export function WorkoutChatPanel({
     }
 
     return list;
-  }, [messages, streamingMessage, streamingToolMessage]);
+  }, [
+    messages,
+    streamingMessage,
+    streamingToolMessage,
+    streamingCompletedTools,
+  ]);
 
   function senderKey(role?: WorkoutChatMessageRole | null) {
     switch (role) {
