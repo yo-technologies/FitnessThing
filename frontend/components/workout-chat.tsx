@@ -725,7 +725,13 @@ export function WorkoutChatPanel({
       list.push(streamingMessage);
     }
 
-    return list;
+    // Сортируем по времени создания для корректного порядка
+    return list.sort((a, b) => {
+      const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+
+      return timeA - timeB;
+    });
   }, [
     messages,
     streamingMessage,
