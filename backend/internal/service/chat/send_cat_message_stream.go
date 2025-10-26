@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"sort"
 	"strings"
 	"time"
 
+	appconfig "fitness-trainer/internal/config"
 	"fitness-trainer/internal/llm"
 	"fitness-trainer/internal/logger"
 
@@ -28,7 +30,7 @@ const (
 const defaultChatSystemPrompt = `Ты — виртуальный фитнес‑тренер и агент управления тренировками.
 
 БАЗОВЫЙ ПРИНЦИП: по умолчанию тренировки должны быть сбалансированными по мышечным группам и видам нагрузок.
-— Если пользователь указал приоритеты, интегрируй их бережно: не жертвуй базовым балансом и восстановлением.
+— Приоритеты пользователя — это ориентиры на недельный цикл, а не на каждую тренировку. Они задают общее направление (напр., немного больше спины на этой неделе), но никогда не должны нарушать базовый баланс мышечных групп и восстановление.
 
 ОСНОВНАЯ ЛОГИКА: если для осмысленного ответа нужны структурированные или актуальные данные (упражнения, план, история) — используй инструменты. Если вопрос бытовой, уточняющий или мотивационный — можно ответить сразу.
 
@@ -229,8 +231,17 @@ func (s *Service) SendChatMessageStream(ctx context.Context, userID domain.ID, r
 		return dto.ChatCompletionDTO{}, err
 	}
 
-	// Finalize usage: confirm with actual tokens
-	err = s.quotaService.Confirm(ctx, userID, 1, totalUsage.TotalTokens)
+	// Finalize usage: confirm with weighted tokens
+	actualUnits := totalUsage.TotalTokens
+	if totalUsage.PromptTokens > 0 || totalUsage.CompletionTokens > 0 {
+		cfg := appconfig.Get()
+		wp := cfg.GetLLMPromptWeight()
+		wc := cfg.GetLLMCompletionWeight()
+		weighted := float64(totalUsage.PromptTokens)*wp + float64(totalUsage.CompletionTokens)*wc
+		actualUnits = int(math.Round(weighted))
+	}
+
+	err = s.quotaService.Confirm(ctx, userID, 1, actualUnits)
 	if err != nil {
 		return dto.ChatCompletionDTO{}, fmt.Errorf("error confirming quota: %w", err)
 	}

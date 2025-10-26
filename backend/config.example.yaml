@@ -8,6 +8,11 @@ llm:
   reasoning_effort: "low"  # low, medium, high
   limits:
     daily_token_limit: 50000
+    # Веса для нормализации токенов при биллинге/квотах
+    # prompt_weight < 1.0 снижает влияние входящих токенов
+    prompt_weight: 0.4
+    # completion_weight обычно 1.0
+    completion_weight: 1.0
 
 # Prompt Generation Settings
 prompt_generation:

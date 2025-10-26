@@ -1,6 +1,7 @@
 package chat
 
 import (
+	"context"
 	"fmt"
 
 	"fitness-trainer/internal/app/interceptors"
@@ -53,12 +54,18 @@ func (i *Implementation) SendChatMessageStream(in *desc.SendChatMessageRequest, 
 		req.WorkoutID = utils.NewNullable(parsed, true)
 	}
 
+	// If client disconnects, we keep background generation running.
+	// Any further sends will be silently ignored.
+	disconnected := false
 	send := func(resp *desc.SendChatMessageStreamResponse) error {
-		if resp == nil {
+		if resp == nil || disconnected {
 			return nil
 		}
 		if err := stream.Send(resp); err != nil {
-			return err
+			// Mark as disconnected and stop propagating errors to the service
+			logger.Infof("client disconnected from SendChatMessageStream: %v", err)
+			disconnected = true
+			return nil
 		}
 		return nil
 	}
@@ -68,26 +75,29 @@ func (i *Implementation) SendChatMessageStream(in *desc.SendChatMessageRequest, 
 			if delta == "" {
 				return nil
 			}
-			return send(&desc.SendChatMessageStreamResponse{
+			_ = send(&desc.SendChatMessageStreamResponse{
 				Payload: &desc.SendChatMessageStreamResponse_MessageDelta{
 					MessageDelta: &desc.ChatMessageDelta{Content: delta},
 				},
 			})
+			return nil
 		},
 		OnUsage: func(usage dto.ChatUsage) error {
-			return send(&desc.SendChatMessageStreamResponse{
+			_ = send(&desc.SendChatMessageStreamResponse{
 				Payload: &desc.SendChatMessageStreamResponse_Usage{
 					Usage: mappers.ChatUsageToProto(usage),
 				},
 			})
+			return nil
 		},
 		OnStatus: func(status string) error {
 			if status == "" {
 				return nil
 			}
-			return send(&desc.SendChatMessageStreamResponse{
+			_ = send(&desc.SendChatMessageStreamResponse{
 				Payload: &desc.SendChatMessageStreamResponse_Status{Status: status},
 			})
+			return nil
 		},
 		OnToolEvent: func(ev dto.ToolEvent) error {
 			state := desc.ToolEvent_STATE_UNSPECIFIED
@@ -105,7 +115,7 @@ func (i *Implementation) SendChatMessageStream(in *desc.SendChatMessageRequest, 
 				err := ev.Error
 				errPtr = &err
 			}
-			return send(&desc.SendChatMessageStreamResponse{
+			_ = send(&desc.SendChatMessageStreamResponse{
 				Payload: &desc.SendChatMessageStreamResponse_ToolEvent{ToolEvent: &desc.ToolEvent{
 					ToolName:   ev.ToolName,
 					ToolCallId: ev.ToolCallID,
@@ -114,6 +124,7 @@ func (i *Implementation) SendChatMessageStream(in *desc.SendChatMessageRequest, 
 					Error:      errPtr,
 				}},
 			})
+			return nil
 		},
 		OnError: func(err error) error {
 			// Map error to ChatError payload
@@ -129,7 +140,7 @@ func (i *Implementation) SendChatMessageStream(in *desc.SendChatMessageRequest, 
 					retryAfterSeconds = int32(te.RetryAfter.Seconds())
 				}
 			}
-			return send(&desc.SendChatMessageStreamResponse{
+			_ = send(&desc.SendChatMessageStreamResponse{
 				Payload: &desc.SendChatMessageStreamResponse_Error{
 					Error: &desc.ChatError{
 						Type:              string(typ),
@@ -139,13 +150,14 @@ func (i *Implementation) SendChatMessageStream(in *desc.SendChatMessageRequest, 
 					},
 				},
 			})
+			return nil
 		},
 		OnFinalResponse: func(result dto.ChatCompletionDTO) error {
 			protoChat := mappers.ChatToProto(result.Chat)
 			protoMessages, err := mappers.ChatMessagesToProto(result.Messages)
 			if err != nil {
 				logger.Errorf("failed to map final chat messages: %v", err)
-				return domain.ErrInternal
+				return nil
 			}
 
 			finalResp := &desc.SendChatMessageResponse{
@@ -157,15 +169,35 @@ func (i *Implementation) SendChatMessageStream(in *desc.SendChatMessageRequest, 
 				finalResp.Usage = mappers.ChatUsageToProto(result.Usage.V)
 			}
 
-			return send(&desc.SendChatMessageStreamResponse{
+			_ = send(&desc.SendChatMessageStreamResponse{
 				Payload: &desc.SendChatMessageStreamResponse_Final{Final: finalResp},
 			})
+			return nil
 		},
 	}
 
-	if _, err := i.service.SendChatMessageStream(ctx, userID, req, callbacks); err != nil {
-		return err
+	// Run agent in background context so it won't be cancelled by client disconnect
+	errCh := make(chan error, 1)
+	bgCtx, cancel := context.WithCancel(context.WithoutCancel(ctx))
+	go func() {
+		spanBG, bgCtx := opentracing.StartSpanFromContext(bgCtx, "api.chat.SendChatMessageStream.background")
+		defer spanBG.Finish()
+		_, err := i.service.SendChatMessageStream(bgCtx, userID, req, callbacks)
+		errCh <- err
+	}()
+
+	// Wait for either client disconnect or agent completion
+	select {
+	case <-stream.Context().Done():
+		// Client disconnected; keep background job running
+	case err := <-errCh:
+		if err != nil {
+			logger.Errorf("SendChatMessageStream background error: %v", err)
+		}
+		// Agent finished; we already streamed the final via callbacks (if possible)
 	}
+
+	cancel()
 
 	return nil
 }

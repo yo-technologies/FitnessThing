@@ -38,6 +38,9 @@ type service interface {
 	DeleteExerciseLog(ctx context.Context, userID, workoutID, exerciseLogID domain.ID) error
 	ReplaceExpectedSets(ctx context.Context, userID, workoutID, exerciseLogID domain.ID, sets []dto.ExpectedSetInput) error
 
+	// Set log methods
+	GetSetLogsByExerciseLogID(ctx context.Context, exerciseLogID domain.ID) ([]domain.ExerciseSetLog, error)
+
 	// Muscle groups
 	GetMuscleGroups(ctx context.Context) ([]dto.MuscleGroupDTO, error)
 }

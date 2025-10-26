@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type KeyboardEvent as ReactKeyboardEvent,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { isAxiosError } from "axios";
 import { Button } from "@nextui-org/button";
 import { Textarea } from "@nextui-org/input";
@@ -248,6 +241,8 @@ export function WorkoutChatPanel({
   const toolEventSeqRef = useRef(0);
   // Ref на последнее сообщение пользователя для скролла к нему
   const lastUserMessageRef = useRef<HTMLDivElement>(null);
+  // Ref на textarea для скрытия клавиатуры
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const hasMessages =
     messages.length > 0 || streamingAssistantMessage.length > 0;
@@ -624,6 +619,7 @@ export function WorkoutChatPanel({
           setStreamState({});
           setIsStreaming(false);
           setIsGenerating(false);
+          void loadLimits();
         },
         onError: (err) => {
           console.error("Workout chat stream error", err);
@@ -681,18 +677,10 @@ export function WorkoutChatPanel({
   );
 
   const handleSend = useCallback(() => {
+    // Скрываем клавиатуру перед отправкой сообщения
+    textareaRef.current?.blur();
     void sendMessage(inputValue);
   }, [inputValue, sendMessage]);
-
-  const handleKeyDown = useCallback(
-    (event: ReactKeyboardEvent<HTMLTextAreaElement>) => {
-      if (event.key === "Enter" && !event.shiftKey) {
-        event.preventDefault();
-        handleSend();
-      }
-    },
-    [handleSend],
-  );
 
   const streamingMessage = useMemo<WorkoutChatMessage | null>(() => {
     if (!streamingAssistantMessage) {
@@ -971,6 +959,7 @@ export function WorkoutChatPanel({
           </div>
           <div className="flex items-center gap-2 border-t border-default-200 px-4 py-2 mb-4">
             <Textarea
+              ref={textareaRef}
               className="flex-1"
               classNames={{
                 inputWrapper: "bg-default-100",
@@ -979,11 +968,6 @@ export function WorkoutChatPanel({
               placeholder="Напишите сообщение..."
               value={inputValue}
               onChange={(event) => setInputValue(event.target.value)}
-              onKeyDown={(event) =>
-                handleKeyDown(
-                  event as unknown as ReactKeyboardEvent<HTMLTextAreaElement>,
-                )
-              }
             />
             <Button
               isIconOnly
