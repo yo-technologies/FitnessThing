@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type KeyboardEvent as ReactKeyboardEvent,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { isAxiosError } from "axios";
 import { Button } from "@nextui-org/button";
 import { Textarea } from "@nextui-org/input";
@@ -684,16 +677,6 @@ export function WorkoutChatPanel({
     void sendMessage(inputValue);
   }, [inputValue, sendMessage]);
 
-  const handleKeyDown = useCallback(
-    (event: ReactKeyboardEvent<HTMLTextAreaElement>) => {
-      if (event.key === "Enter" && !event.shiftKey) {
-        event.preventDefault();
-        handleSend();
-      }
-    },
-    [handleSend],
-  );
-
   const streamingMessage = useMemo<WorkoutChatMessage | null>(() => {
     if (!streamingAssistantMessage) {
       return null;
@@ -979,11 +962,6 @@ export function WorkoutChatPanel({
               placeholder="Напишите сообщение..."
               value={inputValue}
               onChange={(event) => setInputValue(event.target.value)}
-              onKeyDown={(event) =>
-                handleKeyDown(
-                  event as unknown as ReactKeyboardEvent<HTMLTextAreaElement>,
-                )
-              }
             />
             <Button
               isIconOnly
