@@ -7,7 +7,9 @@ import (
 	"fitness-trainer/internal/domain/dto"
 	"fitness-trainer/internal/llm"
 	"fmt"
+	"math"
 
+	appconfig "fitness-trainer/internal/config"
 	"github.com/opentracing/opentracing-go"
 )
 
@@ -141,7 +143,17 @@ func (s *Service) GeneratePrompt(ctx context.Context, settings domain.Generation
 		return domain.Prompt{}, err
 	}
 
-	err = s.quotaService.Confirm(ctx, settings.UserID, 1, usage.TotalTokens)
+	// Confirm weighted usage instead of raw total tokens
+	actualUnits := usage.TotalTokens
+	if usage.PromptTokens > 0 || usage.CompletionTokens > 0 {
+		cfg := appconfig.Get()
+		wp := cfg.GetLLMPromptWeight()
+		wc := cfg.GetLLMCompletionWeight()
+		weighted := float64(usage.PromptTokens)*wp + float64(usage.CompletionTokens)*wc
+		actualUnits = int(math.Round(weighted))
+	}
+
+	err = s.quotaService.Confirm(ctx, settings.UserID, 1, actualUnits)
 	if err != nil {
 		return domain.Prompt{}, fmt.Errorf("error confirming quota: %w", err)
 	}

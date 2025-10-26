@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"sort"
 	"strings"
 	"time"
 
+	appconfig "fitness-trainer/internal/config"
 	"fitness-trainer/internal/llm"
 	"fitness-trainer/internal/logger"
 
@@ -229,8 +231,17 @@ func (s *Service) SendChatMessageStream(ctx context.Context, userID domain.ID, r
 		return dto.ChatCompletionDTO{}, err
 	}
 
-	// Finalize usage: confirm with actual tokens
-	err = s.quotaService.Confirm(ctx, userID, 1, totalUsage.TotalTokens)
+	// Finalize usage: confirm with weighted tokens
+	actualUnits := totalUsage.TotalTokens
+	if totalUsage.PromptTokens > 0 || totalUsage.CompletionTokens > 0 {
+		cfg := appconfig.Get()
+		wp := cfg.GetLLMPromptWeight()
+		wc := cfg.GetLLMCompletionWeight()
+		weighted := float64(totalUsage.PromptTokens)*wp + float64(totalUsage.CompletionTokens)*wc
+		actualUnits = int(math.Round(weighted))
+	}
+
+	err = s.quotaService.Confirm(ctx, userID, 1, actualUnits)
 	if err != nil {
 		return dto.ChatCompletionDTO{}, fmt.Errorf("error confirming quota: %w", err)
 	}

@@ -21,7 +21,9 @@ type LLMConfig struct {
 	} `mapstructure:"openai"`
 	ReasoningEffort string `mapstructure:"reasoning_effort"`
 	Limits          struct {
-		DailyTokenLimit int `mapstructure:"daily_token_limit"`
+		DailyTokenLimit  int     `mapstructure:"daily_token_limit"`
+		PromptWeight     float64 `mapstructure:"prompt_weight"`
+		CompletionWeight float64 `mapstructure:"completion_weight"`
 	} `mapstructure:"limits"`
 }
 
@@ -95,6 +97,9 @@ func (c *Config) loadDefaults() {
 	c.LLM.OpenAI.Model = "openai/gpt-5-mini"
 	c.LLM.ReasoningEffort = "medium"
 	c.LLM.Limits.DailyTokenLimit = 50000
+	// Default weights for normalized token accounting (quota)
+	c.LLM.Limits.PromptWeight = 0.4
+	c.LLM.Limits.CompletionWeight = 1.0
 
 	// Prompt generation defaults
 	c.PromptGeneration.Debounce = time.Second * 60
@@ -148,6 +153,26 @@ func (c *Config) GetLLMDailyTokenLimit() int {
 		return 0
 	}
 	return c.LLM.Limits.DailyTokenLimit
+}
+
+// GetLLMPromptWeight returns weighting coefficient for prompt tokens in quota accounting
+func (c *Config) GetLLMPromptWeight() float64 {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	if c.LLM.Limits.PromptWeight <= 0 {
+		return 0.4
+	}
+	return c.LLM.Limits.PromptWeight
+}
+
+// GetLLMCompletionWeight returns weighting coefficient for completion tokens in quota accounting
+func (c *Config) GetLLMCompletionWeight() float64 {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	if c.LLM.Limits.CompletionWeight <= 0 {
+		return 1.0
+	}
+	return c.LLM.Limits.CompletionWeight
 }
 
 // GetPromptGenerationDebounce returns the prompt generation debounce duration
