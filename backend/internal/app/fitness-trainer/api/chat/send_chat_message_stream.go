@@ -178,7 +178,7 @@ func (i *Implementation) SendChatMessageStream(in *desc.SendChatMessageRequest, 
 
 	// Run agent in background context so it won't be cancelled by client disconnect
 	errCh := make(chan error, 1)
-	bgCtx := context.WithoutCancel(ctx)
+	bgCtx, cancel := context.WithCancel(context.WithoutCancel(ctx))
 	go func() {
 		spanBG, bgCtx := opentracing.StartSpanFromContext(bgCtx, "api.chat.SendChatMessageStream.background")
 		defer spanBG.Finish()
@@ -190,11 +190,14 @@ func (i *Implementation) SendChatMessageStream(in *desc.SendChatMessageRequest, 
 	select {
 	case <-stream.Context().Done():
 		// Client disconnected; keep background job running
-	case <-errCh:
-		// Agent finished; we already streamed the final via callbacks (if possible)		return nil
+	case err := <-errCh:
+		if err != nil {
+			logger.Errorf("SendChatMessageStream background error: %v", err)
+		}
+		// Agent finished; we already streamed the final via callbacks (if possible)
 	}
 
-	bgCtx.Done()
+	cancel()
 
 	return nil
 }
