@@ -141,22 +141,24 @@ type expectedSetInput struct {
 }
 
 type exerciseLogHistory struct {
-	ID         string          `json:"id"`
-	WorkoutID  string          `json:"workout_id"`
-	CreatedAt  time.Time       `json:"created_at"`
-	Notes      string          `json:"notes"`
-	WeightUnit string          `json:"weight_unit"`
-	SetLogs    []setLogHistory `json:"set_logs"`
+	ID          string          `json:"id"`
+	WorkoutID   string          `json:"workout_id"`
+	CreatedAt   time.Time       `json:"created_at"`
+	Notes       string          `json:"notes"`
+	WeightUnit  string          `json:"weight_unit"`
+	PowerRating int             `json:"power_rating"`
+	SetLogs     []setLogHistory `json:"set_logs"`
 }
 
 func exerciseLogHistoryFromDomain(log dto.ExerciseLogDTO) exerciseLogHistory {
 	return exerciseLogHistory{
-		ID:         log.ExerciseLog.ID.String(),
-		WorkoutID:  log.ExerciseLog.WorkoutID.String(),
-		CreatedAt:  log.ExerciseLog.CreatedAt,
-		Notes:      log.ExerciseLog.Notes,
-		WeightUnit: log.ExerciseLog.WeightUnit.String(),
-		SetLogs:    setLogHistoryListFromDomain(log.SetLogs),
+		ID:          log.ExerciseLog.ID.String(),
+		WorkoutID:   log.ExerciseLog.WorkoutID.String(),
+		CreatedAt:   log.ExerciseLog.CreatedAt,
+		Notes:       log.ExerciseLog.Notes,
+		WeightUnit:  log.ExerciseLog.WeightUnit.String(),
+		PowerRating: log.ExerciseLog.PowerRating,
+		SetLogs:     setLogHistoryListFromDomain(log.SetLogs),
 	}
 }
 
@@ -199,10 +201,21 @@ func exerciseLogHistoryPayloadFromDomain(logs []dto.ExerciseLogDTO) exerciseLogH
 }
 
 type workoutPayload struct {
-	ID         string     `json:"id"`
-	CreatedAt  time.Time  `json:"created_at"`
-	FinishedAt time.Time  `json:"finished_at"`
-	Exercises  []exercise `json:"exercises"`
+	ID         string                   `json:"id"`
+	CreatedAt  time.Time                `json:"created_at"`
+	FinishedAt time.Time                `json:"finished_at"`
+	Rating     int                      `json:"rating"`
+	Notes      string                   `json:"notes"`
+	Exercises  []workoutPayloadExercise `json:"exercises"`
+}
+
+type workoutPayloadExercise struct {
+	ExerciseLogID string   `json:"exercise_log_id"`
+	Exercise      exercise `json:"exercise"`
+	Notes         string   `json:"notes"`
+	PowerRating   int      `json:"power_rating"`
+	WeightUnit    string   `json:"weight_unit"`
+	SetLogs       []setLog `json:"set_logs"`
 }
 
 type listExercisesResponse struct {
@@ -221,19 +234,36 @@ func (t *Tools) convertWorkoutsToHistoryResponse(ctx context.Context, workoutsDT
 	response := getWorkoutHistoryResponse{Workouts: make([]workoutPayload, 0, len(workoutsDTO))}
 
 	for _, workoutDTO := range workoutsDTO {
-		exercises := make([]exercise, 0, len(workoutDTO.ExerciseLogs))
-		for _, log := range workoutDTO.ExerciseLogs {
-			exercise, err := t.service.GetExerciseByID(ctx, log.ExerciseID)
+		exercises := make([]workoutPayloadExercise, 0, len(workoutDTO.ExerciseLogs))
+		for _, exerciseLog := range workoutDTO.ExerciseLogs {
+			// Load exercise data
+			exercise, err := t.service.GetExerciseByID(ctx, exerciseLog.ExerciseID)
 			if err != nil {
-				return response, fmt.Errorf("failed to load exercise %s: %w", log.ExerciseID, err)
+				return response, fmt.Errorf("failed to load exercise %s: %w", exerciseLog.ExerciseID, err)
 			}
-			exercises = append(exercises, exerciseFromDomain(exercise))
+
+			// Load set logs for this exercise
+			setLogs, err := t.service.GetSetLogsByExerciseLogID(ctx, exerciseLog.ID)
+			if err != nil {
+				return response, fmt.Errorf("failed to load set logs for exercise log %s: %w", exerciseLog.ID, err)
+			}
+
+			exercises = append(exercises, workoutPayloadExercise{
+				ExerciseLogID: exerciseLog.ID.String(),
+				Exercise:      exerciseFromDomain(exercise),
+				Notes:         exerciseLog.Notes,
+				PowerRating:   exerciseLog.PowerRating,
+				WeightUnit:    exerciseLog.WeightUnit.String(),
+				SetLogs:       setLogListFromDomain(setLogs),
+			})
 		}
 
 		response.Workouts = append(response.Workouts, workoutPayload{
 			ID:         workoutDTO.Workout.ID.String(),
 			CreatedAt:  workoutDTO.Workout.CreatedAt,
 			FinishedAt: workoutDTO.Workout.FinishedAt,
+			Rating:     workoutDTO.Workout.Rating,
+			Notes:      workoutDTO.Workout.Notes,
 			Exercises:  exercises,
 		})
 	}
