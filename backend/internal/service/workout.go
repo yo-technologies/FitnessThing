@@ -365,14 +365,32 @@ func (s *Service) CompleteWorkout(ctx context.Context, userID, workoutID domain.
 		return fmt.Errorf("%w: workout %s is already finished", domain.ErrInvalidArgument, workoutID)
 	}
 
-	workout.FinishedAt = time.Now()
+	return s.unitOfWork.InTransaction(ctx, func(txCtx context.Context) error {
+		workout.FinishedAt = time.Now()
 
-	_, err = s.repository.UpdateWorkout(ctx, workoutID, workout)
-	if err != nil {
-		return err
-	}
+		_, err := s.repository.UpdateWorkout(txCtx, workoutID, workout)
+		if err != nil {
+			return err
+		}
 
-	return nil
+		// Delete empty exercise logs (without any set logs)
+		err = s.repository.DeleteEmptyExerciseLogs(txCtx, workoutID)
+		if err != nil {
+			return err
+		}
+
+		// Check if workout has any exercise logs left
+		exerciseLogs, err := s.repository.GetExerciseLogsByWorkoutID(txCtx, workoutID)
+		if err != nil {
+			return err
+		}
+
+		if len(exerciseLogs) == 0 {
+			return fmt.Errorf("%w: workout %s has no exercise logs", domain.ErrInvalidArgument, workoutID)
+		}
+
+		return nil
+	})
 }
 
 func (s *Service) DeleteWorkout(ctx context.Context, userID, workoutID domain.ID) error {

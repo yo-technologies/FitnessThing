@@ -193,3 +193,25 @@ func (r *PGXRepository) UpdateExerciseLog(ctx context.Context, id domain.ID, exe
 
 	return exerciseLogEntity.toDomain(), nil
 }
+
+func (r *PGXRepository) DeleteEmptyExerciseLogs(ctx context.Context, workoutID domain.ID) error {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "repository.DeleteEmptyExerciseLogs")
+	defer span.Finish()
+
+	query := `
+		DELETE FROM exercise_logs el
+		WHERE el.workout_id = $1 
+		AND NOT EXISTS (
+			SELECT 1 FROM set_logs sl WHERE sl.exercise_log_id = el.id
+		)
+	`
+
+	engine := r.contextManager.GetEngineFromContext(ctx)
+
+	_, err := engine.Exec(ctx, query, uuidToPgtype(workoutID))
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
