@@ -617,6 +617,7 @@ export function WorkoutChatPanel({
           setStreamState({});
           setIsStreaming(false);
           setIsGenerating(false);
+          void loadLimits();
         },
         onError: (err) => {
           console.error("Workout chat stream error", err);
