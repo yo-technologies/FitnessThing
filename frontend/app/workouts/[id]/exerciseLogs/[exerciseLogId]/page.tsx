@@ -406,15 +406,47 @@ export default function RoutineDetailsPage({
       const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
       useEffect(() => {
-        if (exerciseLogDetails.setLogs?.length) {
+        const setIndex = exerciseLogDetails.setLogs?.length ?? 0;
+
+        // 1. Ожидаемый вес из expectedSets
+        const expectedSet = exerciseLogDetails.expectedSets?.[setIndex];
+
+        if (expectedSet && expectedSet.weight && expectedSet.weight > 0) {
+          setWeight(expectedSet.weight);
+        }
+        // 2. Если нет ожидаемого, берём вес последнего сета текущей тренировки
+        else if (exerciseLogDetails.setLogs?.length) {
           const lastIndex = exerciseLogDetails.setLogs.length - 1;
 
           setWeight(exerciseLogDetails.setLogs[lastIndex]?.weight!);
-          setReps(exerciseLogDetails.setLogs[lastIndex]?.reps!);
-        } else if (exerciseLogHistory.length) {
+        }
+        // 3. Если нет текущих сетов, берём из истории
+        else if (
+          exerciseLogHistory.length &&
+          exerciseLogHistory[0].setLogs?.length
+        ) {
           const lastIndex = exerciseLogHistory[0]!.setLogs!.length - 1;
 
           setWeight(exerciseLogHistory[0]!.setLogs![lastIndex]?.weight!);
+        }
+
+        // Повторы: 1. Ожидаемые повторы из expectedSets
+        if (expectedSet && expectedSet.reps && expectedSet.reps > 0) {
+          setReps(expectedSet.reps);
+        }
+        // 2. Если нет ожидаемых, берём из последнего сета текущей тренировки
+        else if (exerciseLogDetails.setLogs?.length) {
+          const lastIndex = exerciseLogDetails.setLogs.length - 1;
+
+          setReps(exerciseLogDetails.setLogs[lastIndex]?.reps!);
+        }
+        // 3. Если нет текущих сетов, берём из истории
+        else if (
+          exerciseLogHistory.length &&
+          exerciseLogHistory[0].setLogs?.length
+        ) {
+          const lastIndex = exerciseLogHistory[0]!.setLogs!.length - 1;
+
           setReps(exerciseLogHistory[0]!.setLogs![lastIndex]?.reps!);
         }
       }, [exerciseLogDetails, exerciseLogHistory]);
