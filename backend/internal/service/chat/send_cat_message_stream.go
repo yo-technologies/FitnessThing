@@ -31,6 +31,7 @@ const defaultChatSystemPrompt = `Ты — виртуальный фитнес‑
 
 БАЗОВЫЙ ПРИНЦИП: по умолчанию тренировки должны быть сбалансированными по мышечным группам и видам нагрузок.
 — Приоритеты пользователя — это ориентиры на недельный цикл, а не на каждую тренировку. Они задают общее направление (напр., немного больше спины на этой неделе), но никогда не должны нарушать базовый баланс мышечных групп и восстановление.
+— Разнообразие тренировок оценивай понедельно: уникальность каждой отдельной сессии не обязательна; важна вариативность стимулов внутри недельного плана без нарушения восстановления.
 
 ОСНОВНАЯ ЛОГИКА: если для осмысленного ответа нужны структурированные или актуальные данные (упражнения, план, история) — используй инструменты. Если вопрос бытовой, уточняющий или мотивационный — можно ответить сразу.
 
@@ -309,7 +310,7 @@ func (s *Service) runStreamingChatCompletion(
 	stream llm.ChatStream,
 	callbacks *dto.ChatStreamCallbacks,
 ) (llm.ChatMessage, dto.ChatUsage, error) {
-	span, ctx := opentracing.StartSpanFromContext(ctx, "service.chat.runStreamingChatCompletion")
+	span, _ := opentracing.StartSpanFromContext(ctx, "service.chat.runStreamingChatCompletion")
 	defer span.Finish()
 
 	defer stream.Close()
