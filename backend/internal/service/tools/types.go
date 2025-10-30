@@ -146,6 +146,7 @@ type exerciseLogHistory struct {
 	CreatedAt   time.Time       `json:"created_at"`
 	Notes       string          `json:"notes"`
 	WeightUnit  string          `json:"weight_unit"`
+	// PowerRating scale: 0–10, where 0 = no effort, 5 = moderate, 8 = hard, 10 = maximal effort
 	PowerRating int             `json:"power_rating"`
 	SetLogs     []setLogHistory `json:"set_logs"`
 }
@@ -204,6 +205,7 @@ type workoutPayload struct {
 	ID         string                   `json:"id"`
 	CreatedAt  time.Time                `json:"created_at"`
 	FinishedAt time.Time                `json:"finished_at"`
+	// Workout Rating scale: 1–5 stars, 0 means not rated
 	Rating     int                      `json:"rating"`
 	Notes      string                   `json:"notes"`
 	Exercises  []workoutPayloadExercise `json:"exercises"`
@@ -213,6 +215,7 @@ type workoutPayloadExercise struct {
 	ExerciseLogID string   `json:"exercise_log_id"`
 	Exercise      exercise `json:"exercise"`
 	Notes         string   `json:"notes"`
+	// PowerRating scale: 0–10, where 0 = no effort, 5 = moderate, 8 = hard, 10 = maximal effort
 	PowerRating   int      `json:"power_rating"`
 	WeightUnit    string   `json:"weight_unit"`
 	SetLogs       []setLog `json:"set_logs"`
