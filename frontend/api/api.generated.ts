@@ -366,6 +366,10 @@ export enum WorkoutGoal {
   GOAL_FLEXIBILITY = "GOAL_FLEXIBILITY",
 }
 
+export interface WorkoutListUserFactsResponse {
+  facts?: WorkoutUserFact[];
+}
+
 export interface WorkoutMuscleGroup {
   id?: string;
   name?: string;
@@ -535,6 +539,16 @@ export interface WorkoutUser {
   /** @format date-time */
   updatedAt?: string;
   hasCompletedOnboarding?: boolean;
+}
+
+export interface WorkoutUserFact {
+  id?: string;
+  userId?: string;
+  content?: string;
+  /** @format date-time */
+  createdAt?: string;
+  /** @format date-time */
+  updatedAt?: string;
 }
 
 export interface WorkoutUserResponse {
@@ -1216,6 +1230,42 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
         body: body,
         secure: true,
         type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags UserService
+     * @name UserServiceListUserFacts
+     * @summary Получить все факты пользователя
+     * @request GET:/v1/users/facts
+     * @secure
+     */
+    userServiceListUserFacts: (params: RequestParams = {}) =>
+      this.request<WorkoutListUserFactsResponse, RpcStatus>({
+        path: `/v1/users/facts`,
+        method: "GET",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags UserService
+     * @name UserServiceDeleteUserFact
+     * @summary Удалить факт пользователя
+     * @request DELETE:/v1/users/facts/{factId}
+     * @secure
+     */
+    userServiceDeleteUserFact: (factId: string, params: RequestParams = {}) =>
+      this.request<WorkoutServiceCompleteWorkoutBody, RpcStatus>({
+        path: `/v1/users/facts/${factId}`,
+        method: "DELETE",
+        secure: true,
         format: "json",
         ...params,
       }),
