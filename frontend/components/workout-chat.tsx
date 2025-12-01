@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, memo } from "react";
 import { isAxiosError } from "axios";
 import { Button } from "@nextui-org/button";
 import { Drawer, DrawerContent } from "@nextui-org/drawer";
@@ -32,6 +32,7 @@ type WorkoutChatPanelProps = {
   isOpen: boolean;
   onClose: () => void;
   prefill?: string;
+  onToolComplete?: () => void;
 };
 
 type StreamState = {
@@ -192,7 +193,7 @@ function MessageBubble({
         </div>
       )}
       {message.error && (
-        <span className="text-xs text-danger truncate max-w-[90%]">
+        <span className="text-xs text-danger truncate max-w-[90%] px-1">
           {message.error}
         </span>
       )}
@@ -200,11 +201,12 @@ function MessageBubble({
   );
 }
 
-export function WorkoutChatPanel({
+export const WorkoutChatPanel = memo(function WorkoutChatPanel({
   workoutId,
   isOpen,
   onClose,
   prefill,
+  onToolComplete: onToolSuccess,
 }: WorkoutChatPanelProps) {
   const [chat, setChat] = useState<WorkoutChat | undefined>();
   const [messages, setMessages] = useState<WorkoutChatMessage[]>([]);
@@ -466,7 +468,7 @@ export function WorkoutChatPanel({
           containerHeight - headerHeight - (userMessageEl.offsetHeight + 12); // 12px - gap между сообщениями
         const newPadding = Math.max(
           availableSpace - contentHeightAfterUserMsg - 25, // дополнительный gap
-          0,
+          20,
         );
 
         setPaddingSize(newPadding);
@@ -587,6 +589,8 @@ export function WorkoutChatPanel({
             state === ToolEventState.COMPLETED ||
             state === ToolEventState.ERROR
           ) {
+            onToolSuccess?.();
+
             // Завершаем стриминговый чип инструмента; если ERROR — пометим ошибку без вывода текста
             setStreamingToolMessage((prev) => {
               if (prev && (!toolName || prev.toolName === toolName)) {
@@ -886,7 +890,7 @@ export function WorkoutChatPanel({
       hideCloseButton
       backdrop="blur"
       classNames={{
-        backdrop: "bg-black/40 backdrop-blur-xl",
+        backdrop: "bg-black/15 backdrop-blur-xl",
         base: "data-[placement=bottom]:inset-x-0",
         wrapper: "md:rounded-t-[40px]",
       }}
@@ -899,7 +903,7 @@ export function WorkoutChatPanel({
       <DrawerContent className="bg-transparent shadow-none">
         <div className="mx-auto flex h-[100dvh] w-full max-w-3xl flex-col gap-3 pb-[max(env(safe-area-inset-bottom),0.85rem)]">
           <section className="relative flex flex-1 min-h-0 flex-col overflow-hidden">
-            <div className="flex flex-col gap-3 border-b border-white/5 p-4 absolute top-0 bg-black/20 backdrop-blur-sm z-10 w-full">
+            <div className="flex flex-col gap-3 border-b border-white/5 p-4 absolute top-0 bg-black/30 backdrop-blur-sm z-10 w-full">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <div className="flex flex-col">
@@ -907,7 +911,7 @@ export function WorkoutChatPanel({
                       Персональный тренер
                     </span>
                     <h2 className="text-base font-semibold leading-tight">
-                      Чат с тренером
+                      {chat?.title || "Чат с тренером"}
                     </h2>
                   </div>
                 </div>
@@ -959,7 +963,7 @@ export function WorkoutChatPanel({
               )}
 
               {statusMessage && (
-                <div className="flex items-center gap-2 text-[11px] text-default-500 px-2">
+                <div className="flex items-center gap-2 text-[11px] text-default-500 px-2 mb-2">
                   {showThinking && (
                     <Spinner
                       classNames={{ wrapper: "w-3 h-3" }}
@@ -970,6 +974,7 @@ export function WorkoutChatPanel({
                   <span className="truncate">{statusMessage}</span>
                 </div>
               )}
+
               <div className="relative">
                 <Textarea
                   ref={textareaRef}
@@ -977,7 +982,7 @@ export function WorkoutChatPanel({
                   classNames={{
                     base: "flex-1",
                     inputWrapper:
-                      "border border-default-200/70 py-2 pl-3 pr-12 backdrop-blur-sm bg-black/20",
+                      "border border-default-200/70 py-2 pl-3 pr-12 backdrop-blur-sm",
                     input:
                       "text-sm text-foreground placeholder:text-default-400",
                   }}
@@ -1011,4 +1016,4 @@ export function WorkoutChatPanel({
       </DrawerContent>
     </Drawer>
   );
-}
+});
