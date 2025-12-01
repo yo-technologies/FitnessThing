@@ -1,13 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, memo } from "react";
 import { isAxiosError } from "axios";
 import { Button } from "@nextui-org/button";
-import { Textarea } from "@nextui-org/input";
-import { Spinner } from "@nextui-org/spinner";
-import { Divider } from "@nextui-org/divider";
 import { Drawer, DrawerContent } from "@nextui-org/drawer";
+import { Textarea } from "@nextui-org/input";
 import { ScrollShadow } from "@nextui-org/react";
+import { Spinner } from "@nextui-org/spinner";
 
 import { AssistantMarkdown } from "./assistant-markdown";
 
@@ -33,6 +32,7 @@ type WorkoutChatPanelProps = {
   isOpen: boolean;
   onClose: () => void;
   prefill?: string;
+  onToolComplete?: () => void;
 };
 
 type StreamState = {
@@ -193,7 +193,7 @@ function MessageBubble({
         </div>
       )}
       {message.error && (
-        <span className="text-xs text-danger truncate max-w-[90%]">
+        <span className="text-xs text-danger truncate max-w-[90%] px-1">
           {message.error}
         </span>
       )}
@@ -201,11 +201,12 @@ function MessageBubble({
   );
 }
 
-export function WorkoutChatPanel({
+export const WorkoutChatPanel = memo(function WorkoutChatPanel({
   workoutId,
   isOpen,
   onClose,
   prefill,
+  onToolComplete: onToolSuccess,
 }: WorkoutChatPanelProps) {
   const [chat, setChat] = useState<WorkoutChat | undefined>();
   const [messages, setMessages] = useState<WorkoutChatMessage[]>([]);
@@ -462,11 +463,12 @@ export function WorkoutChatPanel({
         });
 
         // Паддинг = оставшееся место в контейнере - высота содержимого после пользовательского сообщения
+        const headerHeight = 100;
         const availableSpace =
-          containerHeight - (userMessageEl.offsetHeight + 12); // 12px - gap между сообщениями
+          containerHeight - headerHeight - (userMessageEl.offsetHeight + 12); // 12px - gap между сообщениями
         const newPadding = Math.max(
           availableSpace - contentHeightAfterUserMsg - 25, // дополнительный gap
-          0,
+          20,
         );
 
         setPaddingSize(newPadding);
@@ -587,6 +589,8 @@ export function WorkoutChatPanel({
             state === ToolEventState.COMPLETED ||
             state === ToolEventState.ERROR
           ) {
+            onToolSuccess?.();
+
             // Завершаем стриминговый чип инструмента; если ERROR — пометим ошибку без вывода текста
             setStreamingToolMessage((prev) => {
               if (prev && (!toolName || prev.toolName === toolName)) {
@@ -747,7 +751,7 @@ export function WorkoutChatPanel({
   const content = useMemo(() => {
     if (loading) {
       return (
-        <div className="flex w-full flex-col items-center justify-center gap-2">
+        <div className="flex flex-1 flex-col w-full items-center justify-center gap-2">
           <Spinner color="secondary" size="lg" />
           <p className="text-sm text-default-500">Загружаем чат…</p>
         </div>
@@ -756,7 +760,7 @@ export function WorkoutChatPanel({
 
     if (error && !hasMessages) {
       return (
-        <div className="flex w-full flex-col items-center justify-center gap-4">
+        <div className="flex flex-1 flex-col w-full items-center justify-center gap-4">
           <p className="text-sm text-default-500">{error}</p>
           <Button color="secondary" size="sm" onPress={() => void loadChat()}>
             Повторить
@@ -767,7 +771,7 @@ export function WorkoutChatPanel({
 
     if (!hasMessages) {
       return (
-        <div className="flex w-full flex-col items-center justify-center gap-3 p-6 text-center text-default-500">
+        <div className="flex flex-1 flex-col w-full items-center justify-center gap-3 p-6 text-center text-default-500">
           <p className="text-sm">
             Общайтесь с тренером, чтобы настроить тренировку.
           </p>
@@ -864,55 +868,85 @@ export function WorkoutChatPanel({
       ? "Исчерпан дневной лимит"
       : undefined;
   const showThinking = streamState.status === "assistant_thinking";
+  const statusMessage = useMemo(() => {
+    if (showThinking) {
+      return "Тренер думает…";
+    }
+    if (error) {
+      return error;
+    }
+    if (inCooldown) {
+      return "Подождите перед следующим запросом";
+    }
+    if (outOfQuota) {
+      return "Исчерпан дневной лимит";
+    }
+
+    return null;
+  }, [showThinking, error, inCooldown, outOfQuota]);
 
   return (
     <Drawer
       hideCloseButton
       backdrop="blur"
+      classNames={{
+        backdrop: "bg-black/15 backdrop-blur-xl",
+        base: "data-[placement=bottom]:inset-x-0",
+        wrapper: "md:rounded-t-[40px]",
+      }}
       isDismissable={false}
       isOpen={isOpen}
       placement="bottom"
       size="full"
       onClose={onClose}
     >
-      <DrawerContent>
-        <div className="flex h-[100dvh] flex-col bg-content1">
-          <header className="flex items-center justify-between px-4 py-3">
-            <div>
-              <h2 className="text-lg font-semibold">Чат с тренером</h2>
-              {chat?.title && (
-                <p className="text-xs text-default-400">{chat.title}</p>
-              )}
+      <DrawerContent className="bg-transparent shadow-none">
+        <div className="mx-auto flex h-[100dvh] w-full max-w-3xl flex-col gap-3 pb-[max(env(safe-area-inset-bottom),0.85rem)]">
+          <section className="relative flex flex-1 min-h-0 flex-col overflow-hidden">
+            <div className="flex flex-col gap-3 border-b border-white/5 p-4 absolute top-0 bg-black/30 backdrop-blur-sm z-10 w-full">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] uppercase tracking-[0.2em] text-default-400">
+                      Персональный тренер
+                    </span>
+                    <h2 className="text-base font-semibold leading-tight">
+                      {chat?.title || "Чат с тренером"}
+                    </h2>
+                  </div>
+                </div>
+                <Button
+                  color="danger"
+                  size="sm"
+                  variant="light"
+                  onPress={onClose}
+                >
+                  Закрыть
+                </Button>
+              </div>
             </div>
-            <Button color="danger" size="sm" variant="flat" onPress={onClose}>
-              Закрыть
-            </Button>
-          </header>
 
-          <Divider />
+            <ScrollShadow
+              ref={scrollRef}
+              className="flex-1 overflow-y-auto px-1 sm:px-3"
+              id={scrollElementId}
+              size={60}
+            >
+              <div className="bg-transparent flex min-h-full min-w-full flex-col pb-12 pt-16">
+                {content}
+              </div>
+            </ScrollShadow>
 
-          <div className="flex flex-1 flex-col overflow-hidden">
-            <div className="h-full relative flex flex-1 flex-col overflow-hidden">
-              <ScrollShadow
-                ref={scrollRef}
-                className="flex-1 overflow-y-auto h-full"
-                id={scrollElementId}
-                size={60}
-              >
-                {/* Контент сообщений; добавляем нижний паддинг, чтобы оверлей не перекрывал последние сообщения */}
-                <div className="flex min-h-full min-w-full pb-4">{content}</div>
-              </ScrollShadow>
-
-              {/* Кнопка быстро вниз */}
+            <div className="absolute bottom-0 left-0 right-0 z-20 p-4">
               {showScrollToBottom && (
-                <div className="absolute right-4 bottom-2 z-30">
+                <div className="absolute -top-6 right-4 z-30">
                   <Button
                     isIconOnly
                     aria-label="Прокрутить вниз"
                     color="secondary"
                     radius="full"
                     size="sm"
-                    variant="flat"
+                    variant="shadow"
                     onPress={() => {
                       const el = document.getElementById(
                         scrollElementId,
@@ -928,66 +962,58 @@ export function WorkoutChatPanel({
                 </div>
               )}
 
-              {(error || inCooldown || outOfQuota || showThinking) && (
-                <div className="absolute inset-x-0 bottom-0 z-20 px-4 pb-2 text-xs shadow-md">
+              {statusMessage && (
+                <div className="flex items-center gap-2 text-[11px] text-default-500 px-2 mb-2">
                   {showThinking && (
-                    <div
-                      aria-live="polite"
-                      className="flex items-center gap-1 text-xs text-default-400"
-                      role="status"
-                    >
-                      <Spinner
-                        classNames={{ wrapper: "w-3 h-3" }}
-                        color="secondary"
-                        size="sm"
-                      />
-                      <span>Думает…</span>
-                    </div>
+                    <Spinner
+                      classNames={{ wrapper: "w-3 h-3" }}
+                      color="secondary"
+                      size="sm"
+                    />
                   )}
-                  {error && <div className="text-danger mb-1">{error}</div>}
-                  {inCooldown && (
-                    <div className="text-warning">
-                      {"Слишком часто. Подождите немного перед следующим "}
-                      {"запросом."}
-                    </div>
-                  )}
-                  {outOfQuota && (
-                    <div className="text-warning">
-                      Исчерпан дневной лимит. Продолжите завтра.
-                    </div>
-                  )}
+                  <span className="truncate">{statusMessage}</span>
                 </div>
               )}
+
+              <div className="relative">
+                <Textarea
+                  ref={textareaRef}
+                  className="flex-1 p-0"
+                  classNames={{
+                    base: "flex-1",
+                    inputWrapper:
+                      "border border-default-200/70 py-2 pl-3 pr-12 backdrop-blur-sm",
+                    input:
+                      "text-sm text-foreground placeholder:text-default-400",
+                  }}
+                  maxRows={4}
+                  minRows={1}
+                  placeholder="Напишите сообщение..."
+                  radius="lg"
+                  value={inputValue}
+                  variant="bordered"
+                  onChange={(event) => setInputValue(event.target.value)}
+                />
+                <Button
+                  isIconOnly
+                  aria-label="Отправить сообщение"
+                  className="absolute right-1 bottom-1 h-8 p-0"
+                  color="secondary"
+                  isDisabled={!canSend}
+                  isLoading={isStreaming}
+                  radius="md"
+                  size="sm"
+                  title={sendTooltip}
+                  variant="solid"
+                  onPress={handleSend}
+                >
+                  <UpArrowIcon className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
-          </div>
-          <div className="flex items-center gap-2 border-t border-default-200 px-4 py-2 mb-4">
-            <Textarea
-              ref={textareaRef}
-              className="flex-1"
-              classNames={{
-                inputWrapper: "bg-default-100",
-              }}
-              minRows={2}
-              placeholder="Напишите сообщение..."
-              value={inputValue}
-              onChange={(event) => setInputValue(event.target.value)}
-            />
-            <Button
-              isIconOnly
-              aria-label="Отправить сообщение"
-              className="shrink-0"
-              color="secondary"
-              isDisabled={!canSend}
-              isLoading={isStreaming}
-              radius="full"
-              title={sendTooltip}
-              onPress={handleSend}
-            >
-              <UpArrowIcon className="h-6 w-6" />
-            </Button>
-          </div>
+          </section>
         </div>
       </DrawerContent>
     </Drawer>
   );
-}
+});

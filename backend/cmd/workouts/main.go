@@ -128,6 +128,7 @@ func Run() error {
 		repo,
 		repo,
 		repo,
+		repo,
 		llmClientWrapper,
 		quotaService,
 	)

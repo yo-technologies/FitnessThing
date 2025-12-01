@@ -115,6 +115,26 @@ func NewUser(
 	}
 }
 
+const (
+	MaxUserFactsPerUser = 32
+	MaxUserFactLength   = 512
+)
+
+type UserFact struct {
+	Model
+
+	UserID  ID
+	Content string
+}
+
+func NewUserFact(userID ID, content string) UserFact {
+	return UserFact{
+		Model:   NewModel(),
+		UserID:  userID,
+		Content: content,
+	}
+}
+
 type MuscleGroup string
 
 const (

@@ -12,7 +12,7 @@ import {
 } from "@nextui-org/modal";
 import { DropdownItem } from "@nextui-org/dropdown";
 import { useRouter, useSearchParams } from "next/navigation";
-import { use, useEffect, useState } from "react";
+import { use, useCallback, useEffect, useState } from "react";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { toast } from "react-toastify";
 
@@ -218,16 +218,7 @@ export default function WorkoutDetailsPage({
     }
   }, []);
 
-  // При закрытии панели чата обновляем данные тренировки (вдруг были изменения через инструменты)
-  const handleChatClose = () => {
-    onChatClose();
-    // Лёгкий рефреш без изменения глобального isLoading, чтобы не мигал весь экран
-    fetchWorkoutDetails().catch((e) => {
-      console.warn("Failed to refresh workout after chat close", e);
-    });
-  };
-
-  async function fetchWorkoutDetails() {
+  const fetchWorkoutDetails = useCallback(async () => {
     try {
       const response = await authApi.v1.workoutServiceGetWorkout(id);
 
@@ -236,7 +227,22 @@ export default function WorkoutDetailsPage({
       console.log(error);
       throw error;
     }
-  }
+  }, [id]);
+
+  // При закрытии панели чата обновляем данные тренировки (вдруг были изменения через инструменты)
+  const handleChatClose = useCallback(() => {
+    onChatClose();
+    // Лёгкий рефреш без изменения глобального isLoading, чтобы не мигал весь экран
+    fetchWorkoutDetails().catch((e) => {
+      console.warn("Failed to refresh workout after chat close", e);
+    });
+  }, [onChatClose, fetchWorkoutDetails]);
+
+  const handleToolSuccess = useCallback(() => {
+    fetchWorkoutDetails().catch((e) => {
+      console.warn("Failed to refresh workout after tool success", e);
+    });
+  }, [fetchWorkoutDetails]);
 
   async function fetchData() {
     setIsLoading(true);
@@ -479,13 +485,14 @@ export default function WorkoutDetailsPage({
         <Button
           isIconOnly
           aria-label="Открыть чат с тренером"
-          className="fixed bottom-20 right-6 z-40 shadow-lg w-14 h-14 shadow-lg"
+          className="fixed bottom-20 right-6 z-40 shadow-lg w-12 h-12 shadow-lg"
           color="secondary"
           radius="full"
+          size="sm"
           variant="shadow"
           onPress={onChatOpen}
         >
-          <ChatBubbleIcon className="h-8 w-8" />
+          <ChatBubbleIcon className="h-6 w-6" />
         </Button>
       </>
     );
@@ -499,6 +506,7 @@ export default function WorkoutDetailsPage({
         prefill={prefill}
         workoutId={id}
         onClose={handleChatClose}
+        onToolComplete={handleToolSuccess}
       />
     </>
   );

@@ -1657,6 +1657,8 @@ const (
 	UserService_UpdateUser_FullMethodName                      = "/fitness_trainer.api.workout.UserService/UpdateUser"
 	UserService_UpdateWorkoutGenerationSettings_FullMethodName = "/fitness_trainer.api.workout.UserService/UpdateWorkoutGenerationSettings"
 	UserService_GetWorkoutGenerationSettings_FullMethodName    = "/fitness_trainer.api.workout.UserService/GetWorkoutGenerationSettings"
+	UserService_ListUserFacts_FullMethodName                   = "/fitness_trainer.api.workout.UserService/ListUserFacts"
+	UserService_DeleteUserFact_FullMethodName                  = "/fitness_trainer.api.workout.UserService/DeleteUserFact"
 )
 
 // UserServiceClient is the client API for UserService service.
@@ -1673,6 +1675,10 @@ type UserServiceClient interface {
 	UpdateWorkoutGenerationSettings(ctx context.Context, in *UpdateWorkoutGenerationSettingsRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	// Метод для получения настроек генерации тренировок
 	GetWorkoutGenerationSettings(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*WorkoutGenerationSettingsResponse, error)
+	// Получить все факты пользователя
+	ListUserFacts(ctx context.Context, in *ListUserFactsRequest, opts ...grpc.CallOption) (*ListUserFactsResponse, error)
+	// Удалить факт пользователя
+	DeleteUserFact(ctx context.Context, in *DeleteUserFactRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
 type userServiceClient struct {
@@ -1733,6 +1739,26 @@ func (c *userServiceClient) GetWorkoutGenerationSettings(ctx context.Context, in
 	return out, nil
 }
 
+func (c *userServiceClient) ListUserFacts(ctx context.Context, in *ListUserFactsRequest, opts ...grpc.CallOption) (*ListUserFactsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListUserFactsResponse)
+	err := c.cc.Invoke(ctx, UserService_ListUserFacts_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) DeleteUserFact(ctx context.Context, in *DeleteUserFactRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, UserService_DeleteUserFact_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // UserServiceServer is the server API for UserService service.
 // All implementations must embed UnimplementedUserServiceServer
 // for forward compatibility.
@@ -1747,6 +1773,10 @@ type UserServiceServer interface {
 	UpdateWorkoutGenerationSettings(context.Context, *UpdateWorkoutGenerationSettingsRequest) (*emptypb.Empty, error)
 	// Метод для получения настроек генерации тренировок
 	GetWorkoutGenerationSettings(context.Context, *emptypb.Empty) (*WorkoutGenerationSettingsResponse, error)
+	// Получить все факты пользователя
+	ListUserFacts(context.Context, *ListUserFactsRequest) (*ListUserFactsResponse, error)
+	// Удалить факт пользователя
+	DeleteUserFact(context.Context, *DeleteUserFactRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedUserServiceServer()
 }
 
@@ -1771,6 +1801,12 @@ func (UnimplementedUserServiceServer) UpdateWorkoutGenerationSettings(context.Co
 }
 func (UnimplementedUserServiceServer) GetWorkoutGenerationSettings(context.Context, *emptypb.Empty) (*WorkoutGenerationSettingsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetWorkoutGenerationSettings not implemented")
+}
+func (UnimplementedUserServiceServer) ListUserFacts(context.Context, *ListUserFactsRequest) (*ListUserFactsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListUserFacts not implemented")
+}
+func (UnimplementedUserServiceServer) DeleteUserFact(context.Context, *DeleteUserFactRequest) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteUserFact not implemented")
 }
 func (UnimplementedUserServiceServer) mustEmbedUnimplementedUserServiceServer() {}
 func (UnimplementedUserServiceServer) testEmbeddedByValue()                     {}
@@ -1883,6 +1919,42 @@ func _UserService_GetWorkoutGenerationSettings_Handler(srv interface{}, ctx cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _UserService_ListUserFacts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListUserFactsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).ListUserFacts(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_ListUserFacts_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).ListUserFacts(ctx, req.(*ListUserFactsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_DeleteUserFact_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteUserFactRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).DeleteUserFact(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_DeleteUserFact_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).DeleteUserFact(ctx, req.(*DeleteUserFactRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // UserService_ServiceDesc is the grpc.ServiceDesc for UserService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -1909,6 +1981,14 @@ var UserService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetWorkoutGenerationSettings",
 			Handler:    _UserService_GetWorkoutGenerationSettings_Handler,
+		},
+		{
+			MethodName: "ListUserFacts",
+			Handler:    _UserService_ListUserFacts_Handler,
+		},
+		{
+			MethodName: "DeleteUserFact",
+			Handler:    _UserService_DeleteUserFact_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

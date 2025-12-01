@@ -28,3 +28,21 @@ func UserToProto(user domain.User) *desc.User {
 
 	return userProto
 }
+
+func UserFactToProto(fact domain.UserFact) *desc.UserFact {
+	return &desc.UserFact{
+		Id:        fact.ID.String(),
+		UserId:    fact.UserID.String(),
+		Content:   fact.Content,
+		CreatedAt: timestamppb.New(fact.CreatedAt),
+		UpdatedAt: timestamppb.New(fact.UpdatedAt),
+	}
+}
+
+func UserFactsToProto(facts []domain.UserFact) []*desc.UserFact {
+	result := make([]*desc.UserFact, 0, len(facts))
+	for _, fact := range facts {
+		result = append(result, UserFactToProto(fact))
+	}
+	return result
+}

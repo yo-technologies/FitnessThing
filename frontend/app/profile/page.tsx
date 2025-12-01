@@ -9,6 +9,7 @@ import { Divider } from "@nextui-org/divider";
 import { authApi } from "@/api/api";
 import { Loading } from "@/components/loading";
 import {
+  ChatBubbleIcon,
   ChevronRightIcon,
   EditIcon,
   GearIcon,
@@ -113,6 +114,11 @@ export default function ProfilePage() {
           href="/profile/generation-settings"
           icon={<GearIcon className="w-4 h-4" fill="currentColor" />}
           label="Настройки генерации"
+        />
+        <SubPageButton
+          href="/profile/user-facts"
+          icon={<ChatBubbleIcon className="w-4 h-4" fill="currentColor" />}
+          label="Факты о вас"
         />
         {/*  Light and dark mode switch */}
         <Divider />

@@ -806,6 +806,61 @@
         ]
       }
     },
+    "/v1/users/facts": {
+      "get": {
+        "summary": "Получить все факты пользователя",
+        "operationId": "UserService_ListUserFacts",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/workoutListUserFactsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "UserService"
+        ]
+      }
+    },
+    "/v1/users/facts/{factId}": {
+      "delete": {
+        "summary": "Удалить факт пользователя",
+        "operationId": "UserService_DeleteUserFact",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "factId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "UserService"
+        ]
+      }
+    },
     "/v1/users/me": {
       "get": {
         "summary": "Метод для получения текущего пользователя",
@@ -2358,6 +2413,18 @@
       ],
       "default": "GOAL_UNSPECIFIED"
     },
+    "workoutListUserFactsResponse": {
+      "type": "object",
+      "properties": {
+        "facts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/workoutUserFact"
+          }
+        }
+      }
+    },
     "workoutMuscleGroup": {
       "type": "object",
       "properties": {
@@ -2736,6 +2803,28 @@
         },
         "hasCompletedOnboarding": {
           "type": "boolean"
+        }
+      }
+    },
+    "workoutUserFact": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "userId": {
+          "type": "string"
+        },
+        "content": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
         }
       }
     },

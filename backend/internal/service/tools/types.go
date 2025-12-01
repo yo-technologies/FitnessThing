@@ -133,6 +133,10 @@ type replaceExpectedSetsArgs struct {
 	Sets          []expectedSetInput `json:"sets"`
 }
 
+type saveUserFactArgs struct {
+	Fact string `json:"fact"`
+}
+
 type expectedSetInput struct {
 	SetType     string   `json:"set_type"`
 	Reps        *int     `json:"reps"`
@@ -141,11 +145,11 @@ type expectedSetInput struct {
 }
 
 type exerciseLogHistory struct {
-	ID          string          `json:"id"`
-	WorkoutID   string          `json:"workout_id"`
-	CreatedAt   time.Time       `json:"created_at"`
-	Notes       string          `json:"notes"`
-	WeightUnit  string          `json:"weight_unit"`
+	ID         string    `json:"id"`
+	WorkoutID  string    `json:"workout_id"`
+	CreatedAt  time.Time `json:"created_at"`
+	Notes      string    `json:"notes"`
+	WeightUnit string    `json:"weight_unit"`
 	// PowerRating scale: 0–10, where 0 = no effort, 5 = moderate, 8 = hard, 10 = maximal effort
 	PowerRating int             `json:"power_rating"`
 	SetLogs     []setLogHistory `json:"set_logs"`
@@ -202,13 +206,13 @@ func exerciseLogHistoryPayloadFromDomain(logs []dto.ExerciseLogDTO) exerciseLogH
 }
 
 type workoutPayload struct {
-	ID         string                   `json:"id"`
-	CreatedAt  time.Time                `json:"created_at"`
-	FinishedAt time.Time                `json:"finished_at"`
+	ID         string    `json:"id"`
+	CreatedAt  time.Time `json:"created_at"`
+	FinishedAt time.Time `json:"finished_at"`
 	// Workout Rating scale: 1–5 stars, 0 means not rated
-	Rating     int                      `json:"rating"`
-	Notes      string                   `json:"notes"`
-	Exercises  []workoutPayloadExercise `json:"exercises"`
+	Rating    int                      `json:"rating"`
+	Notes     string                   `json:"notes"`
+	Exercises []workoutPayloadExercise `json:"exercises"`
 }
 
 type workoutPayloadExercise struct {
@@ -216,9 +220,9 @@ type workoutPayloadExercise struct {
 	Exercise      exercise `json:"exercise"`
 	Notes         string   `json:"notes"`
 	// PowerRating scale: 0–10, where 0 = no effort, 5 = moderate, 8 = hard, 10 = maximal effort
-	PowerRating   int      `json:"power_rating"`
-	WeightUnit    string   `json:"weight_unit"`
-	SetLogs       []setLog `json:"set_logs"`
+	PowerRating int      `json:"power_rating"`
+	WeightUnit  string   `json:"weight_unit"`
+	SetLogs     []setLog `json:"set_logs"`
 }
 
 type listExercisesResponse struct {
@@ -231,6 +235,24 @@ type getWorkoutHistoryResponse struct {
 
 type listMuscleGroupsResponse struct {
 	MuscleGroups []dto.MuscleGroupDTO `json:"muscle_groups"`
+}
+
+type userFactPayload struct {
+	ID        string    `json:"id"`
+	UserID    string    `json:"user_id"`
+	Content   string    `json:"content"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+func userFactPayloadFromDomain(fact domain.UserFact) userFactPayload {
+	return userFactPayload{
+		ID:        fact.ID.String(),
+		UserID:    fact.UserID.String(),
+		Content:   fact.Content,
+		CreatedAt: fact.CreatedAt,
+		UpdatedAt: fact.UpdatedAt,
+	}
 }
 
 func (t *Tools) convertWorkoutsToHistoryResponse(ctx context.Context, workoutsDTO []dto.WorkoutDTO) (getWorkoutHistoryResponse, error) {
