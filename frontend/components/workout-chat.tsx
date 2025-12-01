@@ -756,7 +756,7 @@ export function WorkoutChatPanel({
 
     if (error && !hasMessages) {
       return (
-        <div className="flex w-full flex-col items-center justify-center gap-4">
+        <div className="flex flex-1 flex-col w-full items-center justify-center gap-4">
           <p className="text-sm text-default-500">{error}</p>
           <Button color="secondary" size="sm" onPress={() => void loadChat()}>
             Повторить
@@ -767,7 +767,7 @@ export function WorkoutChatPanel({
 
     if (!hasMessages) {
       return (
-        <div className="flex w-full flex-col items-center justify-center gap-3 p-6 text-center text-default-500">
+        <div className="flex flex-1 flex-col w-full items-center justify-center gap-3 p-6 text-center text-default-500">
           <p className="text-sm">
             Общайтесь с тренером, чтобы настроить тренировку.
           </p>
