@@ -485,7 +485,7 @@ export default function WorkoutDetailsPage({
           variant="shadow"
           onPress={onChatOpen}
         >
-          <ChatBubbleIcon className="h-8 w-8" />
+          <ChatBubbleIcon className="h-7 w-7" />
         </Button>
       </>
     );
