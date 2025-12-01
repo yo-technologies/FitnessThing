@@ -80,39 +80,42 @@ function ToolChip({
   toolName,
   isError,
   isStreaming,
-  createdAt,
 }: {
   toolName: string;
   isError?: boolean;
   isStreaming?: boolean;
-  createdAt?: string;
 }) {
   const label = useMemo(() => formatToolLabel(toolName), [toolName]);
 
   return (
-    <div className="flex w-full flex-col gap-1 items-start">
+    <div data-tool-chip className="flex w-full items-start">
       <div
         className={
-          `flex items-baseline gap-2 rounded-medium px-2 py-2 text-sm w-fit max-w-full bg-default-100 text-default-600 border ` +
-          (isError ? "border-danger-200" : "border-default-200")
+          `inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-medium border ` +
+          (isError
+            ? "bg-danger-50 text-danger-600 border-danger-200"
+            : isStreaming
+              ? "bg-warning-50 text-warning-700 border-warning-200"
+              : "bg-default-100 text-default-600 border-default-200")
         }
       >
-        <GearIcon className={`h-3 w-3 self-center`} />
-        <span className="text-xs">{label}</span>
-
+        <GearIcon
+          className={
+            "h-3 w-3 " +
+            (isError
+              ? "text-danger-500"
+              : isStreaming
+                ? "text-warning-500"
+                : "text-default-500")
+          }
+        />
+        <span className="truncate max-w-[220px]">{label}</span>
         {isStreaming && (
-          <span className="flex items-center gap-1 text-warning text-xs ml-2">
-            <Spinner
-              classNames={{ wrapper: "w-3 h-3" }}
-              color="warning"
-              size="sm"
-            />
-          </span>
-        )}
-        {createdAt && (
-          <span className="ml-2 text-[10px] font-light leading-none text-default-500 whitespace-nowrap">
-            {formatTime(createdAt)}
-          </span>
+          <Spinner
+            classNames={{ wrapper: "w-3 h-3" }}
+            color="warning"
+            size="sm"
+          />
         )}
       </div>
     </div>
@@ -152,7 +155,6 @@ function MessageBubble({
 
     return (
       <ToolChip
-        createdAt={message.createdAt ?? undefined}
         isError={Boolean(message.error) || legacyError}
         isStreaming={isStreaming}
         toolName={message.toolName ?? "Инструмент"}
@@ -444,8 +446,9 @@ export function WorkoutChatPanel({
         let contentHeightAfterUserMsg = 0;
         let foundUserMsg = false;
 
-        const messageElements =
-          containerEl.querySelectorAll("[data-message-id]");
+        const messageElements = containerEl.querySelectorAll(
+          "[data-message-id], [data-tool-chip]",
+        );
 
         messageElements.forEach((el) => {
           if (foundUserMsg) {
