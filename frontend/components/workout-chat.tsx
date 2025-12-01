@@ -2,12 +2,13 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { isAxiosError } from "axios";
+import { Avatar } from "@nextui-org/avatar";
 import { Button } from "@nextui-org/button";
-import { Textarea } from "@nextui-org/input";
-import { Spinner } from "@nextui-org/spinner";
-import { Divider } from "@nextui-org/divider";
+import { Chip } from "@nextui-org/chip";
 import { Drawer, DrawerContent } from "@nextui-org/drawer";
+import { Textarea } from "@nextui-org/input";
 import { ScrollShadow } from "@nextui-org/react";
+import { Spinner } from "@nextui-org/spinner";
 
 import { AssistantMarkdown } from "./assistant-markdown";
 
@@ -869,123 +870,159 @@ export function WorkoutChatPanel({
     <Drawer
       hideCloseButton
       backdrop="blur"
+      classNames={{
+        backdrop: "bg-black/40 backdrop-blur-2xl",
+        base: "data-[placement=bottom]:inset-x-0",
+        wrapper: "md:rounded-t-[40px]",
+      }}
       isDismissable={false}
       isOpen={isOpen}
       placement="bottom"
       size="full"
       onClose={onClose}
     >
-      <DrawerContent>
-        <div className="flex h-[100dvh] flex-col bg-content1">
-          <header className="flex items-center justify-between px-4 py-3">
-            <div>
-              <h2 className="text-lg font-semibold">Чат с тренером</h2>
-              {chat?.title && (
-                <p className="text-xs text-default-400">{chat.title}</p>
-              )}
-            </div>
-            <Button color="danger" size="sm" variant="flat" onPress={onClose}>
-              Закрыть
-            </Button>
-          </header>
+      <DrawerContent className="bg-transparent shadow-none">
+        <div className="mx-auto flex h-[100dvh] w-full max-w-4xl flex-col gap-4 px-4 pb-[max(env(safe-area-inset-bottom),1rem)] pt-3">
+          <div className="mx-auto h-1.5 w-12 rounded-full bg-default-200/70" />
 
-          <Divider />
-
-          <div className="flex flex-1 flex-col overflow-hidden">
-            <div className="h-full relative flex flex-1 flex-col overflow-hidden">
-              <ScrollShadow
-                ref={scrollRef}
-                className="flex-1 overflow-y-auto h-full"
-                id={scrollElementId}
-                size={60}
+          <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-background/95 via-background/90 to-background/70 px-4 py-3 shadow-[0_25px_80px_rgba(15,23,42,0.35)] backdrop-blur-xl">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <Avatar
+                  className="bg-secondary/20 text-secondary"
+                  name="AI"
+                  size="md"
+                />
+                <div className="flex flex-col">
+                  <span className="text-[11px] uppercase tracking-[0.18em] text-default-400">
+                    Персональный тренер
+                  </span>
+                  <h2 className="text-lg font-semibold leading-tight">
+                    Чат с тренером
+                  </h2>
+                </div>
+              </div>
+              <Button
+                color="danger"
+                size="sm"
+                variant="light"
+                onPress={onClose}
               >
-                {/* Контент сообщений; добавляем нижний паддинг, чтобы оверлей не перекрывал последние сообщения */}
-                <div className="flex min-h-full min-w-full pb-4">{content}</div>
-              </ScrollShadow>
-
-              {/* Кнопка быстро вниз */}
-              {showScrollToBottom && (
-                <div className="absolute right-4 bottom-2 z-30">
-                  <Button
-                    isIconOnly
-                    aria-label="Прокрутить вниз"
-                    color="secondary"
-                    radius="full"
-                    size="sm"
-                    variant="flat"
-                    onPress={() => {
-                      const el = document.getElementById(
-                        scrollElementId,
-                      ) as HTMLDivElement | null;
-
-                      if (!el) return;
-
-                      el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
-                    }}
-                  >
-                    <UpArrowIcon className="h-4 w-4 rotate-180" />
-                  </Button>
-                </div>
-              )}
-
-              {(error || inCooldown || outOfQuota || showThinking) && (
-                <div className="absolute inset-x-0 bottom-0 z-20 px-4 pb-2 text-xs shadow-md">
-                  {showThinking && (
-                    <div
-                      aria-live="polite"
-                      className="flex items-center gap-1 text-xs text-default-400"
-                      role="status"
-                    >
-                      <Spinner
-                        classNames={{ wrapper: "w-3 h-3" }}
-                        color="secondary"
-                        size="sm"
-                      />
-                      <span>Думает…</span>
-                    </div>
-                  )}
-                  {error && <div className="text-danger mb-1">{error}</div>}
-                  {inCooldown && (
-                    <div className="text-warning">
-                      {"Слишком часто. Подождите немного перед следующим "}
-                      {"запросом."}
-                    </div>
-                  )}
-                  {outOfQuota && (
-                    <div className="text-warning">
-                      Исчерпан дневной лимит. Продолжите завтра.
-                    </div>
-                  )}
-                </div>
-              )}
+                Закрыть
+              </Button>
             </div>
-          </div>
-          <div className="flex items-center gap-2 border-t border-default-200 px-4 py-2 mb-4">
-            <Textarea
-              ref={textareaRef}
-              className="flex-1"
-              classNames={{
-                inputWrapper: "bg-default-100",
-              }}
-              minRows={2}
-              placeholder="Напишите сообщение..."
-              value={inputValue}
-              onChange={(event) => setInputValue(event.target.value)}
-            />
-            <Button
-              isIconOnly
-              aria-label="Отправить сообщение"
-              className="shrink-0"
-              color="secondary"
-              isDisabled={!canSend}
-              isLoading={isStreaming}
-              radius="full"
-              title={sendTooltip}
-              onPress={handleSend}
+            {chat?.title && (
+              <Chip
+                className="mt-3 max-w-full truncate bg-content2/60 text-default-500"
+                color="secondary"
+                size="sm"
+                variant="flat"
+              >
+                {chat.title}
+              </Chip>
+            )}
+          </section>
+
+          <section className="relative flex flex-1 flex-col overflow-hidden rounded-3xl border border-white/5 bg-content1/80 shadow-[0_25px_80px_rgba(15,23,42,0.45)] backdrop-blur-2xl">
+            <ScrollShadow
+              ref={scrollRef}
+              className="flex-1 overflow-y-auto px-1 py-4 sm:px-4"
+              id={scrollElementId}
+              size={60}
             >
-              <UpArrowIcon className="h-6 w-6" />
-            </Button>
-          </div>
+              <div className="flex min-h-full min-w-full flex-col pb-10">
+                {content}
+              </div>
+            </ScrollShadow>
+
+            {showScrollToBottom && (
+              <div className="absolute bottom-4 right-4 z-30">
+                <Button
+                  isIconOnly
+                  aria-label="Прокрутить вниз"
+                  color="secondary"
+                  radius="full"
+                  size="sm"
+                  variant="shadow"
+                  onPress={() => {
+                    const el = document.getElementById(
+                      scrollElementId,
+                    ) as HTMLDivElement | null;
+
+                    if (!el) return;
+
+                    el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+                  }}
+                >
+                  <UpArrowIcon className="h-4 w-4 rotate-180" />
+                </Button>
+              </div>
+            )}
+
+            {(error || inCooldown || outOfQuota || showThinking) && (
+              <div className="pointer-events-none absolute inset-x-4 bottom-4 z-20 rounded-2xl border border-white/10 bg-background/90 px-4 py-3 text-xs shadow-[0_15px_40px_rgba(15,23,42,0.45)] backdrop-blur-lg">
+                {showThinking && (
+                  <div
+                    aria-live="polite"
+                    className="mb-1 flex items-center gap-1 text-default-400"
+                    role="status"
+                  >
+                    <Spinner
+                      classNames={{ wrapper: "w-3 h-3" }}
+                      color="secondary"
+                      size="sm"
+                    />
+                    <span>Думает…</span>
+                  </div>
+                )}
+                {error && <div className="text-danger">{error}</div>}
+                {inCooldown && (
+                  <div className="text-warning">
+                    Слишком часто. Подождите немного перед следующим запросом.
+                  </div>
+                )}
+                {outOfQuota && (
+                  <div className="text-warning">
+                    Исчерпан дневной лимит. Продолжите завтра.
+                  </div>
+                )}
+              </div>
+            )}
+          </section>
+
+          <section className="rounded-3xl border border-white/10 bg-background/95 px-4 py-3 shadow-[0_25px_80px_rgba(15,23,42,0.45)] backdrop-blur-xl">
+            <div className="flex items-end gap-3">
+              <Textarea
+                ref={textareaRef}
+                className="flex-1"
+                classNames={{
+                  base: "flex-1",
+                  inputWrapper:
+                    "bg-transparent border border-default-200/70 data-[hover=true]:border-default-300 data-[focus=true]:border-secondary data-[focus=true]:shadow-[0_0_0_1px_rgba(94,96,206,0.3)] rounded-2xl py-2 px-3",
+                  input: "text-sm text-foreground placeholder:text-default-400",
+                }}
+                minRows={2}
+                placeholder="Напишите сообщение..."
+                value={inputValue}
+                variant="bordered"
+                onChange={(event) => setInputValue(event.target.value)}
+              />
+              <Button
+                isIconOnly
+                aria-label="Отправить сообщение"
+                className="h-12 w-12 shrink-0 rounded-2xl"
+                color="secondary"
+                isDisabled={!canSend}
+                isLoading={isStreaming}
+                radius="lg"
+                title={sendTooltip}
+                variant="solid"
+                onPress={handleSend}
+              >
+                <UpArrowIcon className="h-6 w-6" />
+              </Button>
+            </div>
+          </section>
         </div>
       </DrawerContent>
     </Drawer>

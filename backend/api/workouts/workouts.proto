@@ -57,6 +57,14 @@ message User {
   bool has_completed_onboarding = 13;
 }
 
+message UserFact {
+  string id = 1;
+  string user_id = 2;
+  string content = 3;
+  google.protobuf.Timestamp created_at = 4;
+  google.protobuf.Timestamp updated_at = 5;
+}
+
 message MuscleGroup {
   string id = 1;
   string name = 2;
@@ -914,6 +922,20 @@ service UserService {
       get: "/v1/users/workout_generation_settings"
     };
   }
+
+  // Получить все факты пользователя
+  rpc ListUserFacts(ListUserFactsRequest) returns (ListUserFactsResponse) {
+    option (google.api.http) = {
+      get: "/v1/users/facts"
+    };
+  }
+
+  // Удалить факт пользователя
+  rpc DeleteUserFact(DeleteUserFactRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/v1/users/facts/{fact_id}"
+    };
+  }
 }
 
 message GetUserRequest {
@@ -940,6 +962,18 @@ message DeleteUserRequest {
 
 message UserResponse {
   User user = 1;
+}
+
+message ListUserFactsRequest {}
+
+message ListUserFactsResponse {
+  repeated UserFact facts = 1;
+}
+
+message DeleteUserFactRequest {
+  string fact_id = 1 [
+    (google.api.field_behavior) = REQUIRED
+  ];
 }
 
 message WorkoutGenerationSettingsResponse {

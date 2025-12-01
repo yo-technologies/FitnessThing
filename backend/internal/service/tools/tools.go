@@ -16,10 +16,10 @@ import (
 type agentToolHandler func(ctx context.Context, chatCtx domain.AgentChatContext, raw json.RawMessage) (string, error)
 
 type agentTool struct {
-	name       string
-	handler    agentToolHandler
-	desc       string
-	params     map[string]any
+	name    string
+	handler agentToolHandler
+	desc    string
+	params  map[string]any
 }
 
 type service interface {
@@ -43,6 +43,8 @@ type service interface {
 
 	// Muscle groups
 	GetMuscleGroups(ctx context.Context) ([]dto.MuscleGroupDTO, error)
+	// User facts
+	SaveUserFact(ctx context.Context, userID domain.ID, content string) (domain.UserFact, error)
 }
 
 type Tools struct {
@@ -66,9 +68,9 @@ func (t *Tools) ChatAgentToolDefinitions() []llm.ToolDefinition {
 	defs := make([]llm.ToolDefinition, 0, len(t.chatTools))
 	for _, tool := range t.chatTools {
 		defs = append(defs, llm.ToolDefinition{
-			Name:           tool.name,
-			Description:    tool.desc,
-			Parameters:     tool.params,
+			Name:        tool.name,
+			Description: tool.desc,
+			Parameters:  tool.params,
 		})
 	}
 	return defs
@@ -94,6 +96,7 @@ func (t *Tools) ensureChatTools() {
 			t.newAddExercisesToWorkoutTool(),
 			t.newRemoveExerciseLogsTool(),
 			t.newReplaceExpectedSetsTool(),
+			t.newSaveUserFactTool(),
 		} {
 			if tool.name == "" {
 				panic("agent tool definition missing name")

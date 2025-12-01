@@ -30,6 +30,10 @@ type userPromptRepository interface {
 	GetLastPromptByUserID(ctx context.Context, userID domain.ID) (domain.Prompt, error)
 }
 
+type userFactRepository interface {
+	ListUserFacts(ctx context.Context, userID domain.ID, limit int) ([]domain.UserFact, error)
+}
+
 type quotaService interface {
 	Reserve(ctx context.Context, userID domain.ID, n int) (bool, error)
 	Confirm(ctx context.Context, userID domain.ID, reserved int, actual int) error
@@ -42,6 +46,7 @@ type Service struct {
 	chatRepository       chatRepository
 	workoutRepository    workoutRepository
 	userPromptRepository userPromptRepository
+	userFactRepository   userFactRepository
 	llmClient            llm.CompletionProvider
 	quotaService         quotaService
 }
@@ -51,6 +56,7 @@ func New(
 	chatRepository chatRepository,
 	workoutRepository workoutRepository,
 	userPromptRepository userPromptRepository,
+	userFactRepository userFactRepository,
 	llmClient llm.CompletionProvider,
 	quotaSvc quotaService,
 ) *Service {
@@ -59,6 +65,7 @@ func New(
 		chatRepository:       chatRepository,
 		workoutRepository:    workoutRepository,
 		userPromptRepository: userPromptRepository,
+		userFactRepository:   userFactRepository,
 		llmClient:            llmClient,
 		quotaService:         quotaSvc,
 	}

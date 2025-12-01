@@ -13,6 +13,13 @@ type userRepository interface {
 	UpdateUser(ctx context.Context, user domain.User) (domain.User, error)
 }
 
+type userFactRepository interface {
+	CreateUserFact(ctx context.Context, fact domain.UserFact) (domain.UserFact, error)
+	ListUserFacts(ctx context.Context, userID domain.ID, limit int) ([]domain.UserFact, error)
+	DeleteUserFact(ctx context.Context, userID, factID domain.ID) error
+	CountUserFactsByUserID(ctx context.Context, userID domain.ID) (int, error)
+}
+
 type exerciseRepository interface {
 	GetExercises(ctx context.Context, muscleGroups, excludedExercises []domain.ID) ([]domain.Exercise, error)
 	GetExerciseByID(ctx context.Context, id domain.ID) (domain.Exercise, error)
@@ -100,6 +107,7 @@ type chatRepository interface {
 
 type repository interface {
 	userRepository
+	userFactRepository
 	exerciseRepository
 	routineRepository
 	exerciseInstanceRepository

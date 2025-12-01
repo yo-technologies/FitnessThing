@@ -23,6 +23,7 @@ import (
 
 const (
 	chatHistoryLimit       = 200
+	userFactsContextLimit  = 12
 	maxChatCompletionLoops = 25
 	assistantErrorMessage  = "Не удалось ответить. Попробуйте ещё раз чуть позже."
 )
@@ -460,6 +461,19 @@ func (s *Service) buildChatSystemMessages(ctx context.Context, userID domain.ID,
 	}
 	if err != nil && !errors.Is(err, domain.ErrNotFound) {
 		return nil, fmt.Errorf("failed to load generation settings: %w", err)
+	}
+
+	facts, err := s.userFactRepository.ListUserFacts(ctx, userID, userFactsContextLimit)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load user facts: %w", err)
+	}
+	if len(facts) > 0 {
+		var builder strings.Builder
+		builder.WriteString("Краткие факты о пользователе (используй в ответах):\n")
+		for idx, fact := range facts {
+			builder.WriteString(fmt.Sprintf("%d. %s\n", idx+1, fact.Content))
+		}
+		messages = append(messages, llm.MessageParam{Role: llm.RoleSystem, Content: strings.TrimSpace(builder.String())})
 	}
 
 	if chat.WorkoutID.IsValid {
