@@ -16,7 +16,7 @@ import {
 import { AnimationProcessor } from "@/components/animated-background";
 import { BoltIcon, ChevronRightIcon, PlayIcon } from "@/config/icons";
 import { Loading } from "@/components/loading";
-import { OnboardingModal } from "@/components/OnboardingModal";
+import { OnboardingDrawer } from "@/components/OnboardingModal";
 import { authApi } from "@/api/api";
 
 export default function Home() {
@@ -426,8 +426,8 @@ export default function Home() {
         }
       `}</style>
 
-      {/* Модальное окно онбординга */}
-      <OnboardingModal
+      {/* Drawer онбординга */}
+      <OnboardingDrawer
         isOpen={showOnboarding}
         onClose={handleOnboardingClose}
         onComplete={handleOnboardingComplete}
