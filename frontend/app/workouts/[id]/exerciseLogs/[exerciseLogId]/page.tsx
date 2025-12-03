@@ -1,16 +1,16 @@
 "use client";
 
-import { Button } from "@nextui-org/button";
-import { Card, CardBody } from "@nextui-org/card";
-import { Divider } from "@nextui-org/divider";
+import { Button } from "@heroui/button";
+import { Card, CardBody } from "@heroui/card";
+import { Divider } from "@heroui/divider";
 import {
   Dropdown,
   DropdownItem,
   DropdownMenu,
   DropdownTrigger,
-} from "@nextui-org/dropdown";
-import { Form } from "@nextui-org/form";
-import { Textarea } from "@nextui-org/input";
+} from "@heroui/dropdown";
+import { Form } from "@heroui/form";
+import { Textarea } from "@heroui/input";
 import {
   Modal,
   ModalBody,
@@ -18,14 +18,14 @@ import {
   ModalFooter,
   ModalHeader,
   useDisclosure,
-} from "@nextui-org/modal";
-import { Tabs, Tab } from "@nextui-org/tabs";
-import { Slider } from "@nextui-org/slider";
-import { Tooltip } from "@nextui-org/tooltip";
+} from "@heroui/modal";
+import { Tabs, Tab } from "@heroui/tabs";
+import { Slider } from "@heroui/slider";
+import { Tooltip } from "@heroui/tooltip";
 import { useRouter } from "next/navigation";
 import { use, useEffect, useRef, useState } from "react";
 import { toast } from "react-toastify";
-import { Spinner } from "@nextui-org/react";
+import { Spinner } from "@heroui/react";
 
 import { PageHeader } from "@/components/page-header";
 import { BoltIcon, TrashCanIcon } from "@/config/icons";

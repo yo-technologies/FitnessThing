@@ -1,5 +1,5 @@
 import React from "react";
-import { Popover, PopoverContent, PopoverTrigger } from "@nextui-org/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@heroui/popover";
 
 import { SectionHeaderProps } from "../types";
 

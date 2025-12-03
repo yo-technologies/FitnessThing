@@ -1,16 +1,16 @@
 "use client";
 
-import { Button } from "@nextui-org/button";
-import { Card, CardBody, CardHeader } from "@nextui-org/card";
-import { Link } from "@nextui-org/link";
+import { Button } from "@heroui/button";
+import { Card, CardBody, CardHeader } from "@heroui/card";
+import { Link } from "@heroui/link";
 import {
   Modal,
   ModalContent,
   ModalFooter,
   ModalHeader,
   useDisclosure,
-} from "@nextui-org/modal";
-import { DropdownItem } from "@nextui-org/dropdown";
+} from "@heroui/modal";
+import { DropdownItem } from "@heroui/dropdown";
 import { useRouter, useSearchParams } from "next/navigation";
 import { use, useCallback, useEffect, useState } from "react";
 import { useAutoAnimate } from "@formkit/auto-animate/react";

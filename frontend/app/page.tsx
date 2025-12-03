@@ -1,8 +1,8 @@
 /* eslint-disable react/no-unknown-property */
 "use client";
-import { Button } from "@nextui-org/button";
-import { Spinner } from "@nextui-org/react";
-import { Card, CardFooter, CardHeader } from "@nextui-org/card";
+import { Button } from "@heroui/button";
+import { Spinner } from "@heroui/react";
+import { Card, CardFooter, CardHeader } from "@heroui/card";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -419,7 +419,7 @@ export default function Home() {
           height: 50px;
           background: linear-gradient(
             to top,
-            hsl(var(--nextui-background)),
+            hsl(var(--heroui-background)),
             transparent 100%
           );
           pointer-events: none;

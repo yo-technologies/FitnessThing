@@ -1,6 +1,6 @@
 import React from "react";
-import { Card, CardBody } from "@nextui-org/card";
-import { Textarea } from "@nextui-org/input";
+import { Card, CardBody } from "@heroui/card";
+import { Textarea } from "@heroui/input";
 
 import { TextFieldProps } from "../types";
 

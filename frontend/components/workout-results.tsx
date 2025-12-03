@@ -1,14 +1,14 @@
 "use client";
 
-import { Modal, ModalContent, useDisclosure } from "@nextui-org/modal";
+import { Modal, ModalContent, useDisclosure } from "@heroui/modal";
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
-import { Divider } from "@nextui-org/divider";
-import { Card } from "@nextui-org/card";
-import { Button } from "@nextui-org/button";
-import { Input, Textarea } from "@nextui-org/input";
+import { Divider } from "@heroui/divider";
+import { Card } from "@heroui/card";
+import { Button } from "@heroui/button";
+import { Input, Textarea } from "@heroui/input";
 import clsx from "clsx";
-import { Form } from "@nextui-org/form";
+import { Form } from "@heroui/form";
 
 import {
   HollowStarIcon,

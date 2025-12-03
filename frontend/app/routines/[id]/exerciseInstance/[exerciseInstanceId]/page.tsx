@@ -3,10 +3,10 @@
 import { useRouter } from "next/navigation";
 import { use, useEffect, useRef, useState } from "react";
 import { toast } from "react-toastify";
-import { Button } from "@nextui-org/button";
-import { Card, CardBody } from "@nextui-org/card";
-import { DropdownItem } from "@nextui-org/dropdown";
-import { Spinner } from "@nextui-org/spinner";
+import { Button } from "@heroui/button";
+import { Card, CardBody } from "@heroui/card";
+import { DropdownItem } from "@heroui/dropdown";
+import { Spinner } from "@heroui/spinner";
 
 import { Loading } from "@/components/loading";
 import { authApi } from "@/api/api";

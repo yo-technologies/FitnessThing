@@ -3,7 +3,7 @@
 import { use } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
-import { DropdownItem } from "@nextui-org/dropdown";
+import { DropdownItem } from "@heroui/dropdown";
 
 import { WorkoutResults } from "@/components/workout-results";
 import { PageHeader } from "@/components/page-header";

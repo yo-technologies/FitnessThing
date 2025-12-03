@@ -1,13 +1,13 @@
-import { Card, CardBody, CardHeader } from "@nextui-org/card";
-import { Checkbox } from "@nextui-org/checkbox";
-import { Input } from "@nextui-org/input";
-import { Select, SelectItem } from "@nextui-org/select";
-import { Skeleton } from "@nextui-org/skeleton";
-import { Modal, ModalContent, ModalHeader } from "@nextui-org/modal";
-import { ScrollShadow } from "@nextui-org/scroll-shadow";
+import { Card, CardBody, CardHeader } from "@heroui/card";
+import { Checkbox } from "@heroui/checkbox";
+import { Input } from "@heroui/input";
+import { Select, SelectItem } from "@heroui/select";
+import { Skeleton } from "@heroui/skeleton";
+import { Modal, ModalContent, ModalHeader } from "@heroui/modal";
+import { ScrollShadow } from "@heroui/scroll-shadow";
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
-import { Button } from "@nextui-org/button";
+import { Button } from "@heroui/button";
 
 import InfiniteScroll, { useInfiniteScroll } from "./infinite-scroll";
 
@@ -275,7 +275,7 @@ export function ModalSelectExercise({
                 }}
               >
                 {muscleGroups.map((muscleGroup) => (
-                  <SelectItem key={muscleGroup.id} value={muscleGroup.id}>
+                  <SelectItem key={muscleGroup.id}>
                     {translateMuscleGroup(muscleGroup.name)}
                   </SelectItem>
                 ))}

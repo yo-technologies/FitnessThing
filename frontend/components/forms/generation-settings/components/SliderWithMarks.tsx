@@ -1,7 +1,7 @@
 import React from "react";
-import { Card, CardBody } from "@nextui-org/card";
-import { Chip } from "@nextui-org/chip";
-import { Slider } from "@nextui-org/slider";
+import { Card, CardBody } from "@heroui/card";
+import { Chip } from "@heroui/chip";
+import { Slider } from "@heroui/slider";
 
 import { SliderWithMarksProps } from "../types";
 

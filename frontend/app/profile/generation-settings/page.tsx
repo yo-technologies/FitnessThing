@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Divider } from "@nextui-org/react";
+import { Divider } from "@heroui/react";
 import { toast } from "react-toastify";
 import { debounce } from "lodash";
 

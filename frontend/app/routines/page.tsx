@@ -1,14 +1,14 @@
 "use client";
-import { Button } from "@nextui-org/button";
-import { Card, CardBody, CardHeader } from "@nextui-org/card";
+import { Button } from "@heroui/button";
+import { Card, CardBody, CardHeader } from "@heroui/card";
 import {
   Modal,
   ModalContent,
   ModalHeader,
   useDisclosure,
-} from "@nextui-org/modal";
-import { Form } from "@nextui-org/form";
-import { Input } from "@nextui-org/input";
+} from "@heroui/modal";
+import { Form } from "@heroui/form";
+import { Input } from "@heroui/input";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 

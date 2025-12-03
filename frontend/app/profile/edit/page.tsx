@@ -1,12 +1,12 @@
 "use client";
-import { Form } from "@nextui-org/form";
+import { Form } from "@heroui/form";
 import { useEffect, useState } from "react";
-import { Input } from "@nextui-org/input";
-import { DatePicker } from "@nextui-org/date-picker";
-import { Button } from "@nextui-org/button";
+import { Input } from "@heroui/input";
+import { DatePicker } from "@heroui/date-picker";
+import { Button } from "@heroui/button";
 import { CalendarDate } from "@internationalized/date";
 import { toast } from "react-toastify";
-import { Divider } from "@nextui-org/divider";
+import { Divider } from "@heroui/divider";
 
 import { PageHeader } from "@/components/page-header";
 import { WorkoutUser } from "@/api/api.generated";

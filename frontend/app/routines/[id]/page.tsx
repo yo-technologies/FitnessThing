@@ -1,16 +1,16 @@
 "use client";
 
-import { Button } from "@nextui-org/button";
-import { Card, CardBody, CardHeader } from "@nextui-org/card";
-import { DropdownItem } from "@nextui-org/dropdown";
-import { Form } from "@nextui-org/form";
-import { Input, Textarea } from "@nextui-org/input";
+import { Button } from "@heroui/button";
+import { Card, CardBody, CardHeader } from "@heroui/card";
+import { DropdownItem } from "@heroui/dropdown";
+import { Form } from "@heroui/form";
+import { Input, Textarea } from "@heroui/input";
 import {
   Modal,
   ModalContent,
   ModalHeader,
   useDisclosure,
-} from "@nextui-org/modal";
+} from "@heroui/modal";
 import { useRouter } from "next/navigation";
 import { use, useEffect, useState } from "react";
 import { toast } from "react-toastify";

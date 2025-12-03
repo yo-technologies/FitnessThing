@@ -7,10 +7,10 @@ import {
   ModalHeader,
   ModalBody,
   ModalFooter,
-} from "@nextui-org/modal";
-import { Button } from "@nextui-org/button";
-import { Progress } from "@nextui-org/progress";
-import { Divider } from "@nextui-org/divider";
+} from "@heroui/modal";
+import { Button } from "@heroui/button";
+import { Progress } from "@heroui/progress";
+import { Divider } from "@heroui/divider";
 import { toast } from "react-toastify";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 
@@ -356,14 +356,14 @@ export function OnboardingModal({
               <div className="flex justify-between w-full">
                 {currentStep === 0 ? (
                   // Welcome страница - только кнопка "Начать"
-                  <div className="flex justify-center w-full">
+                  (<div className="flex justify-center w-full">
                     <Button color="primary" onPress={handleNext}>
                       Начать настройку
                     </Button>
-                  </div>
+                  </div>)
                 ) : (
                   // Остальные страницы - обычная навигация
-                  <>
+                  (<>
                     <Button
                       color="default"
                       isDisabled={currentStep === 0}
@@ -372,7 +372,6 @@ export function OnboardingModal({
                     >
                       Назад
                     </Button>
-
                     {currentStep === ONBOARDING_STEPS.length - 1 ? (
                       <Button
                         color="primary"
@@ -386,7 +385,7 @@ export function OnboardingModal({
                         Далее
                       </Button>
                     )}
-                  </>
+                  </>)
                 )}
               </div>
             </ModalFooter>

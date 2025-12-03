@@ -2,11 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, memo } from "react";
 import { isAxiosError } from "axios";
-import { Button } from "@nextui-org/button";
-import { Drawer, DrawerContent } from "@nextui-org/drawer";
-import { Textarea } from "@nextui-org/input";
-import { ScrollShadow } from "@nextui-org/react";
-import { Spinner } from "@nextui-org/spinner";
+import { Button } from "@heroui/button";
+import { Drawer, DrawerContent } from "@heroui/drawer";
+import { Textarea } from "@heroui/input";
+import { ScrollShadow } from "@heroui/react";
+import { Spinner } from "@heroui/spinner";
 
 import { AssistantMarkdown } from "./assistant-markdown";
 
