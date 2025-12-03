@@ -39,7 +39,32 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             ]
         ]
     )
-    await update.message.reply_text("Hello, world!", reply_markup=keyboard)
+    await update.message.reply_text(
+        "Привет! Я бот FitnessThing. 🏋️\n"
+        "Нажми кнопку ниже, чтобы открыть приложение и начать тренировку!",
+        reply_markup=keyboard
+    )
+
+async def about(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = (
+        "🏋️ *FitnessThing*\n\n"
+        "Это Telegram Mini App для фитнеса с ИИ-ассистентом.\n\n"
+        "*Основные возможности:*\n"
+        "🤖 Агентский ИИ-чат для управления тренировками\n"
+        "📊 Отслеживание прогресса и детальное логирование\n"
+        "🎯 Управление программами тренировок\n"
+        "🧠 ИИ запоминает ваши предпочтения и особенности"
+    )
+    await update.message.reply_text(text, parse_mode="Markdown")
+
+async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = (
+        "🤖 *Доступные команды:*\n\n"
+        "/start - Запустить бота и открыть приложение\n"
+        "/about - О проекте\n"
+        "/help - Показать это сообщение"
+    )
+    await update.message.reply_text(text, parse_mode="Markdown")
 
 async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message:
@@ -51,6 +76,8 @@ async def main():
     app = Application.builder().token(os.getenv("TG_BOT_TOKEN")).build()
 
     app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("about", about))
+    app.add_handler(CommandHandler("help", help_command))
 
     await app.initialize()
     await app.start()
