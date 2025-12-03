@@ -21,6 +21,7 @@ import {
 } from "@nextui-org/modal";
 import { Tabs, Tab } from "@nextui-org/tabs";
 import { Slider } from "@nextui-org/slider";
+import { Tooltip } from "@nextui-org/tooltip";
 import { useRouter } from "next/navigation";
 import { use, useEffect, useRef, useState } from "react";
 import { toast } from "react-toastify";
@@ -630,13 +631,23 @@ export default function RoutineDetailsPage({
           <CardBody>
             <div className="flex flex-col gap-4">
               <div className="flex flex-row gap-2 items-center">
-                <p>Оценка усилия:</p>
+                <Tooltip content="Оцените воспринимаемую нагрузку от 0 до 10, где 0 — нет усилий, 10 — максимальное усилие.">
+                  <p className="cursor-help border-b-1 border-dashed border-default-400">
+                    Оценка усилия:
+                  </p>
+                </Tooltip>
                 <p>{powerRating}</p>
               </div>
               <Slider
                 aria-label="Power rating"
                 className="w-full"
                 color="primary"
+                marks={[
+                  { value: 0, label: "0" },
+                  { value: 5, label: "5" },
+                  { value: 8, label: "8" },
+                  { value: 10, label: "10" },
+                ]}
                 maxValue={10}
                 minValue={0}
                 size="sm"

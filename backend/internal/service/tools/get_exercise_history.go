@@ -29,7 +29,7 @@ func (t *Tools) newGetExerciseHistoryTool() agentTool {
 
 	return agentTool{
 		name:    "get_exercise_history",
-		desc:    "Return recent performance history for a specific exercise. Each log includes power_rating — integer from 0 to 10 representing perceived exertion: 0 = no effort, 5 = moderate, 8 = hard, 10 = maximal effort.",
+		desc:    "Return recent performance history for a specific exercise. Each log includes power_rating — integer from 0 to 10 representing perceived exertion.",
 		params:  schema,
 		handler: t.getExerciseHistoryHandler,
 	}
