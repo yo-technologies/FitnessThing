@@ -302,8 +302,8 @@ export function OnboardingDrawer({
       isKeyboardDismissDisabled
       backdrop="blur"
       classNames={{
-        base: "h-full",
-        body: "overflow-y-auto",
+        base: "max-h-[95vh] mb-0 h-full",
+        body: "max-h-[80vh] overflow-y-auto",
         closeButton: "absolute top-3 right-2",
       }}
       isDismissable={false}
