@@ -13,7 +13,7 @@ import {
 } from "@heroui/modal";
 import { useRouter } from "next/navigation";
 import { use, useEffect, useState } from "react";
-import { toast } from "react-toastify";
+import { addToast } from "@heroui/toast";
 import {
   DndContext,
   DragEndEvent,
@@ -92,7 +92,7 @@ export default function RoutineDetailsPage({
       })
       .catch((error) => {
         console.log(error);
-        toast.error("Ошибка при загрузке данных");
+        addToast({ title: "Ошибка при загрузке данных", color: "danger" });
       });
   }
 
@@ -104,7 +104,7 @@ export default function RoutineDetailsPage({
       })
       .catch((error) => {
         console.log(error);
-        toast.error("Ошибка при добавлении упражнения");
+        addToast({ title: "Ошибка при добавлении упражнения", color: "danger" });
       });
   }
 
@@ -117,7 +117,7 @@ export default function RoutineDetailsPage({
       await fetchRoutineDetails();
     } catch (error) {
       console.log(error);
-      toast.error("Ошибка при добавлении упражнения");
+      addToast({ title: "Ошибка при добавлении упражнения", color: "danger" });
     }
   }
 
@@ -129,7 +129,7 @@ export default function RoutineDetailsPage({
       })
       .catch((error) => {
         console.log(error);
-        toast.error("Ошибка при обновлении порядка упражнений");
+        addToast({ title: "Ошибка при обновлении порядка упражнений", color: "danger" });
       });
   }
 
@@ -288,7 +288,7 @@ export default function RoutineDetailsPage({
         await fetchRoutineDetails();
       } catch (error) {
         console.log(error);
-        toast.error("Ошибка при обновлении рутины");
+        addToast({ title: "Ошибка при обновлении рутины", color: "danger" });
       } finally {
         setIsButtonLoading(false);
       }
@@ -349,7 +349,7 @@ export default function RoutineDetailsPage({
       .routineServiceDeleteRoutine(id)
       .catch((error) => {
         console.log(error);
-        toast.error("Ошибка при удалении рутины");
+        addToast({ title: "Ошибка при удалении рутины", color: "danger" });
       })
       .then(() => {
         router.back();

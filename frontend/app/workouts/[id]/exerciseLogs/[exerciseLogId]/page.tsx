@@ -24,7 +24,7 @@ import { Slider } from "@heroui/slider";
 import { Tooltip } from "@heroui/tooltip";
 import { useRouter } from "next/navigation";
 import { use, useEffect, useRef, useState } from "react";
-import { toast } from "react-toastify";
+import { addToast } from "@heroui/toast";
 import { Spinner } from "@heroui/react";
 
 import { PageHeader } from "@/components/page-header";
@@ -104,7 +104,7 @@ export default function RoutineDetailsPage({
         });
     } catch (error) {
       console.log(error);
-      toast.error("Failed to fetch more exercise logs");
+      addToast({ title: "Failed to fetch more exercise logs", color: "danger" });
     }
   }
 
@@ -114,7 +114,7 @@ export default function RoutineDetailsPage({
       await fetchExerciseLogDetails();
     } catch (error) {
       console.log(error);
-      toast.error("Failed to fetch workout details");
+      addToast({ title: "Failed to fetch workout details", color: "danger" });
       setIsError(true);
     } finally {
       setIsLoading(false);
@@ -191,7 +191,7 @@ export default function RoutineDetailsPage({
           weightUnit: prevUnit,
         },
       }));
-      toast.error("Не удалось сменить единицы измерения");
+      addToast({ title: "Не удалось сменить единицы измерения", color: "danger" });
     }
   }
 
@@ -287,7 +287,7 @@ export default function RoutineDetailsPage({
       router.back();
     } catch (error) {
       console.log(error);
-      toast.error("Failed to delete exercise log");
+      addToast({ title: "Failed to delete exercise log", color: "danger" });
     }
   }
 
@@ -306,13 +306,13 @@ export default function RoutineDetailsPage({
     async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
       event.preventDefault();
       if (weight < 0) {
-        toast.error("Вес не может быть отрицательным");
+        addToast({ title: "Вес не может быть отрицательным", color: "danger" });
 
         return;
       }
 
       if (reps <= 0) {
-        toast.error("Повторы должны быть больше 0");
+        addToast({ title: "Повторы должны быть больше 0", color: "danger" });
 
         return;
       }
@@ -331,7 +331,7 @@ export default function RoutineDetailsPage({
         onClose();
       } catch (error) {
         console.log(error);
-        toast.error("Ошибка при изменении сета");
+        addToast({ title: "Ошибка при изменении сета", color: "danger" });
       } finally {
         setIsLoading(false);
       }
@@ -456,13 +456,13 @@ export default function RoutineDetailsPage({
         event.preventDefault();
         if (isSubmitting) return;
         if (weight < 0) {
-          toast.error("Вес не может быть отрицательным");
+          addToast({ title: "Вес не может быть отрицательным", color: "danger" });
 
           return;
         }
 
         if (reps <= 0) {
-          toast.error("Повторы должны быть больше 0");
+          addToast({ title: "Повторы должны быть больше 0", color: "danger" });
 
           return;
         }
@@ -476,7 +476,7 @@ export default function RoutineDetailsPage({
           await fetchExerciseLogDetails();
         } catch (error) {
           console.log(error);
-          toast.error("Ошибка при добавлении сета");
+          addToast({ title: "Ошибка при добавлении сета", color: "danger" });
         } finally {
           setIsSubmitting(false);
         }
@@ -488,7 +488,7 @@ export default function RoutineDetailsPage({
           await fetchExerciseLogDetails();
         } catch (error) {
           console.log(error);
-          toast.error("Failed to delete set");
+          addToast({ title: "Failed to delete set", color: "danger" });
         }
       }
 
@@ -604,7 +604,7 @@ export default function RoutineDetailsPage({
           );
         } catch (error) {
           console.log(error);
-          toast.error("Failed to update power rating");
+          addToast({ title: "Failed to update power rating", color: "danger" });
         }
       }
 
@@ -677,7 +677,7 @@ export default function RoutineDetailsPage({
           );
         } catch (error) {
           console.log(error);
-          toast.error("Failed to update exercise log");
+          addToast({ title: "Failed to update exercise log", color: "danger" });
         }
       }
 

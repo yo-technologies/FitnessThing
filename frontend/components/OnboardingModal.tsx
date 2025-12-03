@@ -11,7 +11,7 @@ import {
 import { Button } from "@heroui/button";
 import { Progress } from "@heroui/progress";
 import { Divider } from "@heroui/divider";
-import { toast } from "react-toastify";
+import { addToast } from "@heroui/toast";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 
 import {
@@ -73,7 +73,7 @@ export function OnboardingModal({
       setMuscleGroups(response.data.muscleGroups || []);
     } catch (error) {
       console.log(error);
-      toast.error("Не удалось загрузить группы мышц");
+      addToast({ title: "Не удалось загрузить группы мышц", color: "danger" });
     }
   }
 
@@ -97,12 +97,15 @@ export function OnboardingModal({
     setIsSubmitting(true);
     try {
       await authApi.v1.userServiceUpdateWorkoutGenerationSettings(formData);
-      toast.success("Добро пожаловать! Настройки сохранены.");
+      addToast({
+        title: "Добро пожаловать! Настройки сохранены.",
+        color: "success",
+      });
       onComplete();
       onClose();
     } catch (error) {
       console.log(error);
-      toast.error("Не удалось сохранить настройки");
+      addToast({ title: "Не удалось сохранить настройки", color: "danger" });
     } finally {
       setIsSubmitting(false);
     }
@@ -356,14 +359,14 @@ export function OnboardingModal({
               <div className="flex justify-between w-full">
                 {currentStep === 0 ? (
                   // Welcome страница - только кнопка "Начать"
-                  (<div className="flex justify-center w-full">
+                  <div className="flex justify-center w-full">
                     <Button color="primary" onPress={handleNext}>
                       Начать настройку
                     </Button>
-                  </div>)
+                  </div>
                 ) : (
                   // Остальные страницы - обычная навигация
-                  (<>
+                  <>
                     <Button
                       color="default"
                       isDisabled={currentStep === 0}
@@ -385,7 +388,7 @@ export function OnboardingModal({
                         Далее
                       </Button>
                     )}
-                  </>)
+                  </>
                 )}
               </div>
             </ModalFooter>

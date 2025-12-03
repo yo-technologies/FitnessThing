@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { Divider } from "@heroui/react";
-import { toast } from "react-toastify";
+import { addToast } from "@heroui/toast";
 import { debounce } from "lodash";
 
 import { PageHeader } from "@/components/page-header";
@@ -45,7 +45,7 @@ export default function GenerationSettingsPage() {
       setMuscleGroups(response.data.muscleGroups || []);
     } catch (error) {
       console.log(error);
-      toast.error("Не удалось загрузить группы мышц");
+      addToast({ title: "Не удалось загрузить группы мышц", color: "danger" });
     }
   }
 
@@ -58,7 +58,7 @@ export default function GenerationSettingsPage() {
       })
       .catch((error) => {
         console.log(error);
-        toast.error("Не удалось загрузить настройки");
+        addToast({ title: "Не удалось загрузить настройки", color: "danger" });
       });
   }
 
@@ -99,7 +99,7 @@ export default function GenerationSettingsPage() {
         await authApi.v1.userServiceUpdateWorkoutGenerationSettings(updates);
       } catch (error) {
         console.log(error);
-        toast.error("Не удалось обновить настройки");
+        addToast({ title: "Не удалось обновить настройки", color: "danger" });
       }
     }
 

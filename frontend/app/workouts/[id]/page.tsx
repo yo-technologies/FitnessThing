@@ -14,7 +14,7 @@ import { DropdownItem } from "@heroui/dropdown";
 import { useRouter, useSearchParams } from "next/navigation";
 import { use, useCallback, useEffect, useState } from "react";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
-import { toast } from "react-toastify";
+import { addToast } from "@heroui/toast";
 
 import {
   BoltIcon,
@@ -250,7 +250,7 @@ export default function WorkoutDetailsPage({
       await fetchWorkoutDetails();
     } catch (error) {
       console.log(error);
-      toast.error("Failed to fetch workout details");
+      addToast({ title: "Failed to fetch workout details", color: "danger" });
       setIsError(true);
     } finally {
       setIsLoading(false);
@@ -271,7 +271,7 @@ export default function WorkoutDetailsPage({
         });
     } catch (error) {
       console.log(error);
-      toast.error("Не удалось завершить тренировку");
+      addToast({ title: "Не удалось завершить тренировку", color: "danger" });
     } finally {
       setIsLoading(false);
     }
@@ -296,7 +296,7 @@ export default function WorkoutDetailsPage({
       await fetchWorkoutDetails();
     } catch (error) {
       console.log(error);
-      toast.error("Failed to add exercises to workout");
+      addToast({ title: "Failed to add exercises to workout", color: "danger" });
     } finally {
       setIsLoading(false);
     }
@@ -316,7 +316,7 @@ export default function WorkoutDetailsPage({
         });
     } catch (error) {
       console.log(error);
-      toast.error("Не удалось удалить тренировку");
+      addToast({ title: "Не удалось удалить тренировку", color: "danger" });
     }
   }
 

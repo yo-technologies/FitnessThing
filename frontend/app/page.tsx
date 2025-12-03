@@ -6,7 +6,7 @@ import { Card, CardFooter, CardHeader } from "@heroui/card";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { toast } from "react-toastify";
+import { addToast } from "@heroui/toast";
 
 import {
   WorkoutRoutine,
@@ -145,7 +145,7 @@ export default function Home() {
     ctx?: Exclude<LoadingAction, null>,
   ) {
     if (activeWorkouts.length > 0) {
-      toast.error("Сначала завершите активную тренировку");
+      addToast({ title: "Сначала завершите активную тренировку", color: "danger" });
 
       return;
     }
@@ -183,12 +183,12 @@ export default function Home() {
         setLoadingAction(null);
 
         if (error.response?.status === 429) {
-          toast.error("Превышен лимит генераций на сегодня");
+          addToast({ title: "Превышен лимит генераций на сегодня", color: "danger" });
 
           return;
         }
 
-        toast.error("Ошибка при начале тренировки");
+        addToast({ title: "Ошибка при начале тренировки", color: "danger" });
         throw error;
       })
       .finally(() => {

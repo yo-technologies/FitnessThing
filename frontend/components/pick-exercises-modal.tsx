@@ -6,7 +6,7 @@ import { Skeleton } from "@heroui/skeleton";
 import { Modal, ModalContent, ModalHeader } from "@heroui/modal";
 import { ScrollShadow } from "@heroui/scroll-shadow";
 import { useEffect, useState } from "react";
-import { toast } from "react-toastify";
+import { addToast } from "@heroui/toast";
 import { Button } from "@heroui/button";
 
 import InfiniteScroll, { useInfiniteScroll } from "./infinite-scroll";
@@ -160,7 +160,7 @@ export function ModalSelectExercise({
       })
       .catch((error) => {
         console.log(error);
-        toast.error("Ошибка при загрузке упражнений");
+        addToast({ title: "Ошибка при загрузке упражнений", color: "danger" });
       })
       .finally(() => {
         setIsLoading(false);
@@ -179,7 +179,7 @@ export function ModalSelectExercise({
       })
       .catch((error) => {
         console.log(error);
-        toast.error("Ошибка при загрузке групп мышц");
+        addToast({ title: "Ошибка при загрузке групп мышц", color: "danger" });
       });
   }
 

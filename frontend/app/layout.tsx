@@ -2,7 +2,7 @@
 import "@/styles/globals.css";
 import { Metadata, Viewport } from "next";
 import clsx from "clsx";
-import { ToastContainer } from "react-toastify";
+import { ToastProvider } from "@heroui/toast";
 import Script from "next/script";
 import { Suspense } from "react";
 
@@ -84,7 +84,7 @@ export default function RootLayout({
               <div className="flex flex-grow max-h-full flex-col w-full">
                 {children}
               </div>
-              <ToastContainer />
+              <ToastProvider placement="top-center" />
               <Navbar />
             </main>
           </Providers>

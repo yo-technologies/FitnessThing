@@ -2,7 +2,7 @@
 
 import { Modal, ModalContent, useDisclosure } from "@heroui/modal";
 import { useEffect, useState } from "react";
-import { toast } from "react-toastify";
+import { addToast } from "@heroui/toast";
 import { Divider } from "@heroui/divider";
 import { Card } from "@heroui/card";
 import { Button } from "@heroui/button";
@@ -59,7 +59,7 @@ export function WorkoutResults({
       await fetchWorkoutDetails();
     } catch (error) {
       console.log(error);
-      toast.error("Failed to fetch workout details");
+      addToast({ title: "Failed to fetch workout details", color: "danger" });
       setIsError(true);
     } finally {
       setIsLoading(false);
@@ -76,11 +76,11 @@ export function WorkoutResults({
       })
       .then((response) => {
         console.log(response.data);
-        toast.success("Шаблон сохранен");
+        addToast({ title: "Шаблон сохранен", color: "success" });
       })
       .catch((error) => {
         console.log(error);
-        toast.error("Ошибка сохранения шаблона");
+        addToast({ title: "Ошибка сохранения шаблона", color: "danger" });
       });
   }
 
@@ -94,7 +94,7 @@ export function WorkoutResults({
       })
       .catch((error) => {
         console.log(error);
-        toast.error("Ошибка добавления комментария");
+        addToast({ title: "Ошибка добавления комментария", color: "danger" });
       });
   }
 
@@ -108,7 +108,7 @@ export function WorkoutResults({
       })
       .catch((error) => {
         console.log(error);
-        toast.error("Ошибка добавления оценки");
+        addToast({ title: "Ошибка добавления оценки", color: "danger" });
       });
   }
 
