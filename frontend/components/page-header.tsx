@@ -3,7 +3,7 @@ import {
   DropdownTrigger,
   DropdownMenu,
   DropdownItem,
-} from "@nextui-org/react";
+} from "@heroui/react";
 import { useRouter } from "next/navigation";
 
 import { LeftArrowIcon, ElipsisIcon } from "@/config/icons";

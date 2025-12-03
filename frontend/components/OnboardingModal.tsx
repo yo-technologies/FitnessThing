@@ -7,11 +7,11 @@ import {
   ModalHeader,
   ModalBody,
   ModalFooter,
-} from "@nextui-org/modal";
-import { Button } from "@nextui-org/button";
-import { Progress } from "@nextui-org/progress";
-import { Divider } from "@nextui-org/divider";
-import { toast } from "react-toastify";
+} from "@heroui/modal";
+import { Button } from "@heroui/button";
+import { Progress } from "@heroui/progress";
+import { Divider } from "@heroui/divider";
+import { addToast } from "@heroui/toast";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 
 import {
@@ -73,7 +73,7 @@ export function OnboardingModal({
       setMuscleGroups(response.data.muscleGroups || []);
     } catch (error) {
       console.log(error);
-      toast.error("Не удалось загрузить группы мышц");
+      addToast({ title: "Не удалось загрузить группы мышц", color: "danger" });
     }
   }
 
@@ -97,12 +97,15 @@ export function OnboardingModal({
     setIsSubmitting(true);
     try {
       await authApi.v1.userServiceUpdateWorkoutGenerationSettings(formData);
-      toast.success("Добро пожаловать! Настройки сохранены.");
+      addToast({
+        title: "Добро пожаловать! Настройки сохранены.",
+        color: "success",
+      });
       onComplete();
       onClose();
     } catch (error) {
       console.log(error);
-      toast.error("Не удалось сохранить настройки");
+      addToast({ title: "Не удалось сохранить настройки", color: "danger" });
     } finally {
       setIsSubmitting(false);
     }
@@ -372,7 +375,6 @@ export function OnboardingModal({
                     >
                       Назад
                     </Button>
-
                     {currentStep === ONBOARDING_STEPS.length - 1 ? (
                       <Button
                         color="primary"

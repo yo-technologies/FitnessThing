@@ -1,12 +1,12 @@
 "use client";
-import { Form } from "@nextui-org/form";
+import { Form } from "@heroui/form";
 import { useEffect, useState } from "react";
-import { Input } from "@nextui-org/input";
-import { DatePicker } from "@nextui-org/date-picker";
-import { Button } from "@nextui-org/button";
+import { Input } from "@heroui/input";
+import { DatePicker } from "@heroui/date-picker";
+import { Button } from "@heroui/button";
 import { CalendarDate } from "@internationalized/date";
-import { toast } from "react-toastify";
-import { Divider } from "@nextui-org/divider";
+import { addToast } from "@heroui/toast";
+import { Divider } from "@heroui/divider";
 
 import { PageHeader } from "@/components/page-header";
 import { WorkoutUser } from "@/api/api.generated";
@@ -52,11 +52,11 @@ function DataForm({ user }: { user: WorkoutUser }) {
         height: userHeight > 0 ? userHeight : undefined,
       })
       .then(() => {
-        toast.success("Данные успешно обновлены");
+        addToast({ title: "Данные успешно обновлены", color: "success" });
       })
       .catch((error) => {
         console.log(error);
-        toast.error("Ошибка при обновлении данных");
+        addToast({ title: "Ошибка при обновлении данных", color: "danger" });
       });
   }
 

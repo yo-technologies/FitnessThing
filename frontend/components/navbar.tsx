@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { link as linkStyles } from "@nextui-org/theme";
+import { link as linkStyles } from "@heroui/theme";
 import NextLink from "next/link";
 import clsx from "clsx";
 

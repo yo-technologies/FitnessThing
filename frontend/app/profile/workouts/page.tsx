@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Card, ScrollShadow } from "@nextui-org/react";
+import { Card, ScrollShadow } from "@heroui/react";
 
 import { PageHeader } from "@/components/page-header";
 import { Loading } from "@/components/loading";

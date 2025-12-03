@@ -2,8 +2,8 @@
 
 import { use } from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "react-toastify";
-import { DropdownItem } from "@nextui-org/dropdown";
+import { addToast } from "@heroui/toast";
+import { DropdownItem } from "@heroui/dropdown";
 
 import { WorkoutResults } from "@/components/workout-results";
 import { PageHeader } from "@/components/page-header";
@@ -26,7 +26,7 @@ export default function RoutineDetailsPage({
       })
       .catch((error) => {
         console.log(error);
-        toast.error("Failed to delete workout");
+        addToast({ title: "Failed to delete workout", color: "danger" });
       });
   }
 

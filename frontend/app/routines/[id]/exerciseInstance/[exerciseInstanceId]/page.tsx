@@ -2,11 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import { use, useEffect, useRef, useState } from "react";
-import { toast } from "react-toastify";
-import { Button } from "@nextui-org/button";
-import { Card, CardBody } from "@nextui-org/card";
-import { DropdownItem } from "@nextui-org/dropdown";
-import { Spinner } from "@nextui-org/spinner";
+import { addToast } from "@heroui/toast";
+import { Button } from "@heroui/button";
+import { Card, CardBody } from "@heroui/card";
+import { DropdownItem } from "@heroui/dropdown";
+import { Spinner } from "@heroui/spinner";
 
 import { Loading } from "@/components/loading";
 import { authApi } from "@/api/api";
@@ -54,7 +54,7 @@ export default function ExerciseInstancePage({
       setIsError(false);
     } catch (error) {
       console.log(error);
-      toast.error("Failed to fetch workout details");
+      addToast({ title: "Failed to fetch workout details", color: "danger" });
       setIsError(true);
     } finally {
       setIsLoading(false);
@@ -112,7 +112,7 @@ export default function ExerciseInstancePage({
           });
       } catch (error) {
         console.log(error);
-        toast.error("Не удалось обновить подход");
+        addToast({ title: "Не удалось обновить подход", color: "danger" });
       }
     }
 
@@ -130,7 +130,7 @@ export default function ExerciseInstancePage({
         })
         .catch((error) => {
           console.log(error);
-          toast.error("Не удалось удалить подход");
+          addToast({ title: "Не удалось удалить подход", color: "danger" });
         })
         .finally(() => {
           setIsLoading(false);
@@ -240,7 +240,7 @@ export default function ExerciseInstancePage({
         })
         .catch((error) => {
           console.log(error);
-          toast.error("Не удалось добавить подход");
+          addToast({ title: "Не удалось добавить подход", color: "danger" });
         });
     }
 
@@ -283,7 +283,7 @@ export default function ExerciseInstancePage({
         });
     } catch (error) {
       console.log(error);
-      toast.error("Не удалось удалить инстанс упражнения");
+      addToast({ title: "Не удалось удалить инстанс упражнения", color: "danger" });
     }
   }
 

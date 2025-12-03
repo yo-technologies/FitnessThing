@@ -2,9 +2,9 @@
 import { useTheme } from "next-themes";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Button } from "@nextui-org/button";
-import { Card } from "@nextui-org/card";
-import { Divider } from "@nextui-org/divider";
+import { Button } from "@heroui/button";
+import { Card } from "@heroui/card";
+import { Divider } from "@heroui/divider";
 
 import { authApi } from "@/api/api";
 import { Loading } from "@/components/loading";

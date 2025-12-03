@@ -1,14 +1,14 @@
 "use client";
 
-import { Modal, ModalContent, useDisclosure } from "@nextui-org/modal";
+import { Modal, ModalContent, useDisclosure } from "@heroui/modal";
 import { useEffect, useState } from "react";
-import { toast } from "react-toastify";
-import { Divider } from "@nextui-org/divider";
-import { Card } from "@nextui-org/card";
-import { Button } from "@nextui-org/button";
-import { Input, Textarea } from "@nextui-org/input";
+import { addToast } from "@heroui/toast";
+import { Divider } from "@heroui/divider";
+import { Card } from "@heroui/card";
+import { Button } from "@heroui/button";
+import { Input, Textarea } from "@heroui/input";
 import clsx from "clsx";
-import { Form } from "@nextui-org/form";
+import { Form } from "@heroui/form";
 
 import {
   HollowStarIcon,
@@ -59,7 +59,7 @@ export function WorkoutResults({
       await fetchWorkoutDetails();
     } catch (error) {
       console.log(error);
-      toast.error("Failed to fetch workout details");
+      addToast({ title: "Failed to fetch workout details", color: "danger" });
       setIsError(true);
     } finally {
       setIsLoading(false);
@@ -76,11 +76,11 @@ export function WorkoutResults({
       })
       .then((response) => {
         console.log(response.data);
-        toast.success("Шаблон сохранен");
+        addToast({ title: "Шаблон сохранен", color: "success" });
       })
       .catch((error) => {
         console.log(error);
-        toast.error("Ошибка сохранения шаблона");
+        addToast({ title: "Ошибка сохранения шаблона", color: "danger" });
       });
   }
 
@@ -94,7 +94,7 @@ export function WorkoutResults({
       })
       .catch((error) => {
         console.log(error);
-        toast.error("Ошибка добавления комментария");
+        addToast({ title: "Ошибка добавления комментария", color: "danger" });
       });
   }
 
@@ -108,7 +108,7 @@ export function WorkoutResults({
       })
       .catch((error) => {
         console.log(error);
-        toast.error("Ошибка добавления оценки");
+        addToast({ title: "Ошибка добавления оценки", color: "danger" });
       });
   }
 

@@ -1,11 +1,12 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@config "../tailwind.config.mjs";
+
+@source "../components";
+@source "../app";
+@source "../node_modules/@heroui/theme/dist";
 
 * {
     box-sizing: border-box;
-    padding: 0;
-    margin: 0;
 }
 
 /* Когда открыта клавиатура (управляется через documentElement.classList) */

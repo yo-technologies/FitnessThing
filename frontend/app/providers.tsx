@@ -3,7 +3,7 @@
 import type { ThemeProviderProps } from "next-themes";
 
 import * as React from "react";
-import { NextUIProvider } from "@nextui-org/system";
+import { HeroUIProvider } from "@heroui/system";
 import { useRouter } from "next/navigation";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { init, swipeBehavior } from "@telegram-apps/sdk-react";
@@ -43,7 +43,7 @@ export function Providers({ children, themeProps }: ProvidersProps) {
   const router = useRouter();
 
   return (
-    <NextUIProvider
+    <HeroUIProvider
       className="flex flex-col flex-grow h-full"
       navigate={router.push}
     >
@@ -52,6 +52,6 @@ export function Providers({ children, themeProps }: ProvidersProps) {
           <I18nProvider locale="ru">{children}</I18nProvider>
         </TelegramMiniAppProvider>
       </NextThemesProvider>
-    </NextUIProvider>
+    </HeroUIProvider>
   );
 }

@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Button } from "@nextui-org/button";
-import { Card, CardBody } from "@nextui-org/card";
-import { Chip } from "@nextui-org/chip";
-import { toast } from "react-toastify";
+import { Button } from "@heroui/button";
+import { Card, CardBody } from "@heroui/card";
+import { Chip } from "@heroui/chip";
+import { addToast } from "@heroui/toast";
 
 import { authApi } from "@/api/api";
 import { WorkoutUserFact } from "@/api/api.generated";
@@ -38,7 +38,7 @@ export default function UserFactsPage() {
     } catch (error) {
       console.log(error);
       setIsError(true);
-      toast.error("Не удалось загрузить факты о пользователе");
+      addToast({ title: "Не удалось загрузить факты о пользователе", color: "danger" });
     }
   }
 
@@ -81,10 +81,10 @@ export default function UserFactsPage() {
       setUserFacts((prevFacts) =>
         prevFacts.filter((fact) => fact.id !== factId),
       );
-      toast.success("Факт удалён");
+      addToast({ title: "Факт удалён", color: "success" });
     } catch (error) {
       console.log(error);
-      toast.error("Не удалось удалить факт");
+      addToast({ title: "Не удалось удалить факт", color: "danger" });
     } finally {
       setDeletingFactId(null);
     }
