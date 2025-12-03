@@ -25,7 +25,7 @@ func (t *Tools) newGetWorkoutHistoryTool() agentTool {
 
 	return agentTool{
 		name:    "get_workout_history",
-		desc:    "Return recent workouts for the current user including exercises. Output fields: workout.rating — integer from 1 to 5 (0 means not rated); exercises[].power_rating — integer from 0 to 10 representing perceived exertion: 0 = no effort, 5 = moderate, 8 = hard, 10 = maximal effort.",
+		desc:    "Return recent workouts for the current user including exercises. Output fields: workout.rating — integer from 1 to 5 (0 means not rated); exercises[].power_rating — integer from 0 to 10 representing perceived exertion.",
 		params:  schema,
 		handler: t.getWorkoutHistoryHandler,
 	}

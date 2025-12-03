@@ -107,8 +107,8 @@ export default function UserFactsPage() {
     <div className="py-4 flex flex-col h-full gap-4">
       <PageHeader enableBackButton title="Факты о вас" />
       <div className="flex flex-col gap-4 px-4 pb-8">
-        <Card className="border border-primary-100 bg-primary-50/70 dark:bg-primary-500/10">
-          <CardBody className="flex flex-col gap-3">
+        <Card>
+          <CardBody className="flex flex-col gap-4 p-4">
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-2">
                 <CircleQuestionIcon className="w-4 h-4 text-primary" />
@@ -128,8 +128,8 @@ export default function UserFactsPage() {
         </Card>
 
         {userFacts.length === 0 ? (
-          <Card className="border-2 border-dashed border-default-200">
-            <CardBody className="flex flex-col gap-2 items-center text-center">
+          <Card>
+            <CardBody className="flex flex-col gap-3 p-4 items-center text-center">
               <ChatBubbleIcon className="w-6 h-6 text-default-300" />
               <div className="flex flex-col gap-1">
                 <p className="text-sm font-semibold text-default-600">
@@ -145,11 +145,8 @@ export default function UserFactsPage() {
         ) : (
           <div className="flex flex-col gap-3">
             {userFacts.map((fact, index) => (
-              <Card
-                key={fact.id}
-                className="border-l-4 border-primary-200 bg-default-50 dark:bg-default-100/10"
-              >
-                <CardBody className="flex flex-col gap-3">
+              <Card key={fact.id} className="shadow-sm">
+                <CardBody className="flex flex-col gap-3 p-4">
                   <div className="flex items-center justify-between">
                     <Chip color="primary" size="sm" variant="flat">
                       Факт #{index + 1}
