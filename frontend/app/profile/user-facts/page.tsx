@@ -106,7 +106,7 @@ export default function UserFactsPage() {
   return (
     <div className="py-4 flex flex-col h-full gap-4">
       <PageHeader enableBackButton title="Факты о вас" />
-      <div className="flex flex-col gap-4 px-4 pb-4">
+      <div className="flex flex-col gap-2 px-4 pb-4">
         <Card>
           <CardBody className="flex flex-col gap-4">
             <div className="flex items-start justify-between gap-3">
@@ -129,7 +129,7 @@ export default function UserFactsPage() {
 
         {userFacts.length === 0 ? (
           <Card>
-            <CardBody className="flex flex-col gap-3 items-center text-center">
+            <CardBody className="flex flex-col gap-2 items-center text-center">
               <ChatBubbleIcon className="w-6 h-6 text-default-300" />
               <div className="flex flex-col gap-1">
                 <p className="text-xs font-semibold text-default-600">
@@ -146,7 +146,7 @@ export default function UserFactsPage() {
           <div className="flex flex-col gap-3">
             {userFacts.map((fact, index) => (
               <Card key={fact.id} className="shadow-sm">
-                <CardBody className="flex flex-col gap-3">
+                <CardBody className="flex flex-col gap-2">
                   <div className="flex items-center justify-between">
                     <Chip color="primary" size="sm" variant="flat">
                       Факт #{index + 1}
