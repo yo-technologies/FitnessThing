@@ -52,6 +52,16 @@ services:
             - "3000"
         depends_on:
             - app
+    bot:
+        container_name: bot
+        profiles: [bot, full]
+        build:
+            context: bot
+            dockerfile: Dockerfile
+        env_file:
+            - ./bot/.env
+        restart: unless-stopped
+
     dozzle:
         container_name: dozzle
         profiles: [logging, full]
