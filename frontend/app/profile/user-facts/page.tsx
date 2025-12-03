@@ -120,7 +120,7 @@ export default function UserFactsPage() {
                 {userFacts.length}/{FACTS_LIMIT}
               </Chip>
             </div>
-            <p className="text-sm text-default-600">
+            <p className="text-xs text-default-600">
               Ассистент фиксирует важные детали ваших запросов, чтобы помнить
               контекст. Здесь вы можете удалить устаревшие или неверные факты.
             </p>
@@ -132,10 +132,10 @@ export default function UserFactsPage() {
             <CardBody className="flex flex-col gap-3 p-4 items-center text-center">
               <ChatBubbleIcon className="w-6 h-6 text-default-300" />
               <div className="flex flex-col gap-1">
-                <p className="text-sm font-semibold text-default-600">
+                <p className="text-xs font-semibold text-default-600">
                   Пока что пусто
                 </p>
-                <p className="text-sm text-default-500">
+                <p className="text-xs text-default-500">
                   Как только ассистент найдёт важную информацию в диалогах, она
                   появится здесь.
                 </p>
@@ -155,7 +155,7 @@ export default function UserFactsPage() {
                       {formatFactDate(fact.createdAt)}
                     </p>
                   </div>
-                  <p className="text-sm text-default-700 whitespace-pre-wrap">
+                  <p className="text-xs text-default-700 whitespace-pre-wrap">
                     {fact.content}
                   </p>
                   <div className="flex flex-row items-center justify-end">
