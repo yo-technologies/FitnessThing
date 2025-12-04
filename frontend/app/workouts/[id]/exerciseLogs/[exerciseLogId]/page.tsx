@@ -25,10 +25,10 @@ import { Tooltip } from "@heroui/tooltip";
 import { useRouter } from "next/navigation";
 import { use, useEffect, useRef, useState } from "react";
 import { addToast } from "@heroui/toast";
-import { Spinner } from "@heroui/react";
+import { Popover, PopoverContent, PopoverTrigger, Spinner } from "@heroui/react";
 
 import { PageHeader } from "@/components/page-header";
-import { BoltIcon, TrashCanIcon } from "@/config/icons";
+import { BoltIcon, CircleQuestionIcon, TrashCanIcon } from "@/config/icons";
 import { Loading } from "@/components/loading";
 import {
   WorkoutExerciseLogDetails,
@@ -630,21 +630,52 @@ export default function RoutineDetailsPage({
         <Card>
           <CardBody>
             <div className="flex flex-col gap-4">
-              <div className="flex flex-row gap-2 items-center">
-                <Tooltip content="Оцените воспринимаемую нагрузку от 0 до 10, где 0 — нет усилий, 10 — максимальное усилие.">
-                  <p className="cursor-help border-b-1 border-dashed border-default-400">
+              <div className="flex flex-row justify-between items-center">
+                <div className="flex flex-row gap-2 items-center">
+                  <p>
                     Оценка усилия:
                   </p>
-                </Tooltip>
-                <p>{powerRating}</p>
+                  <p>{powerRating}</p>
+                </div>
+                <Popover
+                  backdrop="opaque" 
+                  size="sm" 
+                  placement="top"
+                  classNames={{base:"flex flex-row justify-end items-end px-2"}}
+                >
+                  <PopoverTrigger>
+                    <CircleQuestionIcon className="w-4 h-4 text-default-500 cursor-pointer" />
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[80%] items-start">
+                    <p className="text-xs font-light text-default-600 mb-1">
+                      Оцените, насколько интенсивной была эта тренировка от от 0 до 10
+                    </p>
+                    <p className="text-xs font-light text-default-600">
+                      0-5 — лёгкая или умеренная нагрузка
+                    </p>
+                    <p className="text-xs font-light text-default-600">
+                      6-8 — тяжёлая нагрузка
+                    </p>
+                    <p className="text-xs font-light text-default-600 mb-1">
+                      9-10 — максимальная нагрузка
+                    </p>
+                    <p className="text-xs font-light text-default-600">
+                      Лучше всего придерживаться нагрузки в районе 8, чтобы
+                      стимулировать прогресс, но при этом не увеличивать риск травм.
+                    </p>
+                  </PopoverContent>
+                </Popover>
               </div>
               <Slider
                 aria-label="Power rating"
                 className="w-full"
-                color="primary"
+                classNames={{
+                  track: "bg-[linear-gradient(to_right,#22c55e_0%,#22c55e_60%,#f97316_60%,#f97316_80%,#ef4444_80%,#ef4444_100%)] border-none",
+                  filler: "bg-transparent",
+                }}
                 marks={[
                   { value: 0, label: "0" },
-                  { value: 5, label: "5" },
+                  { value: 6, label: "6" },
                   { value: 8, label: "8" },
                   { value: 10, label: "10" },
                 ]}
