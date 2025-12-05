@@ -99,6 +99,7 @@ func (c *CompletionProvider) newOpenAIParams(p llm.ChatParams) openai.ChatComple
 		Model:           shared.ChatModel(c.cfg.GetOpenAIModel()),
 		Messages:        c.toOpenAIMessages(p.Messages),
 		ReasoningEffort: shared.ReasoningEffort(c.cfg.GetReasoningEffort()),
+		Temperature:     openai.Float(1.0),
 	}
 	if len(p.Tools) > 0 {
 		o.Tools = c.toOpenAITools(p.Tools)
