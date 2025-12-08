@@ -890,7 +890,7 @@ export const WorkoutChatPanel = memo(function WorkoutChatPanel({
       hideCloseButton
       backdrop="blur"
       classNames={{
-        backdrop: "bg-black/40 backdrop-blur-xl",
+        backdrop: "bg-black/70 backdrop-blur-xl",
         base: "data-[placement=bottom]:inset-x-0",
         wrapper: "md:rounded-t-[40px]",
       }}
@@ -903,7 +903,7 @@ export const WorkoutChatPanel = memo(function WorkoutChatPanel({
       <DrawerContent className="bg-transparent shadow-none">
         <div className="mx-auto flex h-[100dvh] w-full max-w-3xl flex-col gap-3 pb-[max(env(safe-area-inset-bottom),0.85rem)]">
           <section className="relative flex flex-1 min-h-0 flex-col overflow-hidden">
-            <div className="flex flex-col gap-3 border-b border-white/5 p-4 absolute top-0 bg-black z-10 w-full">
+            <div className="flex flex-col gap-3 border-b border-white/5 p-4 absolute top-0 bg-black/80 backdrop-blur-md z-10 w-full">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <div className="flex flex-col">
