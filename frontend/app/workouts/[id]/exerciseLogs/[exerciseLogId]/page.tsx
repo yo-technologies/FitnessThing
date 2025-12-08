@@ -648,20 +648,19 @@ export default function RoutineDetailsPage({
                   </PopoverTrigger>
                   <PopoverContent className="w-[80%] items-start">
                     <p className="text-xs font-light text-default-600 mb-1">
-                      Оцените, насколько интенсивной была эта тренировка от от 0 до 10
+                      Оцените нагрузку (Power Rating) от 0 до 10
                     </p>
                     <p className="text-xs font-light text-default-600">
-                      0-5 — лёгкая или умеренная нагрузка
+                      6–7 — умеренно, можно увеличить нагрузку.
                     </p>
                     <p className="text-xs font-light text-default-600">
-                      6-8 — тяжёлая нагрузка
+                      8–9 — оптимум, повышать не нужно.
                     </p>
                     <p className="text-xs font-light text-default-600 mb-1">
-                      9-10 — максимальная нагрузка
+                      9–10 — слишком тяжело, прогрессии быть не должно.
                     </p>
                     <p className="text-xs font-light text-default-600">
-                      Лучше всего придерживаться нагрузки в районе 8, чтобы
-                      стимулировать прогресс, но при этом не увеличивать риск травм.
+                      Цель — удерживать нагрузку в зоне 8–9.
                     </p>
                   </PopoverContent>
                 </Popover>
@@ -670,13 +669,14 @@ export default function RoutineDetailsPage({
                 aria-label="Power rating"
                 className="w-full"
                 classNames={{
-                  track: "bg-[linear-gradient(to_right,#22c55e_0%,#22c55e_60%,#f97316_60%,#f97316_80%,#ef4444_80%,#ef4444_100%)] border-none",
+                  track: "bg-[linear-gradient(to_right,#3b82f6_0%,#3b82f6_60%,#eab308_60%,#eab308_80%,#22c55e_80%,#22c55e_90%,#ef4444_90%,#ef4444_100%)] border-none",
                   filler: "bg-transparent",
                 }}
                 marks={[
                   { value: 0, label: "0" },
                   { value: 6, label: "6" },
                   { value: 8, label: "8" },
+                  { value: 9, label: "9" },
                   { value: 10, label: "10" },
                 ]}
                 maxValue={10}
