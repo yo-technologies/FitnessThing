@@ -12296,6 +12296,579 @@ var _ interface {
 	ErrorName() string
 } = GetLLMLimitsResponseValidationError{}
 
+// Validate checks the field values on GetAnalyticsRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GetAnalyticsRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetAnalyticsRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GetAnalyticsRequestMultiError, or nil if none found.
+func (m *GetAnalyticsRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetAnalyticsRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetFrom()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, GetAnalyticsRequestValidationError{
+					field:  "From",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, GetAnalyticsRequestValidationError{
+					field:  "From",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetFrom()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return GetAnalyticsRequestValidationError{
+				field:  "From",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetTo()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, GetAnalyticsRequestValidationError{
+					field:  "To",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, GetAnalyticsRequestValidationError{
+					field:  "To",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetTo()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return GetAnalyticsRequestValidationError{
+				field:  "To",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	// no validation rules for SplitByExercise
+
+	if m.MuscleGroup != nil {
+		// no validation rules for MuscleGroup
+	}
+
+	if m.ExerciseId != nil {
+		// no validation rules for ExerciseId
+	}
+
+	if len(errors) > 0 {
+		return GetAnalyticsRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetAnalyticsRequestMultiError is an error wrapping multiple validation
+// errors returned by GetAnalyticsRequest.ValidateAll() if the designated
+// constraints aren't met.
+type GetAnalyticsRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetAnalyticsRequestMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetAnalyticsRequestMultiError) AllErrors() []error { return m }
+
+// GetAnalyticsRequestValidationError is the validation error returned by
+// GetAnalyticsRequest.Validate if the designated constraints aren't met.
+type GetAnalyticsRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetAnalyticsRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetAnalyticsRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetAnalyticsRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetAnalyticsRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetAnalyticsRequestValidationError) ErrorName() string {
+	return "GetAnalyticsRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetAnalyticsRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetAnalyticsRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetAnalyticsRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetAnalyticsRequestValidationError{}
+
+// Validate checks the field values on AnalyticsPoint with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *AnalyticsPoint) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on AnalyticsPoint with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in AnalyticsPointMultiError,
+// or nil if none found.
+func (m *AnalyticsPoint) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *AnalyticsPoint) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetDate()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, AnalyticsPointValidationError{
+					field:  "Date",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, AnalyticsPointValidationError{
+					field:  "Date",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetDate()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return AnalyticsPointValidationError{
+				field:  "Date",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	// no validation rules for Value
+
+	if len(errors) > 0 {
+		return AnalyticsPointMultiError(errors)
+	}
+
+	return nil
+}
+
+// AnalyticsPointMultiError is an error wrapping multiple validation errors
+// returned by AnalyticsPoint.ValidateAll() if the designated constraints
+// aren't met.
+type AnalyticsPointMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m AnalyticsPointMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m AnalyticsPointMultiError) AllErrors() []error { return m }
+
+// AnalyticsPointValidationError is the validation error returned by
+// AnalyticsPoint.Validate if the designated constraints aren't met.
+type AnalyticsPointValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e AnalyticsPointValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e AnalyticsPointValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e AnalyticsPointValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e AnalyticsPointValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e AnalyticsPointValidationError) ErrorName() string { return "AnalyticsPointValidationError" }
+
+// Error satisfies the builtin error interface
+func (e AnalyticsPointValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sAnalyticsPoint.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = AnalyticsPointValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = AnalyticsPointValidationError{}
+
+// Validate checks the field values on AnalyticsSeries with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *AnalyticsSeries) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on AnalyticsSeries with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// AnalyticsSeriesMultiError, or nil if none found.
+func (m *AnalyticsSeries) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *AnalyticsSeries) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Name
+
+	for idx, item := range m.GetPoints() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, AnalyticsSeriesValidationError{
+						field:  fmt.Sprintf("Points[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, AnalyticsSeriesValidationError{
+						field:  fmt.Sprintf("Points[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return AnalyticsSeriesValidationError{
+					field:  fmt.Sprintf("Points[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return AnalyticsSeriesMultiError(errors)
+	}
+
+	return nil
+}
+
+// AnalyticsSeriesMultiError is an error wrapping multiple validation errors
+// returned by AnalyticsSeries.ValidateAll() if the designated constraints
+// aren't met.
+type AnalyticsSeriesMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m AnalyticsSeriesMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m AnalyticsSeriesMultiError) AllErrors() []error { return m }
+
+// AnalyticsSeriesValidationError is the validation error returned by
+// AnalyticsSeries.Validate if the designated constraints aren't met.
+type AnalyticsSeriesValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e AnalyticsSeriesValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e AnalyticsSeriesValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e AnalyticsSeriesValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e AnalyticsSeriesValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e AnalyticsSeriesValidationError) ErrorName() string { return "AnalyticsSeriesValidationError" }
+
+// Error satisfies the builtin error interface
+func (e AnalyticsSeriesValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sAnalyticsSeries.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = AnalyticsSeriesValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = AnalyticsSeriesValidationError{}
+
+// Validate checks the field values on GetAnalyticsResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GetAnalyticsResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetAnalyticsResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GetAnalyticsResponseMultiError, or nil if none found.
+func (m *GetAnalyticsResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetAnalyticsResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	for idx, item := range m.GetSeries() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, GetAnalyticsResponseValidationError{
+						field:  fmt.Sprintf("Series[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, GetAnalyticsResponseValidationError{
+						field:  fmt.Sprintf("Series[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return GetAnalyticsResponseValidationError{
+					field:  fmt.Sprintf("Series[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return GetAnalyticsResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetAnalyticsResponseMultiError is an error wrapping multiple validation
+// errors returned by GetAnalyticsResponse.ValidateAll() if the designated
+// constraints aren't met.
+type GetAnalyticsResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetAnalyticsResponseMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetAnalyticsResponseMultiError) AllErrors() []error { return m }
+
+// GetAnalyticsResponseValidationError is the validation error returned by
+// GetAnalyticsResponse.Validate if the designated constraints aren't met.
+type GetAnalyticsResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetAnalyticsResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetAnalyticsResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetAnalyticsResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetAnalyticsResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetAnalyticsResponseValidationError) ErrorName() string {
+	return "GetAnalyticsResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetAnalyticsResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetAnalyticsResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetAnalyticsResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetAnalyticsResponseValidationError{}
+
 // Validate checks the field values on GetWorkoutsResponse_WorkoutDetails with
 // the rules defined in the proto definition for this message. If any rules
 // are violated, the first error encountered is returned, or nil if there are

@@ -886,6 +886,7 @@ const (
 	WorkoutService_RateWorkout_FullMethodName                 = "/fitness_trainer.api.workout.WorkoutService/RateWorkout"
 	WorkoutService_AddCommentToWorkout_FullMethodName         = "/fitness_trainer.api.workout.WorkoutService/AddCommentToWorkout"
 	WorkoutService_UpdateExerciseLogWeightUnit_FullMethodName = "/fitness_trainer.api.workout.WorkoutService/UpdateExerciseLogWeightUnit"
+	WorkoutService_GetAnalytics_FullMethodName                = "/fitness_trainer.api.workout.WorkoutService/GetAnalytics"
 )
 
 // WorkoutServiceClient is the client API for WorkoutService service.
@@ -928,6 +929,8 @@ type WorkoutServiceClient interface {
 	AddCommentToWorkout(ctx context.Context, in *AddCommentToWorkoutRequest, opts ...grpc.CallOption) (*WorkoutResponse, error)
 	// Изменить единицу измерения веса для ExerciseLog
 	UpdateExerciseLogWeightUnit(ctx context.Context, in *UpdateExerciseLogWeightUnitRequest, opts ...grpc.CallOption) (*ExerciseLogResponse, error)
+	// Получить аналитику
+	GetAnalytics(ctx context.Context, in *GetAnalyticsRequest, opts ...grpc.CallOption) (*GetAnalyticsResponse, error)
 }
 
 type workoutServiceClient struct {
@@ -1118,6 +1121,16 @@ func (c *workoutServiceClient) UpdateExerciseLogWeightUnit(ctx context.Context, 
 	return out, nil
 }
 
+func (c *workoutServiceClient) GetAnalytics(ctx context.Context, in *GetAnalyticsRequest, opts ...grpc.CallOption) (*GetAnalyticsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetAnalyticsResponse)
+	err := c.cc.Invoke(ctx, WorkoutService_GetAnalytics_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // WorkoutServiceServer is the server API for WorkoutService service.
 // All implementations must embed UnimplementedWorkoutServiceServer
 // for forward compatibility.
@@ -1158,6 +1171,8 @@ type WorkoutServiceServer interface {
 	AddCommentToWorkout(context.Context, *AddCommentToWorkoutRequest) (*WorkoutResponse, error)
 	// Изменить единицу измерения веса для ExerciseLog
 	UpdateExerciseLogWeightUnit(context.Context, *UpdateExerciseLogWeightUnitRequest) (*ExerciseLogResponse, error)
+	// Получить аналитику
+	GetAnalytics(context.Context, *GetAnalyticsRequest) (*GetAnalyticsResponse, error)
 	mustEmbedUnimplementedWorkoutServiceServer()
 }
 
@@ -1221,6 +1236,9 @@ func (UnimplementedWorkoutServiceServer) AddCommentToWorkout(context.Context, *A
 }
 func (UnimplementedWorkoutServiceServer) UpdateExerciseLogWeightUnit(context.Context, *UpdateExerciseLogWeightUnitRequest) (*ExerciseLogResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateExerciseLogWeightUnit not implemented")
+}
+func (UnimplementedWorkoutServiceServer) GetAnalytics(context.Context, *GetAnalyticsRequest) (*GetAnalyticsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAnalytics not implemented")
 }
 func (UnimplementedWorkoutServiceServer) mustEmbedUnimplementedWorkoutServiceServer() {}
 func (UnimplementedWorkoutServiceServer) testEmbeddedByValue()                        {}
@@ -1567,6 +1585,24 @@ func _WorkoutService_UpdateExerciseLogWeightUnit_Handler(srv interface{}, ctx co
 	return interceptor(ctx, in, info, handler)
 }
 
+func _WorkoutService_GetAnalytics_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetAnalyticsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(WorkoutServiceServer).GetAnalytics(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: WorkoutService_GetAnalytics_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(WorkoutServiceServer).GetAnalytics(ctx, req.(*GetAnalyticsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // WorkoutService_ServiceDesc is the grpc.ServiceDesc for WorkoutService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -1645,6 +1681,10 @@ var WorkoutService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateExerciseLogWeightUnit",
 			Handler:    _WorkoutService_UpdateExerciseLogWeightUnit_Handler,
+		},
+		{
+			MethodName: "GetAnalytics",
+			Handler:    _WorkoutService_GetAnalytics_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

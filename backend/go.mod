@@ -5,6 +5,7 @@ go 1.23.0
 toolchain go1.24.4
 
 require (
+	github.com/Masterminds/squirrel v1.5.4
 	github.com/aws/aws-sdk-go-v2 v1.36.1
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.59
 	github.com/envoyproxy/protoc-gen-validate v1.1.0
@@ -26,7 +27,11 @@ require (
 	google.golang.org/protobuf v1.36.0
 )
 
-require github.com/klauspost/compress v1.17.9 // indirect
+require (
+	github.com/klauspost/compress v1.17.9 // indirect
+	github.com/lann/builder v0.0.0-20180802200727-47ae307949d0 // indirect
+	github.com/lann/ps v0.0.0-20150810152359-62de8c46ede0 // indirect
+)
 
 require (
 	github.com/HdrHistogram/hdrhistogram-go v1.1.2 // indirect

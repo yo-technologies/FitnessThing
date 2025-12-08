@@ -2,6 +2,7 @@ package workout
 
 import (
 	"context"
+	"time"
 
 	"fitness-trainer/internal/domain"
 	"fitness-trainer/internal/domain/dto"
@@ -10,6 +11,7 @@ import (
 )
 
 type Service interface {
+	GetAnalytics(ctx context.Context, userID domain.ID, from, to time.Time, muscleGroupIDs []domain.ID, exerciseIDs []domain.ID, splitByExercise bool) ([]domain.AnalyticsSeries, error)
 	GetWorkouts(ctx context.Context, userID domain.ID, limit, offset int) ([]dto.WorkoutDTO, error)
 	StartWorkout(ctx context.Context, userID domain.ID, opts domain.StartWorkoutOpts) (domain.Workout, error)
 	GetWorkout(ctx context.Context, userID, workoutID domain.ID) (dto.WorkoutDetailsDTO, error)
