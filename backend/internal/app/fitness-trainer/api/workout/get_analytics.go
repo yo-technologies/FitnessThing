@@ -27,20 +27,25 @@ func (i *Implementation) GetAnalytics(ctx context.Context, in *desc.GetAnalytics
 		return nil, domain.ErrInternal
 	}
 
+	logger.Debugf("GetAnalytics request: muscle_group=%v, exercise_id=%v", in.MuscleGroup, in.ExerciseId)
+	logger.Debugf("from=%v, to=%v, user:%v", in.From, in.To, userID)
+
 	var muscleGroupIDs []domain.ID
-	if in.MuscleGroup != nil {
+	if in.MuscleGroup != nil && *in.MuscleGroup != "" {
+		logger.Debugf("Parsing muscle group ID: %s", *in.MuscleGroup)
 		id, err := domain.ParseID(*in.MuscleGroup)
 		if err != nil {
-			return nil, fmt.Errorf("%w: %w", domain.ErrInvalidArgument, err)
+			return nil, fmt.Errorf("%w: invalid muscle_group: %w", domain.ErrInvalidArgument, err)
 		}
 		muscleGroupIDs = append(muscleGroupIDs, id)
 	}
 
 	var exerciseIDs []domain.ID
-	if in.ExerciseId != nil {
+	if in.ExerciseId != nil && *in.ExerciseId != "" {
+		logger.Debugf("Parsing exercise ID: %s", *in.ExerciseId)
 		id, err := domain.ParseID(*in.ExerciseId)
 		if err != nil {
-			return nil, fmt.Errorf("%w: %w", domain.ErrInvalidArgument, err)
+			return nil, fmt.Errorf("%w: invalid exercise_id: %w", domain.ErrInvalidArgument, err)
 		}
 		exerciseIDs = append(exerciseIDs, id)
 	}

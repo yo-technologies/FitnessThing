@@ -1,4 +1,4 @@
-import { retrieveRawInitData } from "@telegram-apps/sdk-react";
+import { retrieveRawInitData } from "@tma.js/sdk-react";
 
 import { Api, ApiConfig } from "./api.generated";
 

@@ -6915,7 +6915,7 @@ const file_workouts_workouts_proto_rawDesc = "" +
 	"\x18AddSetToExerciseInstance\x12<.fitness_trainer.api.workout.AddSetToExerciseInstanceRequest\x1a(.fitness_trainer.api.workout.SetResponse\"S\x82\xd3\xe4\x93\x02M:\x01*\"H/v1/routines/{routine_id}/exercise_instances/{exercise_instance_id}/sets\x12\xe6\x01\n" +
 	"\x1bUpdateSetInExerciseInstance\x12?.fitness_trainer.api.workout.UpdateSetInExerciseInstanceRequest\x1a(.fitness_trainer.api.workout.SetResponse\"\\\x82\xd3\xe4\x93\x02V:\x01*\x1aQ/v1/routines/{routine_id}/exercise_instances/{exercise_instance_id}/sets/{set_id}\x12\xd5\x01\n" +
 	"\x1dRemoveSetFromExerciseInstance\x12A.fitness_trainer.api.workout.RemoveSetFromExerciseInstanceRequest\x1a\x16.google.protobuf.Empty\"Y\x82\xd3\xe4\x93\x02S*Q/v1/routines/{routine_id}/exercise_instances/{exercise_instance_id}/sets/{set_id}\x12\x9f\x01\n" +
-	"\x10SetExerciseOrder\x124.fitness_trainer.api.workout.SetExerciseOrderRequest\x1a\x16.google.protobuf.Empty\"=\x82\xd3\xe4\x93\x027:\x01*\"2/v1/routines/{routine_id}/exercise_instances/order2\xcc\x18\n" +
+	"\x10SetExerciseOrder\x124.fitness_trainer.api.workout.SetExerciseOrderRequest\x1a\x16.google.protobuf.Empty\"=\x82\xd3\xe4\x93\x027:\x01*\"2/v1/routines/{routine_id}/exercise_instances/order2\xcf\x18\n" +
 	"\x0eWorkoutService\x12\x87\x01\n" +
 	"\fStartWorkout\x120.fitness_trainer.api.workout.StartWorkoutRequest\x1a,.fitness_trainer.api.workout.WorkoutResponse\"\x17\x82\xd3\xe4\x93\x02\x11:\x01*\"\f/v1/workouts\x12\x90\x01\n" +
 	"\n" +
@@ -6935,8 +6935,8 @@ const file_workouts_workouts_proto_rawDesc = "" +
 	"\x10GetWorkoutReport\x124.fitness_trainer.api.workout.GetWorkoutReportRequest\x1a2.fitness_trainer.api.workout.WorkoutReportResponse\"(\x82\xd3\xe4\x93\x02\"\x12 /v1/workouts/{workout_id}/report\x12\x97\x01\n" +
 	"\vRateWorkout\x12/.fitness_trainer.api.workout.RateWorkoutRequest\x1a,.fitness_trainer.api.workout.WorkoutResponse\")\x82\xd3\xe4\x93\x02#:\x01*\"\x1e/v1/workouts/{workout_id}/rate\x12\xaa\x01\n" +
 	"\x13AddCommentToWorkout\x127.fitness_trainer.api.workout.AddCommentToWorkoutRequest\x1a,.fitness_trainer.api.workout.WorkoutResponse\",\x82\xd3\xe4\x93\x02&:\x01*\"!/v1/workouts/{workout_id}/comment\x12\xe1\x01\n" +
-	"\x1bUpdateExerciseLogWeightUnit\x12?.fitness_trainer.api.workout.UpdateExerciseLogWeightUnitRequest\x1a0.fitness_trainer.api.workout.ExerciseLogResponse\"O\x82\xd3\xe4\x93\x02I:\x01*2D/v1/workouts/{workout_id}/log/exercise/{exercise_log_id}/weight_unit\x12\x8a\x01\n" +
-	"\fGetAnalytics\x120.fitness_trainer.api.workout.GetAnalyticsRequest\x1a1.fitness_trainer.api.workout.GetAnalyticsResponse\"\x15\x82\xd3\xe4\x93\x02\x0f\x12\r/v1/analytics2\xdc\a\n" +
+	"\x1bUpdateExerciseLogWeightUnit\x12?.fitness_trainer.api.workout.UpdateExerciseLogWeightUnitRequest\x1a0.fitness_trainer.api.workout.ExerciseLogResponse\"O\x82\xd3\xe4\x93\x02I:\x01*2D/v1/workouts/{workout_id}/log/exercise/{exercise_log_id}/weight_unit\x12\x8d\x01\n" +
+	"\fGetAnalytics\x120.fitness_trainer.api.workout.GetAnalyticsRequest\x1a1.fitness_trainer.api.workout.GetAnalyticsResponse\"\x18\x82\xd3\xe4\x93\x02\x12:\x01*\"\r/v1/analytics2\xdc\a\n" +
 	"\vUserService\x12~\n" +
 	"\aGetUser\x12+.fitness_trainer.api.workout.GetUserRequest\x1a).fitness_trainer.api.workout.UserResponse\"\x1b\x82\xd3\xe4\x93\x02\x15\x12\x13/v1/users/{user_id}\x12`\n" +
 	"\x05GetMe\x12\x16.google.protobuf.Empty\x1a).fitness_trainer.api.workout.UserResponse\"\x14\x82\xd3\xe4\x93\x02\x0e\x12\f/v1/users/me\x12}\n" +

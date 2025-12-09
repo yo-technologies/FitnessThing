@@ -2,53 +2,78 @@ package repository
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"time"
 
 	"fitness-trainer/internal/domain"
 
-	sq "github.com/Masterminds/squirrel"
 	"github.com/georgysavva/scany/v2/pgxscan"
+	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/opentracing/opentracing-go"
 )
 
 func (r *PGXRepository) GetAnalyticsRawData(ctx context.Context, userID domain.ID, from, to time.Time, muscleGroupIDs []domain.ID, exerciseIDs []domain.ID) ([]domain.AnalyticsRawData, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "repository.GetAnalyticsRawData")
+	defer span.Finish()
+
 	engine := r.contextManager.GetEngineFromContext(ctx)
 
-	psql := sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
+	if muscleGroupIDs == nil {
+		muscleGroupIDs = []domain.ID{}
+	}
 
-	query := psql.Select(
-		"w.finished_at",
-		"e.id as exercise_id",
-		"e.name as exercise_name",
-		"mg.id as muscle_group_id",
-		"mg.name as muscle_group_name",
-		"sl.weight",
-		"sl.reps",
-	).
-		From("workouts w").
-		Join("exercise_logs el ON el.workout_id = w.id").
-		Join("set_logs sl ON sl.exercise_log_id = el.id").
-		Join("exercises e ON e.id = el.exercise_id").
-		Join("exercise_muscle_groups emg ON emg.exercise_id = e.id").
-		Join("muscle_groups mg ON mg.id = emg.muscle_group_id").
-		Where(sq.Eq{"w.user_id": userID}).
-		Where(sq.GtOrEq{"w.finished_at": from}).
-		Where(sq.LtOrEq{"w.finished_at": to})
+	if exerciseIDs == nil {
+		exerciseIDs = []domain.ID{}
+	}
+
+	query := strings.Builder{}
+	query.WriteString(`
+		SELECT DISTINCT ON (sl.id, mg.id)
+			w.finished_at,
+			e.id as exercise_id,
+			e.name as exercise_name,
+			mg.id as muscle_group_id,
+			mg.name as muscle_group_name,
+			sl.weight,
+			sl.reps
+		FROM workouts w
+		INNER JOIN exercise_logs el ON el.workout_id = w.id
+		INNER JOIN set_logs sl ON sl.exercise_log_id = el.id
+		INNER JOIN exercises e ON e.id = el.exercise_id
+		INNER JOIN exercise_muscle_groups emg ON emg.exercise_id = e.id
+		INNER JOIN muscle_groups mg ON mg.id = emg.muscle_group_id
+		WHERE w.user_id = $1
+			AND w.finished_at IS NOT NULL
+			AND w.finished_at >= $2
+			AND w.finished_at <= $3
+	`)
+
+	args := []any{userID, timeToPgtype(from), timeToPgtype(to)}
+	nextArg := 4
 
 	if len(muscleGroupIDs) > 0 {
-		query = query.Where(sq.Eq{"mg.id": muscleGroupIDs})
+		query.WriteString(fmt.Sprintf("\t\t\tAND mg.id = ANY($%d)\n", nextArg))
+		args = append(args, pgtype.FlatArray[pgtype.UUID](uuidsToPgtype(muscleGroupIDs)))
+		nextArg++
 	}
 
 	if len(exerciseIDs) > 0 {
-		query = query.Where(sq.Eq{"e.id": exerciseIDs})
+		query.WriteString(fmt.Sprintf("\t\t\tAND e.id = ANY($%d)\n", nextArg))
+		args = append(args, pgtype.FlatArray[pgtype.UUID](uuidsToPgtype(exerciseIDs)))
+		nextArg++
 	}
 
-	sql, args, err := query.ToSql()
-	if err != nil {
-		return nil, err
-	}
+	query.WriteString("\t\tORDER BY sl.id, mg.id, w.finished_at DESC\n")
 
 	var data []domain.AnalyticsRawData
-	if err := pgxscan.Select(ctx, engine, &data, sql, args...); err != nil {
+	if err := pgxscan.Select(
+		ctx,
+		engine,
+		&data,
+		query.String(),
+		args...,
+	); err != nil {
 		return nil, err
 	}
 

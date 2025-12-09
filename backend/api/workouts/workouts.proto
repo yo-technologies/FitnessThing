@@ -677,7 +677,8 @@ service WorkoutService {
   // Получить аналитику
   rpc GetAnalytics(GetAnalyticsRequest) returns (GetAnalyticsResponse) {
     option (google.api.http) = {
-      get: "/v1/analytics"
+      post: "/v1/analytics"
+      body: "*"
     };
   }
 }

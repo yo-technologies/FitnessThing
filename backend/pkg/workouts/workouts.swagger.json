@@ -38,7 +38,7 @@
   ],
   "paths": {
     "/v1/analytics": {
-      "get": {
+      "post": {
         "summary": "Получить аналитику",
         "operationId": "WorkoutService_GetAnalytics",
         "responses": {
@@ -57,36 +57,12 @@
         },
         "parameters": [
           {
-            "name": "from",
-            "in": "query",
-            "required": false,
-            "type": "string",
-            "format": "date-time"
-          },
-          {
-            "name": "to",
-            "in": "query",
-            "required": false,
-            "type": "string",
-            "format": "date-time"
-          },
-          {
-            "name": "muscleGroup",
-            "in": "query",
-            "required": false,
-            "type": "string"
-          },
-          {
-            "name": "exerciseId",
-            "in": "query",
-            "required": false,
-            "type": "string"
-          },
-          {
-            "name": "splitByExercise",
-            "in": "query",
-            "required": false,
-            "type": "boolean"
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/workoutGetAnalyticsRequest"
+            }
           }
         ],
         "tags": [
@@ -2362,6 +2338,28 @@
         "EXPERIENCE_LEVEL_ADVANCED"
       ],
       "default": "EXPERIENCE_LEVEL_UNSPECIFIED"
+    },
+    "workoutGetAnalyticsRequest": {
+      "type": "object",
+      "properties": {
+        "from": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "to": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "muscleGroup": {
+          "type": "string"
+        },
+        "exerciseId": {
+          "type": "string"
+        },
+        "splitByExercise": {
+          "type": "boolean"
+        }
+      }
     },
     "workoutGetAnalyticsResponse": {
       "type": "object",
