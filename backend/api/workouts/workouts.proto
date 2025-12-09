@@ -673,6 +673,14 @@ service WorkoutService {
       body: "*"
     };
   }
+
+  // Получить аналитику
+  rpc GetAnalytics(GetAnalyticsRequest) returns (GetAnalyticsResponse) {
+    option (google.api.http) = {
+      post: "/v1/analytics"
+      body: "*"
+    };
+  }
 }
 
 message StartWorkoutRequest {
@@ -1186,4 +1194,26 @@ message GetLLMLimitsResponse {
   int32 used = 2;            // Использованные токены за день
   int32 reserved = 3;        // Зарезервированные токены (в процессе)
   int32 remaining = 4;       // Остаток = max(daily_limit - used - reserved, 0)
+}
+
+message GetAnalyticsRequest {
+  google.protobuf.Timestamp from = 1;
+  google.protobuf.Timestamp to = 2;
+  optional string muscle_group = 3;
+  optional string exercise_id = 4;
+  bool split_by_exercise = 5;
+}
+
+message AnalyticsPoint {
+  google.protobuf.Timestamp date = 1;
+  double value = 2;
+}
+
+message AnalyticsSeries {
+  string name = 1;
+  repeated AnalyticsPoint points = 2;
+}
+
+message GetAnalyticsResponse {
+  repeated AnalyticsSeries series = 1;
 }

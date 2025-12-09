@@ -37,6 +37,39 @@
     "application/json"
   ],
   "paths": {
+    "/v1/analytics": {
+      "post": {
+        "summary": "Получить аналитику",
+        "operationId": "WorkoutService_GetAnalytics",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/workoutGetAnalyticsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/workoutGetAnalyticsRequest"
+            }
+          }
+        ],
+        "tags": [
+          "WorkoutService"
+        ]
+      }
+    },
     "/v1/chats/llm_limits": {
       "get": {
         "summary": "Получить состояние лимитов/квот LLM для текущего пользователя",
@@ -1914,6 +1947,34 @@
         }
       }
     },
+    "workoutAnalyticsPoint": {
+      "type": "object",
+      "properties": {
+        "date": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "value": {
+          "type": "number",
+          "format": "double"
+        }
+      }
+    },
+    "workoutAnalyticsSeries": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "points": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/workoutAnalyticsPoint"
+          }
+        }
+      }
+    },
     "workoutChat": {
       "type": "object",
       "properties": {
@@ -2277,6 +2338,40 @@
         "EXPERIENCE_LEVEL_ADVANCED"
       ],
       "default": "EXPERIENCE_LEVEL_UNSPECIFIED"
+    },
+    "workoutGetAnalyticsRequest": {
+      "type": "object",
+      "properties": {
+        "from": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "to": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "muscleGroup": {
+          "type": "string"
+        },
+        "exerciseId": {
+          "type": "string"
+        },
+        "splitByExercise": {
+          "type": "boolean"
+        }
+      }
+    },
+    "workoutGetAnalyticsResponse": {
+      "type": "object",
+      "properties": {
+        "series": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/workoutAnalyticsSeries"
+          }
+        }
+      }
     },
     "workoutGetChatRequest": {
       "type": "object",

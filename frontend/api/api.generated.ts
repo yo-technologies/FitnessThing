@@ -133,6 +133,18 @@ export interface RpcStatus {
   details?: ProtobufAny[];
 }
 
+export interface WorkoutAnalyticsPoint {
+  /** @format date-time */
+  date?: string;
+  /** @format double */
+  value?: number;
+}
+
+export interface WorkoutAnalyticsSeries {
+  name?: string;
+  points?: WorkoutAnalyticsPoint[];
+}
+
 export interface WorkoutChat {
   id?: string;
   userId?: string;
@@ -295,6 +307,20 @@ export enum WorkoutExperienceLevel {
   EXPERIENCE_LEVEL_BEGINNER = "EXPERIENCE_LEVEL_BEGINNER",
   EXPERIENCE_LEVEL_INTERMEDIATE = "EXPERIENCE_LEVEL_INTERMEDIATE",
   EXPERIENCE_LEVEL_ADVANCED = "EXPERIENCE_LEVEL_ADVANCED",
+}
+
+export interface WorkoutGetAnalyticsRequest {
+  /** @format date-time */
+  from?: string;
+  /** @format date-time */
+  to?: string;
+  muscleGroup?: string;
+  exerciseId?: string;
+  splitByExercise?: boolean;
+}
+
+export interface WorkoutGetAnalyticsResponse {
+  series?: WorkoutAnalyticsSeries[];
 }
 
 export interface WorkoutGetChatRequest {
@@ -766,6 +792,26 @@ export class HttpClient<SecurityDataType = unknown> {
  */
 export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDataType> {
   v1 = {
+    /**
+     * No description
+     *
+     * @tags WorkoutService
+     * @name WorkoutServiceGetAnalytics
+     * @summary Получить аналитику
+     * @request POST:/v1/analytics
+     * @secure
+     */
+    workoutServiceGetAnalytics: (body: WorkoutGetAnalyticsRequest, params: RequestParams = {}) =>
+      this.request<WorkoutGetAnalyticsResponse, RpcStatus>({
+        path: `/v1/analytics`,
+        method: "POST",
+        body: body,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
     /**
      * No description
      *

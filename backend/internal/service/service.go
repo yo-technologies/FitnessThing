@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"time"
 
 	"fitness-trainer/internal/domain"
 	"fitness-trainer/internal/domain/dto"
@@ -105,6 +106,10 @@ type chatRepository interface {
 	ListChatMessages(ctx context.Context, chatID domain.ID, limit, offset int) ([]domain.ChatMessage, error)
 }
 
+type analyticsRepository interface {
+	GetAnalyticsRawData(ctx context.Context, userID domain.ID, from, to time.Time, muscleGroupIDs []domain.ID, exerciseIDs []domain.ID) ([]domain.AnalyticsRawData, error)
+}
+
 type repository interface {
 	userRepository
 	userFactRepository
@@ -120,6 +125,7 @@ type repository interface {
 	generationSettingsRepository
 	promptRepository
 	chatRepository
+	analyticsRepository
 }
 
 type unitOfWork interface {

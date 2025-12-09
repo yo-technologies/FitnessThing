@@ -106,9 +106,9 @@ export default function ProfilePage() {
           label="История тренировок"
         />
         <SubPageButton
-          href="/profile/records"
+          href="/profile/analytics"
           icon={<TrophyIcon className="w-4 h-4" fill="currentColor" />}
-          label="Рекорды"
+          label="Аналитика"
         />
         <SubPageButton
           href="/profile/generation-settings"
