@@ -9,6 +9,13 @@
     box-sizing: border-box;
 }
 
+/* Стили для code блоков в markdown */
+pre {
+    max-width: 100%;
+    overflow-x: auto;
+    white-space: pre;
+}
+
 /* Когда открыта клавиатура (управляется через documentElement.classList) */
 .kb-open body .app-navbar {
     transform: translateY(100%);
