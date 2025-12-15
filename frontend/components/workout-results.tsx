@@ -114,6 +114,19 @@ export function WorkoutResults({
 
   useEffect(() => {
     fetchData();
+
+    // Слушаем событие обновления данных из layout (когда чат применяет инструменты)
+    const handleDataUpdate = () => {
+      fetchWorkoutDetails().catch((e) => {
+        console.warn("Failed to refresh workout results after data update", e);
+      });
+    };
+
+    window.addEventListener("workout-data-updated", handleDataUpdate);
+
+    return () => {
+      window.removeEventListener("workout-data-updated", handleDataUpdate);
+    };
   }, []);
 
   if (isLoading) {

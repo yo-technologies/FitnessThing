@@ -18,14 +18,12 @@ import { addToast } from "@heroui/toast";
 
 import {
   BoltIcon,
-  ChatBubbleIcon,
   ChevronRightIcon,
   PlusIcon,
 } from "@/config/icons";
 import { ModalSelectExercise } from "@/components/pick-exercises-modal";
 import { PageHeader } from "@/components/page-header";
 import { Loading } from "@/components/loading";
-import { WorkoutChatPanel } from "@/components/workout-chat";
 import {
   WorkoutExerciseLogDetails,
   WorkoutGetWorkoutResponse,
@@ -184,39 +182,8 @@ export default function WorkoutDetailsPage({
   const { id } = use(params);
 
   const router = useRouter();
-  const searchParams = useSearchParams();
 
   const { isOpen, onOpen, onClose } = useDisclosure();
-
-  const {
-    isOpen: isChatOpen,
-    onOpen: onChatOpen,
-    onClose: onChatClose,
-  } = useDisclosure();
-
-  // Открываем чат автоматически и предзаполняем инпут, если переданы параметры
-  const prefill = searchParams.get("prefill") ?? undefined;
-  const shouldOpenChat = searchParams.get("openChat") === "1";
-
-  // Автоматическое открытие чата при загрузке страницы
-  useEffect(() => {
-    if (shouldOpenChat) {
-      onChatOpen();
-      try {
-        const url = new URL(window.location.href);
-
-        if (!url.searchParams.has("openChat")) return;
-
-        url.searchParams.delete("openChat");
-
-        const newUrl = `${url.pathname}${url.search ? `?${url.searchParams.toString()}` : ""}${url.hash}`;
-
-        window.history.replaceState(null, "", newUrl);
-      } catch {
-        // no-op
-      }
-    }
-  }, []);
 
   const fetchWorkoutDetails = useCallback(async () => {
     try {
@@ -228,21 +195,6 @@ export default function WorkoutDetailsPage({
       throw error;
     }
   }, [id]);
-
-  // При закрытии панели чата обновляем данные тренировки (вдруг были изменения через инструменты)
-  const handleChatClose = useCallback(() => {
-    onChatClose();
-    // Лёгкий рефреш без изменения глобального isLoading, чтобы не мигал весь экран
-    fetchWorkoutDetails().catch((e) => {
-      console.warn("Failed to refresh workout after chat close", e);
-    });
-  }, [onChatClose, fetchWorkoutDetails]);
-
-  const handleToolSuccess = useCallback(() => {
-    fetchWorkoutDetails().catch((e) => {
-      console.warn("Failed to refresh workout after tool success", e);
-    });
-  }, [fetchWorkoutDetails]);
 
   async function fetchData() {
     setIsLoading(true);
@@ -328,7 +280,20 @@ export default function WorkoutDetailsPage({
 
   useEffect(() => {
     fetchData();
-  }, []);
+
+    // Слушаем событие обновления данных из layout (когда чат применяет инструменты)
+    const handleDataUpdate = () => {
+      fetchWorkoutDetails().catch((e) => {
+        console.warn("Failed to refresh workout after data update", e);
+      });
+    };
+
+    window.addEventListener("workout-data-updated", handleDataUpdate);
+
+    return () => {
+      window.removeEventListener("workout-data-updated", handleDataUpdate);
+    };
+  }, [fetchWorkoutDetails]);
 
   if (isLoading) {
     return <Loading />;
@@ -482,32 +447,9 @@ export default function WorkoutDetailsPage({
           onSubmit={addExercisesToWorkout}
         />
         <FinishWorkoutModal />
-        <Button
-          isIconOnly
-          aria-label="Открыть чат с тренером"
-          className="fixed bottom-20 right-6 z-40 shadow-lg w-12 h-12 shadow-lg"
-          color="secondary"
-          radius="full"
-          size="sm"
-          variant="shadow"
-          onPress={onChatOpen}
-        >
-          <ChatBubbleIcon className="h-6 w-6" />
-        </Button>
       </>
     );
   }
 
-  return (
-    <>
-      <MainContent />
-      <WorkoutChatPanel
-        isOpen={isChatOpen}
-        prefill={prefill}
-        workoutId={id}
-        onClose={handleChatClose}
-        onToolComplete={handleToolSuccess}
-      />
-    </>
-  );
+  return <MainContent />;
 }

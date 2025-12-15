@@ -123,6 +123,19 @@ export default function RoutineDetailsPage({
 
   useEffect(() => {
     fetchData();
+
+    // Слушаем событие обновления данных из layout (когда чат применяет инструменты)
+    const handleDataUpdate = () => {
+      fetchExerciseLogDetails().catch((e) => {
+        console.warn("Failed to refresh exercise log after data update", e);
+      });
+    };
+
+    window.addEventListener("workout-data-updated", handleDataUpdate);
+
+    return () => {
+      window.removeEventListener("workout-data-updated", handleDataUpdate);
+    };
   }, []);
 
   useEffect(() => {
