@@ -27,6 +27,15 @@ import {
 import { GearIcon, UpArrowIcon } from "@/config/icons";
 import { formatToolLabel } from "@/config/tools";
 
+function TypingIndicator() {
+  return (
+    <div className="flex items-center gap-1">
+      <span className="text-sm text-default-500">печатает</span>
+      <Spinner variant="wave" size="sm" />
+    </div>
+  );
+}
+
 type WorkoutChatPanelProps = {
   workoutId: string;
   isOpen: boolean;
@@ -183,7 +192,7 @@ function MessageBubble({
             className={`max-w-full rounded-large text-sm shadow-sm ${bubbleClasses}`}
           >
             <AssistantMarkdown content={message.content} />
-            {isStreaming && <span className="ml-1 animate-pulse">▍</span>}
+            {isStreaming && !isUser && <TypingIndicator />}
           </div>
           {message.createdAt && isUser && (
             <span className="text-[10px] font-light leading-none text-default-500 whitespace-nowrap">
@@ -870,7 +879,7 @@ export const WorkoutChatPanel = memo(function WorkoutChatPanel({
   const showThinking = streamState.status === "assistant_thinking";
   const statusMessage = useMemo(() => {
     if (showThinking) {
-      return "Тренер думает…";
+      return null;
     }
     if (error) {
       return error;
