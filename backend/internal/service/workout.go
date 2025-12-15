@@ -9,6 +9,7 @@ import (
 	"fitness-trainer/internal/domain"
 	"fitness-trainer/internal/domain/dto"
 	"fitness-trainer/internal/logger"
+	"fitness-trainer/internal/utils"
 
 	"github.com/opentracing/opentracing-go"
 )
@@ -671,7 +672,7 @@ func (s *Service) RateWorkout(ctx context.Context, userID, workoutID domain.ID, 
 		return domain.Workout{}, fmt.Errorf("%w: workout %s is not finished", domain.ErrInvalidArgument, workoutID)
 	}
 
-	workout.Rating = rating
+	workout.Rating = utils.NewNullable(rating, true)
 
 	workout, err = s.repository.UpdateWorkout(ctx, workoutID, workout)
 	if err != nil {

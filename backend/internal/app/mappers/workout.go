@@ -32,7 +32,12 @@ func WorkoutToProto(workout domain.Workout) *desc.Workout {
 		UserId:           workout.UserID.String(),
 		CreatedAt:        timestamppb.New(workout.CreatedAt),
 		Notes:            workout.Notes,
-		Rating:           int32(workout.Rating),
+		Rating: func() int32 {
+			if workout.Rating.IsValid {
+				return int32(workout.Rating.V)
+			}
+			return 0
+		}(),
 		FinishedAt:       timestamppb.New(workout.FinishedAt),
 		UpdatedAt:        timestamppb.New(workout.UpdatedAt),
 	}

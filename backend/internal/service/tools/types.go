@@ -290,7 +290,12 @@ func (t *Tools) convertWorkoutsToHistoryResponse(ctx context.Context, workoutsDT
 			ID:         workoutDTO.Workout.ID.String(),
 			CreatedAt:  workoutDTO.Workout.CreatedAt,
 			FinishedAt: workoutDTO.Workout.FinishedAt,
-			Rating:     workoutDTO.Workout.Rating,
+			Rating: func() int {
+				if workoutDTO.Workout.Rating.IsValid {
+					return workoutDTO.Workout.Rating.V
+				}
+				return 0
+			}(),
 			Notes:      workoutDTO.Workout.Notes,
 			Exercises:  exercises,
 		})

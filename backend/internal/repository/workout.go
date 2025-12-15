@@ -19,7 +19,7 @@ type workoutEntity struct {
 	UserID     pgtype.UUID
 	RoutineID  pgtype.UUID
 	Notes      string
-	Rating     int
+	Rating     pgtype.Int4
 	FinishedAt pgtype.Timestamptz
 	CreatedAt  pgtype.Timestamptz
 	UpdatedAt  pgtype.Timestamptz
@@ -35,7 +35,7 @@ func (w workoutEntity) toDomain() domain.Workout {
 		UserID:     domain.ID(w.UserID.Bytes),
 		RoutineID:  utils.NewNullable(domain.ID(w.RoutineID.Bytes), w.RoutineID.Valid),
 		Notes:      w.Notes,
-		Rating:     w.Rating,
+		Rating:     utils.NewNullable(int(w.Rating.Int32), w.Rating.Valid),
 		FinishedAt: w.FinishedAt.Time,
 	}
 }
@@ -46,7 +46,7 @@ func workoutFromDomain(workout domain.Workout) workoutEntity {
 		UserID:     uuidToPgtype(workout.UserID),
 		RoutineID:  pgtype.UUID{Bytes: uuid.UUID(workout.RoutineID.V), Valid: workout.RoutineID.IsValid},
 		Notes:      workout.Notes,
-		Rating:     workout.Rating,
+		Rating:     pgtype.Int4{Int32: int32(workout.Rating.V), Valid: workout.Rating.IsValid},
 		FinishedAt: timeToPgtype(workout.FinishedAt),
 		CreatedAt:  timeToPgtype(workout.CreatedAt),
 		UpdatedAt:  timeToPgtype(workout.UpdatedAt),
@@ -96,7 +96,7 @@ func (r *PGXRepository) GetWorkoutByID(ctx context.Context, id domain.ID) (domai
 	defer span.Finish()
 
 	query := `
-		SELECT id, user_id, routine_id, created_at, notes, rating, finished_at, updated_at
+		SELECT id, user_id, routine_id, notes, rating, finished_at, created_at, updated_at
 		FROM workouts
 		WHERE id = $1
 	`
@@ -120,7 +120,7 @@ func (r *PGXRepository) GetActiveWorkouts(ctx context.Context, userID domain.ID)
 	defer span.Finish()
 
 	query := `
-		SELECT id, user_id, routine_id, created_at, notes, rating, finished_at, updated_at
+		SELECT id, user_id, routine_id, notes, rating, finished_at, created_at, updated_at
 		FROM workouts
 		WHERE user_id = $1 AND finished_at IS NULL
 	`
@@ -192,7 +192,7 @@ func (r *PGXRepository) GetWorkouts(ctx context.Context, userID domain.ID, limit
 	defer span.Finish()
 
 	query := `
-		SELECT id, user_id, routine_id, created_at, notes, rating, finished_at, updated_at
+		SELECT id, user_id, routine_id, notes, rating, finished_at, created_at, updated_at
 		FROM workouts
 		WHERE user_id = $1 AND finished_at IS NOT NULL
 		ORDER BY created_at DESC

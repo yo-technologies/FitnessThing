@@ -295,7 +295,7 @@ type Workout struct {
 	UserID     ID
 	RoutineID  utils.Nullable[ID]
 	Notes      string
-	Rating     int
+	Rating     utils.Nullable[int]
 	FinishedAt time.Time
 }
 
