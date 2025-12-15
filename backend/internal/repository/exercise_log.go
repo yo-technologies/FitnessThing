@@ -17,7 +17,7 @@ type exerciseLogEntity struct {
 	Notes       string             `db:"notes"`
 	PowerRating int                `db:"power_rating"`
 	WeightUnit  string             `db:"weight_unit"`
-	Order       int                `db:"order"`
+	Order       pgtype.Int4        `db:"order"`
 	CreatedAt   pgtype.Timestamptz `db:"created_at"`
 	UpdateAt    pgtype.Timestamptz `db:"updated_at"`
 }
@@ -27,6 +27,11 @@ func (e exerciseLogEntity) toDomain() domain.ExerciseLog {
 	if err != nil {
 		logger.Errorf("failed to convert weight unit: %v", err)
 		wu = domain.WeightUnitKG
+	}
+
+	order := 0
+	if e.Order.Valid {
+		order = int(e.Order.Int32)
 	}
 
 	return domain.ExerciseLog{
@@ -40,7 +45,7 @@ func (e exerciseLogEntity) toDomain() domain.ExerciseLog {
 		Notes:       e.Notes,
 		PowerRating: e.PowerRating,
 		WeightUnit:  wu,
-		Order:       e.Order,
+		Order:       order,
 	}
 }
 
@@ -52,7 +57,7 @@ func exerciseLogFromDomain(exerciseLog domain.ExerciseLog) exerciseLogEntity {
 		Notes:       exerciseLog.Notes,
 		PowerRating: exerciseLog.PowerRating,
 		WeightUnit:  exerciseLog.WeightUnit.String(),
-		Order:       exerciseLog.Order,
+		Order:       pgtype.Int4{Int32: int32(exerciseLog.Order), Valid: true},
 		CreatedAt:   timeToPgtype(exerciseLog.CreatedAt),
 		UpdateAt:    timeToPgtype(exerciseLog.UpdatedAt),
 	}
