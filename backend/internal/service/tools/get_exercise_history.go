@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fitness-trainer/internal/domain"
 	"fmt"
+
 	"github.com/opentracing/opentracing-go"
 )
 
@@ -29,7 +30,7 @@ func (t *Tools) newGetExerciseHistoryTool() agentTool {
 
 	return agentTool{
 		name:    "get_exercise_history",
-		desc:    "Return recent performance history for a specific exercise. Each log includes power_rating — integer from 0 to 10 representing perceived exertion.",
+		desc:    "Return recent performance history for a specific exercise. Each log includes power_rating — integer from 0 to 10 representing perceived exertion, and order in the workout.",
 		params:  schema,
 		handler: t.getExerciseHistoryHandler,
 	}
