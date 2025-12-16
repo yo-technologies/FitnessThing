@@ -6,7 +6,7 @@ import * as React from "react";
 import { HeroUIProvider } from "@heroui/system";
 import { useRouter } from "next/navigation";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
-import { init, swipeBehavior } from "@tma.js/sdk-react";
+import { init, swipeBehavior, viewport } from "@tma.js/sdk-react";
 import { I18nProvider } from "@react-aria/i18n";
 
 export interface ProvidersProps {
@@ -28,6 +28,8 @@ function TelegramMiniAppProvider({ children }: ProvidersProps) {
       init();
       swipeBehavior.mount();
       swipeBehavior.disableVertical.ifAvailable();
+      
+      viewport.expand.ifAvailable();  
     } catch (e) {
       console.log("Error while initializing Telegram Mini App SDK");
       console.log(e);
