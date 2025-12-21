@@ -152,14 +152,14 @@ func (r *PGXRepository) GetExerciseLogsByExerciseIDAndUserID(ctx context.Context
 
 	engine := r.contextManager.GetEngineFromContext(ctx)
 
-	var exerciseLogs []domain.ExerciseLog
-	err := pgxscan.Select(ctx, engine, &exerciseLogs, query, exerciseID, userID, limit, offset)
+	var exerciseLogs []exerciseLogEntity
+	err := pgxscan.Select(ctx, engine, &exerciseLogs, query, uuidToPgtype(exerciseID), uuidToPgtype(userID), limit, offset)
 	if err != nil {
 		logger.Errorf("failed to get exercise logs by exercise id and user id: %v", err)
 		return nil, err
 	}
 
-	return exerciseLogs, nil
+	return toExerciseLogsDomain(exerciseLogs), nil
 }
 
 func (r *PGXRepository) DeleteExerciseLog(ctx context.Context, id domain.ID) error {
