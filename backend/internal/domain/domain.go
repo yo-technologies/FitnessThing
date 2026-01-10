@@ -315,7 +315,6 @@ type ExerciseLog struct {
 	Notes       string
 	PowerRating int
 	WeightUnit  WeightUnit
-	Order       int
 }
 
 func NewExerciseLog(workoutID, exerciseID ID, weightUnit WeightUnit) ExerciseLog {

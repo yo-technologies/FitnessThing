@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"fmt"
-	"sort"
 	"time"
 
 	"fitness-trainer/internal/domain"
@@ -13,6 +12,8 @@ import (
 
 	"github.com/opentracing/opentracing-go"
 )
+
+const workoutsCount = 8
 
 func (s *Service) StartWorkout(ctx context.Context, userID domain.ID, opts domain.StartWorkoutOpts) (domain.Workout, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "service.StartWorkout")
@@ -394,43 +395,6 @@ func (s *Service) CompleteWorkout(ctx context.Context, userID, workoutID domain.
 
 		if len(exerciseLogs) == 0 {
 			return fmt.Errorf("%w: workout %s has no exercise logs", domain.ErrInvalidArgument, workoutID)
-		}
-
-		// Set order based on the time of the first set log
-		type exerciseWithTime struct {
-			log  domain.ExerciseLog
-			time time.Time
-		}
-		var exercisesWithTime []exerciseWithTime
-		for _, log := range exerciseLogs {
-			setLogs, err := s.repository.GetSetLogsByExerciseLogID(txCtx, log.ID)
-			if err != nil {
-				return err
-			}
-			if len(setLogs) == 0 {
-				continue // skip if no sets
-			}
-			minTime := setLogs[0].CreatedAt
-			for _, set := range setLogs {
-				if set.CreatedAt.Before(minTime) {
-					minTime = set.CreatedAt
-				}
-			}
-			exercisesWithTime = append(exercisesWithTime, exerciseWithTime{log: log, time: minTime})
-		}
-
-		// Sort by time
-		sort.Slice(exercisesWithTime, func(i, j int) bool {
-			return exercisesWithTime[i].time.Before(exercisesWithTime[j].time)
-		})
-
-		// Update order
-		for i, ewt := range exercisesWithTime {
-			ewt.log.Order = i + 1
-			_, err := s.repository.UpdateExerciseLog(txCtx, ewt.log.ID, ewt.log)
-			if err != nil {
-				return err
-			}
 		}
 
 		return nil

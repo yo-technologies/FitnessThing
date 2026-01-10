@@ -17,7 +17,6 @@ type exerciseLogEntity struct {
 	Notes       string             `db:"notes"`
 	PowerRating int                `db:"power_rating"`
 	WeightUnit  string             `db:"weight_unit"`
-	Order       pgtype.Int4        `db:"order"`
 	CreatedAt   pgtype.Timestamptz `db:"created_at"`
 	UpdateAt    pgtype.Timestamptz `db:"updated_at"`
 }
@@ -27,11 +26,6 @@ func (e exerciseLogEntity) toDomain() domain.ExerciseLog {
 	if err != nil {
 		logger.Errorf("failed to convert weight unit: %v", err)
 		wu = domain.WeightUnitKG
-	}
-
-	order := 0
-	if e.Order.Valid {
-		order = int(e.Order.Int32)
 	}
 
 	return domain.ExerciseLog{
@@ -45,7 +39,6 @@ func (e exerciseLogEntity) toDomain() domain.ExerciseLog {
 		Notes:       e.Notes,
 		PowerRating: e.PowerRating,
 		WeightUnit:  wu,
-		Order:       order,
 	}
 }
 
@@ -57,7 +50,6 @@ func exerciseLogFromDomain(exerciseLog domain.ExerciseLog) exerciseLogEntity {
 		Notes:       exerciseLog.Notes,
 		PowerRating: exerciseLog.PowerRating,
 		WeightUnit:  exerciseLog.WeightUnit.String(),
-		Order:       pgtype.Int4{Int32: int32(exerciseLog.Order), Valid: true},
 		CreatedAt:   timeToPgtype(exerciseLog.CreatedAt),
 		UpdateAt:    timeToPgtype(exerciseLog.UpdatedAt),
 	}
@@ -77,7 +69,7 @@ func (r *PGXRepository) GetExerciseLogsByWorkoutID(ctx context.Context, workoutI
 	defer span.Finish()
 
 	query := `
-		SELECT id, exercise_id, workout_id, notes, power_rating, weight_unit, "order", created_at, updated_at
+		SELECT id, exercise_id, workout_id, notes, power_rating, weight_unit, created_at, updated_at
 		FROM exercise_logs
 		WHERE workout_id = $1
 		ORDER BY created_at
@@ -98,15 +90,15 @@ func (r *PGXRepository) CreateExerciseLog(ctx context.Context, exerciseLog domai
 	defer span.Finish()
 
 	query := `
-		INSERT INTO exercise_logs (id, exercise_id, workout_id, notes, power_rating, weight_unit, "order", created_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		INSERT INTO exercise_logs (id, exercise_id, workout_id, notes, power_rating, weight_unit, created_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
 		RETURNING *
 	`
 
 	engine := r.contextManager.GetEngineFromContext(ctx)
 
 	exerciseLogEntity := exerciseLogFromDomain(exerciseLog)
-	if err := pgxscan.Get(ctx, engine, &exerciseLogEntity, query, exerciseLogEntity.ID, exerciseLogEntity.ExerciseID, exerciseLogEntity.WorkoutID, exerciseLogEntity.Notes, exerciseLogEntity.PowerRating, exerciseLogEntity.WeightUnit, exerciseLogEntity.Order, exerciseLogEntity.CreatedAt); err != nil {
+	if err := pgxscan.Get(ctx, engine, &exerciseLogEntity, query, exerciseLogEntity.ID, exerciseLogEntity.ExerciseID, exerciseLogEntity.WorkoutID, exerciseLogEntity.Notes, exerciseLogEntity.PowerRating, exerciseLogEntity.WeightUnit, exerciseLogEntity.CreatedAt); err != nil {
 		return domain.ExerciseLog{}, err
 	}
 
@@ -118,7 +110,7 @@ func (r *PGXRepository) GetExerciseLogByID(ctx context.Context, id domain.ID) (d
 	defer span.Finish()
 
 	query := `
-		SELECT id, exercise_id, workout_id, notes, power_rating, weight_unit, "order", created_at, updated_at
+		SELECT id, exercise_id, workout_id, notes, power_rating, weight_unit, created_at, updated_at
 		FROM exercise_logs
 		WHERE id = $1
 	`
@@ -138,7 +130,7 @@ func (r *PGXRepository) GetExerciseLogsByExerciseIDAndUserID(ctx context.Context
 	defer span.Finish()
 
 	query := `
-		SELECT el.id, el.exercise_id, el.workout_id, el.notes, el.power_rating, el.weight_unit, el."order", el.created_at, el.updated_at
+		SELECT el.id, el.exercise_id, el.workout_id, el.notes, el.power_rating, el.weight_unit, el.created_at, el.updated_at
 		FROM exercise_logs el
 		JOIN workouts w ON el.workout_id = w.id
 		JOIN set_logs sl ON el.id = sl.exercise_log_id
@@ -187,15 +179,15 @@ func (r *PGXRepository) UpdateExerciseLog(ctx context.Context, id domain.ID, exe
 
 	query := `
 		UPDATE exercise_logs
-		SET notes = $1, power_rating = $2, weight_unit = $3, "order" = $4, updated_at = now()
-		WHERE id = $5
-		RETURNING id, exercise_id, workout_id, notes, power_rating, weight_unit, "order", created_at, updated_at
+		SET notes = $1, power_rating = $2, weight_unit = $3, updated_at = now()
+		WHERE id = $4
+		RETURNING id, exercise_id, workout_id, notes, power_rating, weight_unit, created_at, updated_at
 	`
 
 	engine := r.contextManager.GetEngineFromContext(ctx)
 
 	exerciseLogEntity := exerciseLogFromDomain(exerciseLog)
-	if err := pgxscan.Get(ctx, engine, &exerciseLogEntity, query, exerciseLogEntity.Notes, exerciseLogEntity.PowerRating, exerciseLogEntity.WeightUnit, exerciseLogEntity.Order, exerciseLogEntity.ID); err != nil {
+	if err := pgxscan.Get(ctx, engine, &exerciseLogEntity, query, exerciseLogEntity.Notes, exerciseLogEntity.PowerRating, exerciseLogEntity.WeightUnit, exerciseLogEntity.ID); err != nil {
 		return domain.ExerciseLog{}, err
 	}
 
