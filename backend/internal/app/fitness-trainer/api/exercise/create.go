@@ -24,7 +24,7 @@ func (i *Implementation) CreateExercise(ctx context.Context, in *desc.CreateExer
 	var exerciseDTO dto.CreateExerciseDTO
 	{
 		exerciseDTO.Name = in.Name
-		
+
 		if in.Description != nil {
 			exerciseDTO.Description = utils.NewNullable(in.GetDescription(), true)
 		}

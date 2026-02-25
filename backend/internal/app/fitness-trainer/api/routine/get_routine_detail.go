@@ -14,7 +14,7 @@ import (
 func (i *Implementation) GetRoutineDetail(ctx context.Context, in *desc.GetRoutineDetailRequest) (*desc.RoutineDetailResponse, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "api.routine.GetRoutineDetail")
 	defer span.Finish()
-	
+
 	if err := in.Validate(); err != nil {
 		return nil, fmt.Errorf("%w: %w", domain.ErrInvalidArgument, err)
 	}

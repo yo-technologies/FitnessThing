@@ -6,8 +6,8 @@ import (
 	"fitness-trainer/internal/domain"
 	"fitness-trainer/internal/domain/dto"
 	"fmt"
-	"time"
 	"github.com/opentracing/opentracing-go"
+	"time"
 )
 
 func (t *Tools) newReplaceExpectedSetsTool() agentTool {

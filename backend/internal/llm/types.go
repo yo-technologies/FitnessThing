@@ -14,6 +14,7 @@ type CompletionProvider interface {
 // Roles for chat messages
 const (
 	RoleSystem    = "system"
+	RoleDeveloper = "developer"
 	RoleUser      = "user"
 	RoleAssistant = "assistant"
 	RoleTool      = "tool"
@@ -21,9 +22,9 @@ const (
 
 // ToolDefinition describes a callable tool for the assistant
 type ToolDefinition struct {
-	Name           string
-	Description    string
-	Parameters     map[string]any // JSON Schema for parameters as a map
+	Name        string
+	Description string
+	Parameters  map[string]any // JSON Schema for parameters as a map
 }
 
 // MessageParam is a message input to the model

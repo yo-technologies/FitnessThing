@@ -13,7 +13,7 @@ import (
 func (i *Implementation) GetMuscleGroups(ctx context.Context, in *emptypb.Empty) (*desc.GetMuscleGroupsResponse, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "api.exercise.GetMuscleGroups")
 	defer span.Finish()
-	
+
 	muscleGroups, err := i.service.GetMuscleGroups(ctx)
 	if err != nil {
 		return nil, err

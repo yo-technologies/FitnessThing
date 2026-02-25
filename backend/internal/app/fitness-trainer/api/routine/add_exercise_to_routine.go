@@ -13,7 +13,7 @@ import (
 func (i *Implementation) AddExerciseToRoutine(ctx context.Context, in *desc.AddExerciseToRoutineRequest) (*desc.RoutineInstanceResponse, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "api.routine.AddExerciseToRoutine")
 	defer span.Finish()
-	
+
 	if err := in.Validate(); err != nil {
 		return nil, fmt.Errorf("%w: %w", domain.ErrInvalidArgument, err)
 	}

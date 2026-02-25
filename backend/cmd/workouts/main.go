@@ -15,7 +15,6 @@ import (
 	s3_client "fitness-trainer/internal/clients/s3"
 	appconfig "fitness-trainer/internal/config"
 	llm_openai "fitness-trainer/internal/llm/openai"
-	prompt_generator_service "fitness-trainer/internal/service/prompt_generator"
 
 	"fitness-trainer/internal/app"
 	"fitness-trainer/internal/db"
@@ -23,7 +22,6 @@ import (
 	"fitness-trainer/internal/logger"
 	"fitness-trainer/internal/repository"
 	"fitness-trainer/internal/service"
-	"fitness-trainer/internal/service/background"
 	"fitness-trainer/internal/service/chat"
 	"fitness-trainer/internal/service/quota"
 	"fitness-trainer/internal/service/tools"
@@ -34,7 +32,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/go-co-op/gocron/v2"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 	"github.com/openai/openai-go/v3"
@@ -134,38 +131,6 @@ func Run() error {
 	)
 
 	telegramTokenParser := newTelegramTokenParser()
-
-	promptGenerationDebounce := cfg.GetPromptGenerationDebounce()
-	promptGenerationPeriod := cfg.GetPromptGenerationPeriod()
-
-	promptGenerationService := prompt_generator_service.New(
-		llmClientWrapper,
-		repo,
-		quotaService,
-	)
-
-	backgroundService := background.New(
-		promptGenerationDebounce,
-		repo,
-		repo,
-		promptGenerationService,
-	)
-
-	scheduler, err := gocron.NewScheduler(
-		gocron.WithLocation(time.UTC),
-	)
-	if err != nil {
-		return fmt.Errorf("failed to create scheduler: %w", err)
-	}
-
-	scheduler.NewJob(
-		gocron.DurationJob(promptGenerationPeriod),
-		gocron.NewTask(backgroundService.GeneratePrompts),
-		gocron.WithSingletonMode(gocron.LimitModeReschedule),
-		gocron.JobOption(gocron.WithStartImmediately()),
-	)
-
-	scheduler.Start()
 
 	app := app.New(
 		service,

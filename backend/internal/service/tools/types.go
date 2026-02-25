@@ -293,8 +293,8 @@ func (t *Tools) convertWorkoutsToHistoryResponse(ctx context.Context, workoutsDT
 				}
 				return 0
 			}(),
-			Notes:      workoutDTO.Workout.Notes,
-			Exercises:  exercises,
+			Notes:     workoutDTO.Workout.Notes,
+			Exercises: exercises,
 		})
 	}
 

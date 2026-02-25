@@ -9,4 +9,3 @@ var swaggerFile []byte
 func GetSwaggerDescription() []byte {
 	return swaggerFile
 }
-

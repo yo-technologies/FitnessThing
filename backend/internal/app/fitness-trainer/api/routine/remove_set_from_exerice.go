@@ -16,11 +16,11 @@ import (
 func (i *Implementation) RemoveSetFromExerciseInstance(ctx context.Context, in *desc.RemoveSetFromExerciseInstanceRequest) (*emptypb.Empty, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "api.routine.RemoveSetFromExerciseInstance")
 	defer span.Finish()
-	
+
 	if err := in.Validate(); err != nil {
 		return nil, fmt.Errorf("%w: %w", domain.ErrInvalidArgument, err)
 	}
-	
+
 	routineID, err := domain.ParseID(in.RoutineId)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", domain.ErrInvalidArgument, err)

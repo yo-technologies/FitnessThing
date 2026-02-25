@@ -26,8 +26,8 @@ type workoutRepository interface {
 	GetWorkoutByID(ctx context.Context, id domain.ID) (domain.Workout, error)
 }
 
-type userPromptRepository interface {
-	GetLastPromptByUserID(ctx context.Context, userID domain.ID) (domain.Prompt, error)
+type generationSettingsRepository interface {
+	GetGenerationSettings(ctx context.Context, userID domain.ID) (domain.GenerationSettings, error)
 }
 
 type userFactRepository interface {
@@ -42,31 +42,31 @@ type quotaService interface {
 }
 
 type Service struct {
-	toolsService         toolsService
-	chatRepository       chatRepository
-	workoutRepository    workoutRepository
-	userPromptRepository userPromptRepository
-	userFactRepository   userFactRepository
-	llmClient            llm.CompletionProvider
-	quotaService         quotaService
+	toolsService                 toolsService
+	chatRepository               chatRepository
+	workoutRepository            workoutRepository
+	generationSettingsRepository generationSettingsRepository
+	userFactRepository           userFactRepository
+	llmClient                    llm.CompletionProvider
+	quotaService                 quotaService
 }
 
 func New(
 	toolsService toolsService,
 	chatRepository chatRepository,
 	workoutRepository workoutRepository,
-	userPromptRepository userPromptRepository,
+	generationSettingsRepository generationSettingsRepository,
 	userFactRepository userFactRepository,
 	llmClient llm.CompletionProvider,
 	quotaSvc quotaService,
 ) *Service {
 	return &Service{
-		toolsService:         toolsService,
-		chatRepository:       chatRepository,
-		workoutRepository:    workoutRepository,
-		userPromptRepository: userPromptRepository,
-		userFactRepository:   userFactRepository,
-		llmClient:            llmClient,
-		quotaService:         quotaSvc,
+		toolsService:                 toolsService,
+		chatRepository:               chatRepository,
+		workoutRepository:            workoutRepository,
+		generationSettingsRepository: generationSettingsRepository,
+		userFactRepository:           userFactRepository,
+		llmClient:                    llmClient,
+		quotaService:                 quotaSvc,
 	}
 }

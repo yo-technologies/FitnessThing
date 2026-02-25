@@ -15,7 +15,7 @@ import (
 func (i *Implementation) RemoveExerciseInstanceFromRoutine(ctx context.Context, in *desc.RemoveExerciseInstanceFromRoutineRequest) (*emptypb.Empty, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "api.routine.RemoveExerciseInstanceFromRoutine")
 	defer span.Finish()
-	
+
 	if err := in.Validate(); err != nil {
 		return nil, fmt.Errorf("%w: %w", domain.ErrInvalidArgument, err)
 	}

@@ -14,7 +14,7 @@ import (
 func (i *Implementation) GetWorkoutReport(ctx context.Context, in *desc.GetWorkoutReportRequest) (*desc.WorkoutReportResponse, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "api.workout.GetWorkoutReport")
 	defer span.Finish()
-	
+
 	if err := in.Validate(); err != nil {
 		return nil, fmt.Errorf("%w: %w", domain.ErrInvalidArgument, err)
 	}

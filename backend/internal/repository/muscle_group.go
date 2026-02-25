@@ -86,8 +86,8 @@ func (r *PGXRepository) GetMuscleGroupsByIDs(ctx context.Context, ids []domain.I
 	var muscleGroups []muscleGroupEntity
 	if err := pgxscan.Select(ctx, engine, &muscleGroups, query, pgtype.FlatArray[pgtype.UUID](uuidsToPgtype(ids))); err != nil {
 		logger.Errorf("failed to get muscle groups by IDs: %v", err)
-			return nil, err
-		}
+		return nil, err
+	}
 
 	var muscleGroupsDTO []dto.MuscleGroupDTO
 	for _, muscleGroup := range muscleGroups {

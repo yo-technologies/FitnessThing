@@ -60,7 +60,7 @@ func expectedSetsToDomain(expectedSets []expectedSetEntity) []domain.ExpectedSet
 func (r *PGXRepository) GetExpectedSetsByExerciseLogID(ctx context.Context, exerciseLogID domain.ID) ([]domain.ExpectedSet, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "repository.GetExpectedSetsByExerciseLogID")
 	defer span.Finish()
-	
+
 	query := `
 		SELECT id, exercise_log_id, set_type, reps, weight, time, created_at, updated_at
 		FROM expected_sets es

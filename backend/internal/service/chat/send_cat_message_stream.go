@@ -481,12 +481,12 @@ func (s *Service) buildChatSystemMessages(ctx context.Context, userID domain.ID,
 
 	messages := []llm.MessageParam{{Role: llm.RoleSystem, Content: defaultChatSystemPrompt}}
 
-	prompt, err := s.userPromptRepository.GetLastPromptByUserID(ctx, userID)
-	if err == nil {
-		messages = append(messages, llm.MessageParam{Role: llm.RoleSystem, Content: fmt.Sprintf("\n\nЛичные пожелания пользователя: %s", prompt.PromptText)})
-	}
-	if err != nil && !errors.Is(err, domain.ErrNotFound) {
+	developerMessage, err := s.buildGenerationSettingsDeveloperMessage(ctx, userID)
+	if err != nil {
 		return nil, fmt.Errorf("failed to load generation settings: %w", err)
+	}
+	if developerMessage != "" {
+		messages = append(messages, llm.MessageParam{Role: llm.RoleDeveloper, Content: developerMessage})
 	}
 
 	facts, err := s.userFactRepository.ListUserFacts(ctx, userID, userFactsContextLimit)
@@ -507,6 +507,61 @@ func (s *Service) buildChatSystemMessages(ctx context.Context, userID domain.ID,
 	}
 
 	return messages, nil
+}
+
+func (s *Service) buildGenerationSettingsDeveloperMessage(ctx context.Context, userID domain.ID) (string, error) {
+	settings, err := s.generationSettingsRepository.GetGenerationSettings(ctx, userID)
+	if err != nil {
+		if errors.Is(err, domain.ErrNotFound) {
+			return "", nil
+		}
+		return "", err
+	}
+
+	var builder strings.Builder
+	builder.WriteString("Контекст настроек пользователя для генерации тренировок. Используй как приоритетные пользовательские предпочтения:\n")
+
+	if value := strings.TrimSpace(settings.BasePrompt.V); settings.BasePrompt.IsValid && value != "" {
+		fmt.Fprintf(&builder, "- Базовые пожелания: %s\n", value)
+	}
+	if settings.VarietyLevel.IsValid {
+		fmt.Fprintf(&builder, "- Уровень разнообразия (1-3): %d\n", settings.VarietyLevel.V)
+	}
+	if settings.PrimaryGoal != domain.GoalUnspecified {
+		fmt.Fprintf(&builder, "- Основная цель: %s\n", settings.PrimaryGoal.String())
+	}
+	if len(settings.SecondaryGoals) > 0 {
+		fmt.Fprintf(&builder, "- Дополнительные цели: %s\n", strings.Join(settings.SecondaryGoals, ", "))
+	}
+	if settings.ExperienceLevel != domain.ExperienceLevelUnspecified {
+		fmt.Fprintf(&builder, "- Уровень подготовки: %s\n", settings.ExperienceLevel.String())
+	}
+	if settings.DaysPerWeek.IsValid {
+		fmt.Fprintf(&builder, "- Тренировок в неделю: %d\n", settings.DaysPerWeek.V)
+	}
+	if settings.SessionDurationMinutes.IsValid {
+		fmt.Fprintf(&builder, "- Длительность тренировки (мин): %d\n", settings.SessionDurationMinutes.V)
+	}
+	if value := strings.TrimSpace(settings.Injuries.V); settings.Injuries.IsValid && value != "" {
+		fmt.Fprintf(&builder, "- Ограничения/травмы: %s\n", value)
+	}
+	if settings.WorkoutPlanType != domain.WorkoutPlanTypeUnspecified {
+		fmt.Fprintf(&builder, "- Тип плана: %s\n", settings.WorkoutPlanType.String())
+	}
+	if len(settings.PriorityMuscleGroupsIDs) > 0 {
+		groupIDs := make([]string, 0, len(settings.PriorityMuscleGroupsIDs))
+		for _, groupID := range settings.PriorityMuscleGroupsIDs {
+			groupIDs = append(groupIDs, groupID.String())
+		}
+		fmt.Fprintf(&builder, "- Приоритетные группы мышц (ID): %s\n", strings.Join(groupIDs, ", "))
+	}
+
+	message := strings.TrimSpace(builder.String())
+	if message == "Контекст настроек пользователя для генерации тренировок. Используй как приоритетные пользовательские предпочтения:" {
+		return "", nil
+	}
+
+	return message, nil
 }
 
 func (s *Service) chatMessageToLLMParam(message domain.ChatMessage) (llm.MessageParam, error) {

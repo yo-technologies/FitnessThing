@@ -16,7 +16,7 @@ import (
 func (i *Implementation) LogSet(ctx context.Context, in *desc.LogSetRequest) (*desc.SetLogResponse, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "api.workout.LogSet")
 	defer span.Finish()
-	
+
 	if err := in.Validate(); err != nil {
 		return nil, fmt.Errorf("%w: %w", domain.ErrInvalidArgument, err)
 	}

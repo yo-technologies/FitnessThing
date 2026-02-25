@@ -45,6 +45,8 @@ func (c *CompletionProvider) toOpenAIMessages(msgs []llm.MessageParam) []openai.
 		switch m.Role {
 		case llm.RoleSystem:
 			out = append(out, openai.SystemMessage(m.Content))
+		case llm.RoleDeveloper:
+			out = append(out, openai.DeveloperMessage(m.Content))
 		case llm.RoleUser:
 			out = append(out, openai.UserMessage(m.Content))
 		case llm.RoleAssistant:

@@ -15,11 +15,11 @@ import (
 func (i *Implementation) CompleteWorkout(ctx context.Context, in *desc.CompleteWorkoutRequest) (*emptypb.Empty, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "api.workout.CompleteWorkout")
 	defer span.Finish()
-	
+
 	if err := in.Validate(); err != nil {
 		return nil, fmt.Errorf("%w: %w", domain.ErrInvalidArgument, err)
 	}
-	
+
 	userID, ok := interceptors.GetUserID(ctx)
 	if !ok {
 		logger.Errorf("error getting user id from context")

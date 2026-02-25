@@ -14,7 +14,7 @@ import (
 func (i *Implementation) DeleteRoutine(ctx context.Context, in *desc.DeleteRoutineRequest) (*emptypb.Empty, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "api.routine.DeleteRoutine")
 	defer span.Finish()
-	
+
 	if err := in.ValidateAll(); err != nil {
 		return nil, fmt.Errorf("%w: %v", domain.ErrInvalidArgument, err)
 	}

@@ -10,6 +10,6 @@ import (
 func (s *Service) GetMuscleGroups(ctx context.Context) ([]dto.MuscleGroupDTO, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "service.GetMuscleGroups")
 	defer span.Finish()
-	
+
 	return s.repository.GetMuscleGroups(ctx)
 }
