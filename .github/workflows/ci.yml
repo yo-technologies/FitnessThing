@@ -114,7 +114,7 @@ jobs:
           target: ${{ matrix.target }}
           push: true
           build-args: |
-            NEXT_PUBLIC_API_URL=https://api.fitness.yotechnologies.ru
+            NEXT_PUBLIC_API_URL=https://api.fitness.yotechnologies.ru/api
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-${{ matrix.image }}:latest
             ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-${{ matrix.image }}:${{ needs.prepare.outputs.image_tag }}
