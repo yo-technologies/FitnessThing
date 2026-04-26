@@ -1,0 +1,57 @@
+name: ${COMPOSE_PROJECT_NAME:-fitnesstrainer}
+
+include:
+  - traefik/compose.yaml
+  - jaeger/compose.yaml
+
+services:
+  api:
+    image: ${API_IMAGE}
+    restart: unless-stopped
+    env_file:
+      - ${API_ENV_FILE}
+    volumes:
+      - ${BACKEND_CONFIG}:/app/config.yaml:ro
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.api.rule=Host(`${API_DOMAIN}`)
+      - traefik.http.routers.api.entrypoints=websecure
+      - traefik.http.routers.api.tls.certresolver=le
+      - traefik.http.services.api.loadbalancer.server.port=8080
+    networks:
+      - proxy
+
+  migrate:
+    image: ${MIGRATE_IMAGE}
+    restart: "no"
+    env_file:
+      - ${API_ENV_FILE}
+    networks:
+      - proxy
+
+  frontend:
+    image: ${FRONTEND_IMAGE}
+    restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.frontend.rule=Host(`${FRONTEND_DOMAIN}`)
+      - traefik.http.routers.frontend.entrypoints=websecure
+      - traefik.http.routers.frontend.tls.certresolver=le
+      - traefik.http.services.frontend.loadbalancer.server.port=3000
+    networks:
+      - proxy
+
+  bot:
+    image: ${BOT_IMAGE}
+    restart: unless-stopped
+    env_file:
+      - ${BOT_ENV_FILE}
+    networks:
+      - proxy
+
+networks:
+  proxy:
+    name: ${COMPOSE_PROJECT_NAME:-fitnesstrainer}_proxy

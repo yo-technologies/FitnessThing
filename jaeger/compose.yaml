@@ -1,0 +1,11 @@
+services:
+  jaeger:
+    image: jaegertracing/all-in-one
+    restart: unless-stopped
+    expose:
+      - "16686"
+      - "14268"
+      - "4317"
+      - "4318"
+    networks:
+      - proxy

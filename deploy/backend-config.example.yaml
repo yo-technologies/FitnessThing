@@ -1,0 +1,20 @@
+# Backend config example (LLM settings + env var references)
+# Mount at BACKEND_CONFIG path on the server
+
+llm:
+  openai:
+    model: "anthropic/claude-haiku-4.5"
+    base_url: "https://openrouter.ai/api/v1"
+    api_key: "${OPENAI_API_KEY}"
+  reasoning_effort: "low"  # low, medium, high
+  limits:
+    daily_token_limit: 50000
+    prompt_weight: 0.4
+    completion_weight: 1.0
+
+prompt_generation:
+  debounce: "60s"
+  period: "10s"
+  rate_limit:
+    per_hour: 5
+    burst: 5
