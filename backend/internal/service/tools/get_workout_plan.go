@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fitness-trainer/internal/domain"
 	"fmt"
+
 	"github.com/opentracing/opentracing-go"
 )
 
@@ -18,7 +19,7 @@ var getWorkoutPlanSchema = map[string]any{
 func (t *Tools) newGetWorkoutPlanTool() agentTool {
 	return agentTool{
 		name:    "get_workout_plan",
-		desc:    "Return the current state of the workout including exercises, expected sets, and logged performance.",
+		desc:    "Return the current state of the workout including exercises, expected sets, and logged performance. Call this before setting weights for any exercise to check which muscle groups have already been worked in this session — use that to apply intra-workout fatigue adjustments.",
 		params:  getWorkoutPlanSchema,
 		handler: t.getWorkoutPlanToolHandler,
 	}
