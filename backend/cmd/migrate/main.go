@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fitness-trainer/internal/logger"
 	"fmt"
+	"net/url"
 	"os"
 
 	"github.com/joho/godotenv"
@@ -20,8 +21,8 @@ func init() {
 func loadPostgresURL() string {
 	return fmt.Sprintf(
 		"postgres://%s:%s@%s:%s/%s?sslmode=%s",
-		os.Getenv("POSTGRES_USER"),
-		os.Getenv("POSTGRES_PASSWORD"),
+		url.PathEscape(os.Getenv("POSTGRES_USER")),
+		url.PathEscape(os.Getenv("POSTGRES_PASSWORD")),
 		os.Getenv("POSTGRES_HOST"),
 		os.Getenv("POSTGRES_PORT"),
 		os.Getenv("POSTGRES_DB"),
