@@ -61,8 +61,11 @@ RUN adduser \
     --uid "${UID}" \
     appuser
 
-USER appuser
+WORKDIR /app
 
 COPY --from=build /bin/migrate /bin/
+COPY migrations/ ./migrations/
+
+USER appuser
 
 ENTRYPOINT [ "/bin/migrate" ]
