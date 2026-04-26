@@ -158,10 +158,9 @@ jobs:
                   IMAGE_PREFIX: ${{ env.IMAGE_PREFIX }}
             - name: Deploy
               run: |
-                  export ENV_FILE="${DEPLOY_DIR}/.env"
-                  make migrate
-                  make pull
-                  make up
+                  make migrate ENV_FILE="${DEPLOY_DIR}/.env"
+                  make pull ENV_FILE="${DEPLOY_DIR}/.env"
+                  make up ENV_FILE="${DEPLOY_DIR}/.env"
             - name: Docker disk usage (before prune)
               run: docker system df
             - name: Prune unused Docker images
