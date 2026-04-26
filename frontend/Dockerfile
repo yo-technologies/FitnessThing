@@ -26,8 +26,8 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 # Build-time API URL (can be a default value)
-ARG API_URL
-ENV API_URL=$API_URL
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 
 # Next.js collects completely anonymous telemetry data about general usage.
 # Learn more here: https://nextjs.org/telemetry
